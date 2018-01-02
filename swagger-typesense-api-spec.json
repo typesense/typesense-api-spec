@@ -2,7 +2,7 @@
   "swagger": "2.0",
   "info": {
     "description": "An open source search engine for building delightful search experiences. ",
-    "version": "0.7.1",
+    "version": "0.7.2-draft-1",
     "title": "Typesense API",
     "termsOfService": "http://swagger.io/terms/",
     "contact": {
@@ -22,6 +22,14 @@
       "externalDocs": {
         "description": "Find out more",
         "url": "http://wreally.com/typesense-docs-0.7/#create-a-collection"
+      }
+    },
+    {
+      "name": "documents",
+      "description": "A document is an individual record to be indexed and belongs to a collection",
+      "externalDocs": {
+        "description": "Find out more",
+        "url": "http://wreally.com/typesense-docs-0.7/#index-a-document"
       }
     }
   ],
@@ -100,7 +108,7 @@
         "tags": [
           "collections"
         ],
-        "summary": "Retrieve a collection",
+        "summary": "Retrieve a single collection",
         "description": "Retrieve the details of a collection, given its name.",
         "operationId": "getCollection",
         "consumes": [
@@ -133,9 +141,48 @@
           }
         }
       },
-      "post": {
+      "delete": {
         "tags": [
           "collections"
+        ],
+        "summary": "Delete a collection",
+        "description": "Permanently drops a collection. This action cannot be done. For large collections, this might have an impact on read latencies.",
+        "operationId": "deleteCollection",
+        "consumes": [
+          "application/json"
+        ],
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "collectionName",
+            "description": "The name of the collection to delete",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Collection deleted",
+            "schema": {
+              "$ref": "#/definitions/Collection"
+            }
+          },
+          "404": {
+            "description": "Collection not found",
+            "schema": {
+              "$ref": "#/definitions/ApiResponse"
+            }
+          }
+        }
+      }
+    },
+    "/collections/{collectionName}/documents": {
+      "post": {
+        "tags": [
+          "documents"
         ],
         "summary": "Index a document",
         "description": "A document to be indexed in a given collection must conform to the schema of the collection.",
@@ -179,14 +226,16 @@
             }
           }
         }
-      },
-      "delete": {
+      }
+    },
+    "/collections/{collectionName}/documents/{documentId}": {
+      "get": {
         "tags": [
-          "collections"
+          "documents"
         ],
-        "summary": "Delete a collection",
-        "description": "Permanently drops a collection. This action cannot be done. For large collections, this might have an impact on read latencies.",
-        "operationId": "deleteCollection",
+        "summary": "Retreive a document",
+        "description": "Fetch an individual document from a collection by using its ID.",
+        "operationId": "getDocument",
         "consumes": [
           "application/json"
         ],
@@ -197,20 +246,71 @@
           {
             "in": "path",
             "name": "collectionName",
-            "description": "The name of the collection to delete",
+            "description": "The name of the collection to search for the document under",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "in": "path",
+            "name": "documentId",
+            "description": "The Document ID",
             "required": true,
             "type": "string"
           }
         ],
         "responses": {
           "200": {
-            "description": "Collection deleted",
+            "description": "The document referenced by the ID",
             "schema": {
-              "$ref": "#/definitions/Collection"
+              "$ref": "#/definitions/Document"
             }
           },
           "404": {
-            "description": "Collection not found",
+            "description": "The document was not found",
+            "schema": {
+              "$ref": "#/definitions/ApiResponse"
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "documents"
+        ],
+        "summary": "Delete a document",
+        "description": "Delete an individual document from a collection by using its ID.",
+        "operationId": "deleteDocument",
+        "consumes": [
+          "application/json"
+        ],
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "collectionName",
+            "description": "The name of the collection to search for the document under",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "in": "path",
+            "name": "documentId",
+            "description": "The Document ID",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The document referenced by the ID was deleted",
+            "schema": {
+              "$ref": "#/definitions/Document"
+            }
+          },
+          "404": {
+            "description": "The document was not found",
             "schema": {
               "$ref": "#/definitions/ApiResponse"
             }
@@ -218,13 +318,13 @@
         }
       }
     },
-    "/collections/{collectionName}/search": {
+    "/collections/{collectionName}/documents/search": {
       "get": {
         "tags": [
-          "collections"
+          "documents"
         ],
-        "summary": "Search a collection",
-        "description": "Search a collection for documents that match the search criteria",
+        "summary": "Search for documents in a collection",
+        "description": "Search for documents in a collection that match the search criteria.",
         "operationId": "searchCollection",
         "consumes": [
           "application/json"
@@ -353,10 +453,10 @@
         }
       }
     },
-    "/collections/{collectionName}/export": {
+    "/collections/{collectionName}/documents/export": {
       "get": {
         "tags": [
-          "collections"
+          "documents"
         ],
         "summary": "Export all documents in a collection",
         "description": "Export all documents in a collection in JSON lines format.",
@@ -382,96 +482,6 @@
             "schema": {
               "type": "string",
               "example": "{\"id\": \"124\", \"company_name\": \"Stark Industries\", \"num_employees\": 5215, \"country\": \"US\"}\n{\"id\": \"125\", \"company_name\": \"Future Technology\", \"num_employees\": 1232,\"country\": \"UK\"}\n{\"id\": \"126\", \"company_name\": \"Random Corp.\", \"num_employees\": 531,\"country\": \"AU\"}\n"
-            }
-          },
-          "404": {
-            "description": "The document was not found",
-            "schema": {
-              "$ref": "#/definitions/ApiResponse"
-            }
-          }
-        }
-      }
-    },
-    "/collections/{collectionName}/{documentId}": {
-      "get": {
-        "tags": [
-          "collections"
-        ],
-        "summary": "Get a document by ID",
-        "description": "Fetch an individual document from a collection by using its ID.",
-        "operationId": "getDocument",
-        "consumes": [
-          "application/json"
-        ],
-        "produces": [
-          "application/json"
-        ],
-        "parameters": [
-          {
-            "in": "path",
-            "name": "collectionName",
-            "description": "The name of the collection to search for the document under",
-            "required": true,
-            "type": "string"
-          },
-          {
-            "in": "path",
-            "name": "documentId",
-            "description": "The Document ID",
-            "required": true,
-            "type": "string"
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "The document referenced by the ID",
-            "schema": {
-              "$ref": "#/definitions/Document"
-            }
-          },
-          "404": {
-            "description": "The document was not found",
-            "schema": {
-              "$ref": "#/definitions/ApiResponse"
-            }
-          }
-        }
-      },
-      "delete": {
-        "tags": [
-          "collections"
-        ],
-        "summary": "Delete a document",
-        "description": "Delete an individual document from a collection by using its ID.",
-        "operationId": "deleteDocument",
-        "consumes": [
-          "application/json"
-        ],
-        "produces": [
-          "application/json"
-        ],
-        "parameters": [
-          {
-            "in": "path",
-            "name": "collectionName",
-            "description": "The name of the collection to search for the document under",
-            "required": true,
-            "type": "string"
-          },
-          {
-            "in": "path",
-            "name": "documentId",
-            "description": "The Document ID",
-            "required": true,
-            "type": "string"
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "The document referenced by the ID was deleted",
-            "schema": {
-              "$ref": "#/definitions/Document"
             }
           },
           "404": {
