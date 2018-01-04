@@ -2,7 +2,7 @@
   "swagger": "2.0",
   "info": {
     "description": "An open source search engine for building delightful search experiences. ",
-    "version": "0.7.2-draft-1",
+    "version": "0.8.0-draft",
     "title": "Typesense API",
     "termsOfService": "http://swagger.io/terms/",
     "contact": {
@@ -63,7 +63,7 @@
           }
         ],
         "responses": {
-          "200": {
+          "201": {
             "description": "Collection successfully created",
             "schema": {
               "$ref": "#/definitions/Collection"
@@ -212,17 +212,16 @@
           }
         ],
         "responses": {
-          "200": {
-            "description": "Document successfully indexed",
+          "201": {
+            "description": "Document successfully created/indexed",
             "schema": {
-              "type": "object",
-              "properties": {
-                "id": {
-                  "type": "string",
-                  "description": "If the document contains an `id` field of type `string`, Typesense would use that field as the identifier for the document. Otherwise, Typesense would assign an identifier of its choice to the document.",
-                  "example": 124
-                }
-              }
+              "$ref": "#/definitions/Document"
+            }
+          },
+          "404": {
+            "description": "Collection not found",
+            "schema": {
+              "$ref": "#/definitions/ApiResponse"
             }
           }
         }
@@ -266,7 +265,7 @@
             }
           },
           "404": {
-            "description": "The document was not found",
+            "description": "The document or collection was not found",
             "schema": {
               "$ref": "#/definitions/ApiResponse"
             }
@@ -310,7 +309,7 @@
             }
           },
           "404": {
-            "description": "The document was not found",
+            "description": "The document or collection was not found",
             "schema": {
               "$ref": "#/definitions/ApiResponse"
             }
@@ -440,14 +439,30 @@
                   "type": "integer",
                   "description": "The number of milliseconds the search took"
                 },
+                "page": {
+                  "type": "integer",
+                  "description": "The search result page number"
+                },
                 "hits": {
                   "type": "array",
                   "description": "The documents that matched the search query",
                   "items": {
-                    "$ref": "#/definitions/DocumentWithSearchResultMetaData"
+                    "$ref": "#/definitions/SearchResultHit"
                   }
                 }
               }
+            }
+          },
+          "400": {
+            "description": "Bad request, see error message for details",
+            "schema": {
+              "$ref": "#/definitions/ApiResponse"
+            }
+          },
+          "404": {
+            "description": "The collection or field was not found",
+            "schema": {
+              "$ref": "#/definitions/ApiResponse"
             }
           }
         }
@@ -531,11 +546,13 @@
           "example": [
             {
               "name": "company_name",
-              "type": "string"
+              "type": "string",
+              "facet": false
             },
             {
               "name": "num_employees",
-              "type": "int32"
+              "type": "int32",
+              "facet": false
             },
             {
               "name": "country",
@@ -588,30 +605,29 @@
         "country": "USA"
       }
     },
-    "DocumentWithSearchResultMetaData": {
-      "allOf": [
-        {
-          "$ref": "#/definitions/Document"
+    "SearchResultHit": {
+      "type": "object",
+      "properties": {
+        "_highlight": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "description": "Contains highlighted portions of the search fields"
         },
-        {
-          "type": "object",
-          "properties": {
-            "_highlight": {
-              "additionalProperties": {
-                "type": "string"
-              }
-            }
-          }
+        "document": {
+          "$ref": "#/definitions/Document"
         }
-      ],
+      },
       "example": {
         "_highlight": {
-          "description": "<mark>Stark</mark> Industries"
+          "company_name": "<mark>Stark</mark> Industries"
         },
-        "id": "124",
-        "company_name": "Stark Industries",
-        "num_employees": 5215,
-        "country": "USA"
+        "document": {
+          "id": "124",
+          "company_name": "Stark Industries",
+          "num_employees": 5215,
+          "country": "USA"
+        }
       }
     },
     "ApiResponse": {
