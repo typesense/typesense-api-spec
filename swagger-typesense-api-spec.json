@@ -227,7 +227,7 @@
         }
       }
     },
-    "/collections/{collectionName}/documents/{documentId}": {
+    "/collections/{collectionName}/document/{documentId}": {
       "get": {
         "tags": [
           "documents"
