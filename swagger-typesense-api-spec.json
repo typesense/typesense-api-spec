@@ -435,7 +435,7 @@
                   "type": "integer",
                   "description": "The number of documents found"
                 },
-                "took_ms": {
+                "search_time_ms": {
                   "type": "integer",
                   "description": "The number of milliseconds the search took"
                 },
