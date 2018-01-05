@@ -294,7 +294,7 @@
           {
             "in": "query",
             "name": "prefix",
-            "description": "Boolean field to indicate that the last word in the query should be treated as a prefix, and not as a whole word. This is used for building autocomplete and instant search interfaces.",
+            "description": "Boolean field to indicate that the last word in the query should be treated as a prefix, and not as a whole word. This is used for building autocomplete and instant search interfaces. Defaults to true.",
             "required": false,
             "type": "string"
           },
