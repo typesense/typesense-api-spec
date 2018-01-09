@@ -31,6 +31,10 @@
         "description": "Find out more",
         "url": "http://wreally.com/typesense-docs-0.7/#index-a-document"
       }
+    },
+    {
+      "name": "debug",
+      "description": "Debugging information"
     }
   ],
   "schemes": [
@@ -503,6 +507,38 @@
             "description": "The document or collection was not found",
             "schema": {
               "$ref": "#/definitions/ApiResponse"
+            }
+          }
+        }
+      }
+    },
+    "/debug": {
+      "get": {
+        "tags": [
+          "debug"
+        ],
+        "summary": "Print debugging information",
+        "description": "Print debugging information",
+        "operationId": "debug",
+        "consumes": [
+          "application/json"
+        ],
+        "produces": [
+          "application/json"
+        ],
+        "responses": {
+          "200": {
+            "description": "Debugging information",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "version": {
+                  "type": "string"
+                },
+                "os": {
+                  "type": "string"
+                }
+              }
             }
           }
         }
