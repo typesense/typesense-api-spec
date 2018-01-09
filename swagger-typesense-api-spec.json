@@ -534,9 +534,6 @@
               "properties": {
                 "version": {
                   "type": "string"
-                },
-                "os": {
-                  "type": "string"
                 }
               }
             }
