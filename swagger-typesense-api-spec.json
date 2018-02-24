@@ -31,6 +31,10 @@
         "description": "Find out more",
         "url": "http://wreally.com/typesense-docs-0.7/#index-a-document"
       }
+    },
+    {
+      "name": "debug",
+      "description": "Debugging information"
     }
   ],
   "schemes": [
@@ -227,6 +231,197 @@
         }
       }
     },
+    "/collections/{collectionName}/documents/search": {
+      "get": {
+        "tags": [
+          "documents"
+        ],
+        "summary": "Search for documents in a collection",
+        "description": "Search for documents in a collection that match the search criteria.",
+        "operationId": "searchCollection",
+        "consumes": [
+          "application/json"
+        ],
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "collectionName",
+            "description": "The name of the collection to search for the document under",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "in": "query",
+            "name": "q",
+            "description": "The search query",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "in": "query",
+            "name": "query_by",
+            "description": "A list of `string` or `string[]` fields that should be queried against. Separate multiple fields with a comma.",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "in": "query",
+            "name": "filter_by",
+            "description": "Filter conditions for refining your search results. Separate multiple conditions with &&.",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "in": "query",
+            "name": "sort_by",
+            "description": "A list of numerical fields and their corresponding sort orders that will be used for ordering your results. Separate multiple fields with a comma. Currently, upto 2 sort fields can be specified.",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "in": "query",
+            "name": "facet_by",
+            "description": "A list of fields that will be used for faceting your results on. Separate multiple fields with a comma.",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "in": "query",
+            "name": "num_typos",
+            "description": "The number of typographical errors (1 or 2) that would be tolerated. Default: 2",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "in": "query",
+            "name": "prefix",
+            "description": "Boolean field to indicate that the last word in the query should be treated as a prefix, and not as a whole word. This is used for building autocomplete and instant search interfaces. Defaults to true.",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "in": "query",
+            "name": "rank_tokens_by",
+            "description": "When a token/word in the search query matches multiple possible words (either because of a typo or during prefix search), this parameter determines the priority of the matching tokens. \nFor e.g. both “john” and “joan” are 1-typo away from “jofn”. In a prefix search, both “apple” and “apply” would match “app”. \nThe value of rank_tokens_by must be: TOKEN_RANKING_FIELD or TERM_FREQUENCY. \nTOKEN_RANKING_FIELD: Tokens are ranked by the value of the token_ranking_field specified during collection creation. \nTERM_FREQUENCY: Tokens that occur more frequently in the collection are ranked first.\nDefault: TOKEN_RANKING_FIELD if a token_ranking_field was provided when the collection was created. Otherwise, TERM_FREQUENCY is used.",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "in": "query",
+            "name": "page",
+            "description": "Results from this specific page number would be fetched.",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "in": "query",
+            "name": "per_page",
+            "description": "Number of results to fetch per page.",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "in": "query",
+            "name": "callback",
+            "description": "Name of the callback function to be used for JSONP response.",
+            "required": false,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Search results",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "facet_counts": {
+                  "type": "array",
+                  "description": "todo",
+                  "items": {
+                    "type": "integer"
+                  },
+                  "example": []
+                },
+                "found": {
+                  "type": "integer",
+                  "description": "The number of documents found"
+                },
+                "search_time_ms": {
+                  "type": "integer",
+                  "description": "The number of milliseconds the search took"
+                },
+                "page": {
+                  "type": "integer",
+                  "description": "The search result page number"
+                },
+                "hits": {
+                  "type": "array",
+                  "description": "The documents that matched the search query",
+                  "items": {
+                    "$ref": "#/definitions/SearchResultHit"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request, see error message for details",
+            "schema": {
+              "$ref": "#/definitions/ApiResponse"
+            }
+          },
+          "404": {
+            "description": "The collection or field was not found",
+            "schema": {
+              "$ref": "#/definitions/ApiResponse"
+            }
+          }
+        }
+      }
+    },
+    "/collections/{collectionName}/documents/export": {
+      "get": {
+        "tags": [
+          "documents"
+        ],
+        "summary": "Export all documents in a collection",
+        "description": "Export all documents in a collection in JSON lines format.",
+        "operationId": "exportCollection",
+        "consumes": [
+          "application/json"
+        ],
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "collectionName",
+            "description": "The name of the collection",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The document referenced by the ID",
+            "schema": {
+              "type": "string",
+              "example": "{\"id\": \"124\", \"company_name\": \"Stark Industries\", \"num_employees\": 5215, \"country\": \"US\"}\n{\"id\": \"125\", \"company_name\": \"Future Technology\", \"num_employees\": 1232,\"country\": \"UK\"}\n{\"id\": \"126\", \"company_name\": \"Random Corp.\", \"num_employees\": 531,\"country\": \"AU\"}\n"
+            }
+          },
+          "404": {
+            "description": "The document was not found",
+            "schema": {
+              "$ref": "#/definitions/ApiResponse"
+            }
+          }
+        }
+      }
+    },
     "/collections/{collectionName}/documents/{documentId}": {
       "get": {
         "tags": [
@@ -317,192 +512,30 @@
         }
       }
     },
-    "/collections/{collectionName}/documents/search": {
+    "/debug": {
       "get": {
         "tags": [
-          "documents"
+          "debug"
         ],
-        "summary": "Search for documents in a collection",
-        "description": "Search for documents in a collection that match the search criteria.",
-        "operationId": "searchCollection",
+        "summary": "Print debugging information",
+        "description": "Print debugging information",
+        "operationId": "debug",
         "consumes": [
           "application/json"
         ],
         "produces": [
           "application/json"
         ],
-        "parameters": [
-          {
-            "in": "path",
-            "name": "collectionName",
-            "description": "The name of the collection to search for the document under",
-            "required": true,
-            "type": "string"
-          },
-          {
-            "in": "query",
-            "name": "q",
-            "description": "The search query",
-            "required": true,
-            "type": "string"
-          },
-          {
-            "in": "query",
-            "name": "query_by",
-            "description": "A list of `string` or `string[]` fields that should be queried against. Separate multiple fields with a comma.",
-            "required": true,
-            "type": "string"
-          },
-          {
-            "in": "query",
-            "name": "filter_by",
-            "description": "Filter conditions for refining your search results. Separate multiple conditions with &&.",
-            "required": false,
-            "type": "string"
-          },
-          {
-            "in": "query",
-            "name": "sort_by",
-            "description": "A list of numerical fields and their corresponding sort orders that will be used for ordering your results. Separate multiple fields with a comma. Currently, upto 2 sort fields can be specified.",
-            "required": false,
-            "type": "string"
-          },
-          {
-            "in": "query",
-            "name": "facet_by",
-            "description": "A list of fields that will be used for faceting your results on. Separate multiple fields with a comma.",
-            "required": false,
-            "type": "string"
-          },
-          {
-            "in": "query",
-            "name": "num_typos",
-            "description": "The number of typographical errors (1 or 2) that would be tolerated. Default: 2",
-            "required": false,
-            "type": "string"
-          },
-          {
-            "in": "query",
-            "name": "prefix",
-            "description": "Boolean field to indicate that the last word in the query should be treated as a prefix, and not as a whole word. This is used for building autocomplete and instant search interfaces.",
-            "required": false,
-            "type": "string"
-          },
-          {
-            "in": "query",
-            "name": "rank_tokens_by",
-            "description": "When a token/word in the search query matches multiple possible words (either because of a typo or during prefix search), this parameter determines the priority of the matching tokens. \nFor e.g. both “john” and “joan” are 1-typo away from “jofn”. In a prefix search, both “apple” and “apply” would match “app”. \nThe value of rank_tokens_by must be: TOKEN_RANKING_FIELD or TERM_FREQUENCY. \nTOKEN_RANKING_FIELD: Tokens are ranked by the value of the token_ranking_field specified during collection creation. \nTERM_FREQUENCY: Tokens that occur more frequently in the collection are ranked first.",
-            "required": false,
-            "type": "string"
-          },
-          {
-            "in": "query",
-            "name": "page",
-            "description": "Results from this specific page number would be fetched.",
-            "required": false,
-            "type": "string"
-          },
-          {
-            "in": "query",
-            "name": "per_page",
-            "description": "Number of results to fetch per page.",
-            "required": false,
-            "type": "string"
-          },
-          {
-            "in": "query",
-            "name": "callback",
-            "description": "Name of the callback function to be used for JSONP response.",
-            "required": false,
-            "type": "string"
-          }
-        ],
         "responses": {
           "200": {
-            "description": "Search results",
+            "description": "Debugging information",
             "schema": {
               "type": "object",
               "properties": {
-                "facet_counts": {
-                  "type": "array",
-                  "description": "todo",
-                  "items": {
-                    "type": "integer"
-                  },
-                  "example": []
-                },
-                "found": {
-                  "type": "integer",
-                  "description": "The number of documents found"
-                },
-                "took_ms": {
-                  "type": "integer",
-                  "description": "The number of milliseconds the search took"
-                },
-                "page": {
-                  "type": "integer",
-                  "description": "The search result page number"
-                },
-                "hits": {
-                  "type": "array",
-                  "description": "The documents that matched the search query",
-                  "items": {
-                    "$ref": "#/definitions/SearchResultHit"
-                  }
+                "version": {
+                  "type": "string"
                 }
               }
-            }
-          },
-          "400": {
-            "description": "Bad request, see error message for details",
-            "schema": {
-              "$ref": "#/definitions/ApiResponse"
-            }
-          },
-          "404": {
-            "description": "The collection or field was not found",
-            "schema": {
-              "$ref": "#/definitions/ApiResponse"
-            }
-          }
-        }
-      }
-    },
-    "/collections/{collectionName}/documents/export": {
-      "get": {
-        "tags": [
-          "documents"
-        ],
-        "summary": "Export all documents in a collection",
-        "description": "Export all documents in a collection in JSON lines format.",
-        "operationId": "exportCollection",
-        "consumes": [
-          "application/json"
-        ],
-        "produces": [
-          "application/json"
-        ],
-        "parameters": [
-          {
-            "in": "path",
-            "name": "collectionName",
-            "description": "The name of the collection",
-            "required": true,
-            "type": "string"
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "The document referenced by the ID",
-            "schema": {
-              "type": "string",
-              "example": "{\"id\": \"124\", \"company_name\": \"Stark Industries\", \"num_employees\": 5215, \"country\": \"US\"}\n{\"id\": \"125\", \"company_name\": \"Future Technology\", \"num_employees\": 1232,\"country\": \"UK\"}\n{\"id\": \"126\", \"company_name\": \"Random Corp.\", \"num_employees\": 531,\"country\": \"AU\"}\n"
-            }
-          },
-          "404": {
-            "description": "The document was not found",
-            "schema": {
-              "$ref": "#/definitions/ApiResponse"
             }
           }
         }
