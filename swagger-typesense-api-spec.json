@@ -641,7 +641,7 @@
     "SearchResultHit": {
       "type": "object",
       "properties": {
-        "_highlight": {
+        "highlight": {
           "additionalProperties": {
             "type": "string"
           },
@@ -652,7 +652,7 @@
         }
       },
       "example": {
-        "_highlight": {
+        "highlight": {
           "company_name": "<mark>Stark</mark> Industries"
         },
         "document": {
