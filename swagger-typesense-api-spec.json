@@ -304,13 +304,6 @@
           },
           {
             "in": "query",
-            "name": "rank_tokens_by",
-            "description": "When a token/word in the search query matches multiple possible words (either because of a typo or during prefix search), this parameter determines the priority of the matching tokens. \nFor e.g. both “john” and “joan” are 1-typo away from “jofn”. In a prefix search, both “apple” and “apply” would match “app”. \nThe value of rank_tokens_by must be: TOKEN_RANKING_FIELD or TERM_FREQUENCY. \nTOKEN_RANKING_FIELD: Tokens are ranked by the value of the token_ranking_field specified during collection creation. \nTERM_FREQUENCY: Tokens that occur more frequently in the collection are ranked first.\nDefault: TOKEN_RANKING_FIELD if a token_ranking_field was provided when the collection was created. Otherwise, TERM_FREQUENCY is used.",
-            "required": false,
-            "type": "string"
-          },
-          {
-            "in": "query",
             "name": "page",
             "description": "Results from this specific page number would be fetched.",
             "required": false,
@@ -594,7 +587,7 @@
             }
           ]
         },
-        "token_ranking_field": {
+        "default_sorting_field": {
           "type": "string",
           "example": "num_employees"
         }
@@ -641,7 +634,7 @@
     "SearchResultHit": {
       "type": "object",
       "properties": {
-        "_highlight": {
+        "highlight": {
           "additionalProperties": {
             "type": "string"
           },
@@ -652,7 +645,7 @@
         }
       },
       "example": {
-        "_highlight": {
+        "highlight": {
           "company_name": "<mark>Stark</mark> Industries"
         },
         "document": {
