@@ -336,6 +336,13 @@
             "description": "Comma-separated list of fields from the document to exclude in the search result",
             "required": false,
             "type": "string"
+          },
+          {
+            "in": "query",
+            "name": "drop_tokens_threshold",
+            "description": "If the number of results found for a specific query is less than this number, Typesense will attempt to drop the tokens in the query until enough results are found. Set to 0 to disable.",
+            "required": false,
+            "type": "string"
           }
         ],
         "responses": {
@@ -649,8 +656,21 @@
       "type": "object",
       "properties": {
         "highlight": {
-          "additionalProperties": {
-            "type": "string"
+          "type": "object",
+          "properties": {
+            "field": {
+              "type": "string",
+              "example": "company_name"
+            },
+            "snippet": {
+              "type": "string",
+              "example": "<mark>Stark</mark> Industries"
+            },
+            "index": {
+              "type": "integer",
+              "description": "The index property will be present only for string[] fields.",
+              "example": 1
+            }
           },
           "description": "Contains highlighted portions of the search fields"
         },
@@ -660,7 +680,8 @@
       },
       "example": {
         "highlight": {
-          "company_name": "<mark>Stark</mark> Industries"
+          "field": "company_name",
+          "snippet": "<mark>Stark</mark> Industries"
         },
         "document": {
           "id": "124",
