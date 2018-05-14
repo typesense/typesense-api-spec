@@ -643,7 +643,7 @@
       "type": "object",
       "description": "Can be any key-value pair",
       "additionalProperties": {
-        "type": "string"
+        "type": "object"
       },
       "example": {
         "id": "124",
@@ -655,21 +655,30 @@
     "SearchResultHit": {
       "type": "object",
       "properties": {
-        "highlight": {
+        "highlights": {
           "type": "object",
-          "properties": {
-            "field": {
-              "type": "string",
-              "example": "company_name"
-            },
-            "snippet": {
-              "type": "string",
-              "example": "<mark>Stark</mark> Industries"
-            },
-            "index": {
-              "type": "integer",
-              "description": "The index property will be present only for string[] fields.",
-              "example": 1
+          "additionalProperties": {
+            "type": "object",
+            "properties": {
+              "field_name": {
+                "type": "object",
+                "example": "company_name",
+                "properties": {
+                  "field": {
+                    "type": "string",
+                    "example": "company_name"
+                  },
+                  "snippet": {
+                    "type": "string",
+                    "example": "<mark>Stark</mark> Industries"
+                  },
+                  "index": {
+                    "type": "integer",
+                    "description": "The index property will be present only for string[] fields.",
+                    "example": 1
+                  }
+                }
+              }
             }
           },
           "description": "Contains highlighted portions of the search fields"
@@ -679,9 +688,11 @@
         }
       },
       "example": {
-        "highlight": {
-          "field": "company_name",
-          "snippet": "<mark>Stark</mark> Industries"
+        "highlights": {
+          "company_name": {
+            "field": "company_name",
+            "snippet": "<mark>Stark</mark> Industries"
+          }
         },
         "document": {
           "id": "124",
@@ -702,6 +713,6 @@
   },
   "externalDocs": {
     "description": "Find out more about Typsesense",
-    "url": "http://wreally.com/typesense-docs-0.7/"
+    "url": "https://typesense.org/"
   }
 }
