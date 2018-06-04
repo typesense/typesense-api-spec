@@ -2,15 +2,15 @@
   "swagger": "2.0",
   "info": {
     "description": "An open source search engine for building delightful search experiences. ",
-    "version": "0.8.0-draft",
+    "version": "0.9.0",
     "title": "Typesense API",
     "termsOfService": "http://swagger.io/terms/",
     "contact": {
       "email": "contact@wreally.com"
     },
     "license": {
-      "name": "MIT",
-      "url": "https://tldrlegal.com/license/mit-license"
+      "name": "GPL-2.0",
+      "url": "https://tldrlegal.com/license/gnu-general-public-license-v2"
     }
   },
   "host": "localhost:8108",
@@ -21,7 +21,7 @@
       "description": "A collection is defined by a schema",
       "externalDocs": {
         "description": "Find out more",
-        "url": "http://wreally.com/typesense-docs-0.7/#create-a-collection"
+        "url": "https://typesense.org/api/#create-collection"
       }
     },
     {
@@ -29,7 +29,7 @@
       "description": "A document is an individual record to be indexed and belongs to a collection",
       "externalDocs": {
         "description": "Find out more",
-        "url": "http://wreally.com/typesense-docs-0.7/#index-a-document"
+        "url": "https://typesense.org/api/#index-document"
       }
     },
     {
@@ -320,6 +320,27 @@
             "in": "query",
             "name": "callback",
             "description": "Name of the callback function to be used for JSONP response.",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "in": "query",
+            "name": "include_fields",
+            "description": "Comma-separated list of fields from the document to include in the search result",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "in": "query",
+            "name": "exclude_fields",
+            "description": "Comma-separated list of fields from the document to exclude in the search result",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "in": "query",
+            "name": "drop_tokens_threshold",
+            "description": "If the number of results found for a specific query is less than this number, Typesense will attempt to drop the tokens in the query until enough results are found. Set to 0 to disable.",
             "required": false,
             "type": "string"
           }
@@ -622,7 +643,7 @@
       "type": "object",
       "description": "Can be any key-value pair",
       "additionalProperties": {
-        "type": "string"
+        "type": "object"
       },
       "example": {
         "id": "124",
@@ -634,9 +655,40 @@
     "SearchResultHit": {
       "type": "object",
       "properties": {
-        "highlight": {
-          "additionalProperties": {
-            "type": "string"
+        "highlights": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "field": {
+                "type": "string",
+                "example": "company_name"
+              },
+              "snippet": {
+                "type": "string",
+                "example": "<mark>Stark</mark> Industries",
+                "description": "Present only for (non-array) string fields"
+              },
+              "snippets": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "example": [
+                  "<mark>Stark</mark> Industries",
+                  "<mark>Stark</mark> Corp"
+                ],
+                "description": "Present only for (array) string[] fields"
+              },
+              "indices": {
+                "type": "array",
+                "items": {
+                  "type": "integer"
+                },
+                "description": "The indices property will be present only for string[] fields and will contain the corresponding indices of the snippets in the search field",
+                "example": 1
+              }
+            }
           },
           "description": "Contains highlighted portions of the search fields"
         },
@@ -645,8 +697,11 @@
         }
       },
       "example": {
-        "highlight": {
-          "company_name": "<mark>Stark</mark> Industries"
+        "highlights": {
+          "company_name": {
+            "field": "company_name",
+            "snippet": "<mark>Stark</mark> Industries"
+          }
         },
         "document": {
           "id": "124",
@@ -667,6 +722,6 @@
   },
   "externalDocs": {
     "description": "Find out more about Typsesense",
-    "url": "http://wreally.com/typesense-docs-0.7/"
+    "url": "https://typesense.org/"
   }
 }
