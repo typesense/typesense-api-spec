@@ -656,28 +656,37 @@
       "type": "object",
       "properties": {
         "highlights": {
-          "type": "object",
-          "additionalProperties": {
+          "type": "array",
+          "items": {
             "type": "object",
             "properties": {
-              "field_name": {
-                "type": "object",
-                "example": "company_name",
-                "properties": {
-                  "field": {
-                    "type": "string",
-                    "example": "company_name"
-                  },
-                  "snippet": {
-                    "type": "string",
-                    "example": "<mark>Stark</mark> Industries"
-                  },
-                  "index": {
-                    "type": "integer",
-                    "description": "The index property will be present only for string[] fields.",
-                    "example": 1
-                  }
-                }
+              "field": {
+                "type": "string",
+                "example": "company_name"
+              },
+              "snippet": {
+                "type": "string",
+                "example": "<mark>Stark</mark> Industries",
+                "description": "Present only for (non-array) string fields"
+              },
+              "snippets": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "example": [
+                  "<mark>Stark</mark> Industries",
+                  "<mark>Stark</mark> Corp"
+                ],
+                "description": "Present only for (array) string[] fields"
+              },
+              "indices": {
+                "type": "array",
+                "items": {
+                  "type": "integer"
+                },
+                "description": "The indices property will be present only for string[] fields and will contain the corresponding indices of the snippets in the search field",
+                "example": 1
               }
             }
           },
