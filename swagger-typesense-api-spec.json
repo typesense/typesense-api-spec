@@ -290,6 +290,13 @@
           },
           {
             "in": "query",
+            "name": "max_facet_values",
+            "description": "Maximum number of facet values to be returned.",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "in": "query",
             "name": "num_typos",
             "description": "The number of typographical errors (1 or 2) that would be tolerated. Default: 2",
             "required": false,
@@ -404,8 +411,45 @@
         "summary": "Export all documents in a collection",
         "description": "Export all documents in a collection in JSON lines format.",
         "operationId": "exportCollection",
+        "produces": [
+          "application/octet-stream"
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "collectionName",
+            "description": "The name of the collection",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Exports all the documents in a given collection.",
+            "schema": {
+              "type": "string",
+              "example": "{\"id\": \"124\", \"company_name\": \"Stark Industries\", \"num_employees\": 5215, \"country\": \"US\"}\n{\"id\": \"125\", \"company_name\": \"Future Technology\", \"num_employees\": 1232,\"country\": \"UK\"}\n{\"id\": \"126\", \"company_name\": \"Random Corp.\", \"num_employees\": 531,\"country\": \"AU\"}\n"
+            }
+          },
+          "404": {
+            "description": "The collection was not found",
+            "schema": {
+              "$ref": "#/definitions/ApiResponse"
+            }
+          }
+        }
+      }
+    },
+    "/collections/{collectionName}/documents/import": {
+      "post": {
+        "tags": [
+          "documents"
+        ],
+        "summary": "Import documents into a collection",
+        "description": "The documents to be imported must be formatted in a newline delimited JSON structure. You can feed the output file from a Typesense export operation directly as import.",
+        "operationId": "importCollection",
         "consumes": [
-          "application/json"
+          "application/octet-stream"
         ],
         "produces": [
           "application/json"
@@ -421,14 +465,14 @@
         ],
         "responses": {
           "200": {
-            "description": "The document referenced by the ID",
+            "description": "Result of the import operation.",
             "schema": {
               "type": "string",
-              "example": "{\"id\": \"124\", \"company_name\": \"Stark Industries\", \"num_employees\": 5215, \"country\": \"US\"}\n{\"id\": \"125\", \"company_name\": \"Future Technology\", \"num_employees\": 1232,\"country\": \"UK\"}\n{\"id\": \"126\", \"company_name\": \"Random Corp.\", \"num_employees\": 531,\"country\": \"AU\"}\n"
+              "example": "{\"success\": false, \"num_imported\": 1, \"items\": [{\"success\": true}, {\"success\": false, \"error\": \"Bad JSON.\"}]}"
             }
           },
           "404": {
-            "description": "The document was not found",
+            "description": "The collection was not found",
             "schema": {
               "$ref": "#/definitions/ApiResponse"
             }
@@ -554,6 +598,35 @@
           }
         }
       }
+    },
+    "/health": {
+      "get": {
+        "tags": [
+          "health"
+        ],
+        "summary": "Checks if Typesense server is ready to accept requests.",
+        "description": "Checks if Typesense server is ready to accept requests.",
+        "operationId": "health",
+        "consumes": [
+          "application/json"
+        ],
+        "produces": [
+          "application/json"
+        ],
+        "responses": {
+          "200": {
+            "description": "Search service is ready for requests.",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "ok": {
+                  "type": "bool"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "security": [
@@ -611,6 +684,10 @@
         "default_sorting_field": {
           "type": "string",
           "example": "num_employees"
+        },
+        "created_at": {
+          "type": "int64",
+          "example": 1568144299
         }
       }
     },
