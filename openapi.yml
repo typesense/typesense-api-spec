@@ -848,32 +848,16 @@ paths:
           required: true
           schema:
             type: string
-        - name: action
+        - name: queryParams
           in: query
-          description:
-            Action mode. Allowed action modes are `create`, `upsert` and `update`.
-            `create` mode creates a new document. Fails if a document with the same id
-            already exists. `upsert` mode creates a new document or updates an existing
-            document if a document with the same id already exists.
-            `update` mode updates an existing document. Fails if a document with the
-            given id does not exist.
-          required: true #only for codegen
           schema:
-            type: string
-            example: upsert
-            enum:
-              - create
-              - upsert
-              - update
-        - name: batch_size
-          in: query
-          description:
-            Batch size used for import. By default, Typesense ingests 40 documents at a time
-            into Typesense. To increase this value, use the `batch_size` parameter.
-            Larger batch sizes will consume larger transient memory during import.
-          required: true #only for codegen
-          schema:
-            type: integer
+            type: object
+            properties: 
+              action: 
+                type: string
+                description: Something
+              batch_size:
+                type: integer
       requestBody:
         description: The json array of documents or the JSONL file to import
         content:
