@@ -1152,7 +1152,6 @@ components:
       required:
         - name
         - fields
-        - default_sorting_field
       type: object
       properties:
         name:
