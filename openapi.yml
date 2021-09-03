@@ -1152,7 +1152,6 @@ components:
       required:
         - name
         - fields
-        - default_sorting_field
       type: object
       properties:
         name:
@@ -1218,6 +1217,7 @@ components:
             - int64[]
             - float[]
             - bool[]
+            - auto
         optional:
           type: boolean
           example: true
