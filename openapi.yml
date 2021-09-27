@@ -209,7 +209,7 @@ paths:
           in: query
           schema:
             type: object
-            properties:      
+            properties:
               filter_by:
                 type: string
                 example: "num_employees:>100 && country: [USA, UK]"
@@ -454,8 +454,8 @@ paths:
               prioritize_exact_match:
                 description: >
                   Set this parameter to true to ensure that an exact match is ranked above
-                  the others 
-                type: boolean    
+                  the others
+                type: boolean
       responses:
         200:
           description: Search results
@@ -707,9 +707,9 @@ paths:
             type: string
         - name: exportDocumentsParameters
           in: query
-          schema: 
+          schema:
             type: object
-            properties: 
+            properties:
               filter_by:
                 description:
                   Filter conditions for refining your search results. Separate
@@ -763,8 +763,8 @@ paths:
           in: query
           schema:
             type: object
-            properties: 
-              action: 
+            properties:
+              action:
                 type: string
               batch_size:
                 type: integer
@@ -1180,6 +1180,7 @@ components:
             the search results are ranked when a sort_by clause is not provided during
             searching. This field must indicate some kind of popularity.
           example: num_employees
+          default: ""
     Collection:
       allOf:
         - $ref: "#/components/schemas/CollectionSchema"
