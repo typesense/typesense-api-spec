@@ -1197,8 +1197,6 @@ components:
       required:
         - name
         - type
-        - facet #only for codegen
-        - optional #only for codegen
       type: object
       properties:
         name:
@@ -1229,7 +1227,8 @@ components:
           default: false
         index:
           type: boolean
-          example: false
+          example: true
+          default: true
     CollectionAliasSchema:
       type: object
       required:
