@@ -1200,6 +1200,10 @@ components:
               description: Timestamp of when the collection was created
               format: int64
               readOnly: true
+            num_memory_shards:
+              type: integer
+              format: int64
+              readOnly: true
     Field:
       required:
         - name
