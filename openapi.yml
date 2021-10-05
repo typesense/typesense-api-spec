@@ -1188,6 +1188,7 @@ components:
           required:
             - num_documents
             - created_at
+            - num_memory_shards
           properties:
             num_documents:
               type: integer
