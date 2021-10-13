@@ -267,7 +267,8 @@ paths:
               - include_fields # only for codegen
               - exclude_fields # only for codegen
               - hidden_hits # only for codegen
-              - highlight_fields # only for codegen
+              - highlight_full_fields # only for codegen
+              - pinned_hits # only for codegen
               - prefix # only for codegen
               
             properties:
