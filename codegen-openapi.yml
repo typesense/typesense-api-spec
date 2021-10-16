@@ -1648,6 +1648,18 @@ components:
       properties:
         snapshot_path:
           type: string
+    ErrorResponse:
+      type: object
+      properties:
+        message:
+          type: string
+    MultiSearchResponse:
+      type: object
+      properties:
+        results:
+          type: array
+          items:
+            $ref: "#/components/schemas/SearchResult"
   securitySchemes:
     api_key_header:
       type: apiKey
