@@ -2,7 +2,7 @@ openapi: 3.0.3
 info:
   title: Typesense API
   description: "An open source search engine for building delightful search experiences."
-  version: 0.17.0
+  version: 0.21.0
 externalDocs:
   description: Find out more about Typsesense
   url: https://typesense.org
@@ -23,19 +23,19 @@ tags:
     description: Promote certain documents over others
     externalDocs:
       description: Find out more
-      url: https://typesense.org/docs/0.18.0/api/#curation
+      url: https://typesense.org/docs/0.21.0/api/#curation
   - name: keys
     description: Manage API Keys with fine-grain access control
     externalDocs:
       description: Find out more
-      url: https://typesense.org/docs/0.18.0/api/#api-keys
+      url: https://typesense.org/docs/0.21.0/api/#api-keys
   - name: debug
     description: Debugging information
   - name: operations
     description: Manage Typesense cluster
     externalDocs:
       description: Find out more
-      url: https://typesense.org/docs/0.18.0/api/#cluster-operations
+      url: https://typesense.org/docs/0.21.0/api/#cluster-operations
 
 paths:
   /collections:
@@ -55,9 +55,9 @@ paths:
             application/json:
               schema:
                 type: array
-                x-go-type: "[]*Collection"
+                x-go-type: "[]*CollectionResponse"
                 items:
-                  $ref: "#/components/schemas/Collection"
+                  $ref: "#/components/schemas/CollectionResponse"
     post:
       tags:
         - collections
@@ -79,7 +79,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Collection"
+                $ref: "#/components/schemas/CollectionResponse"
         409:
           description: Collection already exists
           content:
@@ -106,7 +106,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Collection"
+                $ref: "#/components/schemas/CollectionResponse"
         404:
           description: Collection not found
           content:
@@ -134,7 +134,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Collection"
+                $ref: "#/components/schemas/CollectionResponse"
         404:
           description: Collection not found
           content:
@@ -209,7 +209,7 @@ paths:
           in: query
           schema:
             type: object
-            properties:      
+            properties:
               filter_by:
                 type: string
                 example: "num_employees:>100 && country: [USA, UK]"
@@ -256,18 +256,38 @@ paths:
           in: query
           schema:
             type: object
+            required:
+              - q
+              - query_by
+              - query_by_weights # only for codegen
+              - sort_by # only for codegen
+              - required # only for codegen
+              - facet_by # only for codegen
+              - group_by # only for codegen
+              - include_fields # only for codegen
+              - exclude_fields # only for codegen
+              - hidden_hits # only for codegen
+              - highlight_full_fields # only for codegen
+              - pinned_hits # only for codegen
+              - prefix # only for codegen
+              
             properties:
               q:
                 description: The query text to search for in the collection.
                   Use * as the search string to return all documents.
                   This is typically useful when used in conjunction with filter_by.
                 type: string
+                
+                
               query_by:
                 description: A list of `string` fields that should be queried
                   against. Multiple fields are separated with a comma.
                 type: array
                 items:
                   type: string
+                default: []
+                
+                
               query_by_weights:
                 description:
                   The relative weight to give each `query_by` field when ranking results.
@@ -276,6 +296,8 @@ paths:
                 type: array
                 items:
                   type: string
+                default: []
+                
               max_hits:
                 description: >
                   Maximum number of hits returned. Increasing this value might
@@ -287,6 +309,7 @@ paths:
                     example: all
                     enum:
                       - all
+                      
               prefix:
                 description:
                   Boolean field to indicate that the last word in the query should
@@ -295,12 +318,15 @@ paths:
                 type: array
                 items:
                   type: boolean
+                default: []
+                
               filter_by:
                 description:
                   Filter conditions for refining your search results. Separate
                   multiple conditions with &&.
                 type: string
                 example: "num_employees:>100 && country: [USA, UK]"
+                
               sort_by:
                 description:
                   A list of numerical fields and their corresponding sort orders
@@ -314,6 +340,8 @@ paths:
                 items:
                   type: string
                   example: num_employees:desc
+                default: []
+                
               facet_by:
                 description:
                   A list of fields that will be used for faceting your results
@@ -321,9 +349,12 @@ paths:
                 type: array
                 items:
                   type: string
+                default: []
+                
               max_facet_values:
                 description: Maximum number of facet values to be returned.
                 type: integer
+                
               facet_query:
                 description:
                   Facet values that are returned can now be filtered via this parameter.
@@ -331,17 +362,21 @@ paths:
                   by `category`, you can set `facet_query=category:shoe` to return only
                   facet values that contain the prefix "shoe".
                 type: string
+                
               num_typos:
                 description: >
                   The number of typographical errors (1 or 2) that would be tolerated.
                   Default: 2
                 type: integer
+                
               page:
                 description: Results from this specific page number would be fetched.
                 type: integer
+                
               per_page:
                 description: "Number of results to fetch per page. Default: 10"
                 type: integer
+                
               group_by:
                 description:
                   You can aggregate search results into groups or buckets by specify
@@ -350,32 +385,42 @@ paths:
                 type: array
                 items:
                   type: string
+                default: []
+              
               group_limit:
                 description: >
                   Maximum number of hits to be returned for every group. If the `group_limit` is
                   set as `K` then only the top K hits in each group are returned in the response.
                   Default: 3
                 type: integer
+              
               include_fields:
                 description: List of fields from the document to include in the search result
                 type: array
                 items:
                   type: string
+                default: []
+                
               exclude_fields:
                 description: List of fields from the document to exclude in the search result
                 type: array
                 items:
                   type: string
+                default: []
+                
               highlight_full_fields:
                 description: List of fields which should be highlighted fully without snippeting
                 type: array
                 items:
                   type: string
+                default: []
+                
               highlight_affix_num_tokens:
                 description: >
                   The number of tokens that should surround the highlighted text on each side.
                   Default: 4
                 type: integer
+                
               highlight_start_tag:
                 description: >
                   The start tag used for the highlighted snippets.
@@ -386,11 +431,13 @@ paths:
                   The end tag used for the highlighted snippets.
                   Default: `</mark>`
                 type: string
+                
               snippet_threshold:
                 description: >
                   Field values under this length will be fully highlighted, instead of showing
                   a snippet of relevant portion. Default: 30
                 type: integer
+                
               drop_tokens_threshold:
                 description: >
                   If the number of results found for a specific query is less than
@@ -404,6 +451,7 @@ paths:
                   Typesense will attempt to look for tokens with more typos until
                   enough results are found. Default: 100
                 type: integer
+                
               pinned_hits:
                 description: >
                   A list of records to unconditionally include in the search results
@@ -419,6 +467,8 @@ paths:
                 type: array
                 items:
                   type: string
+                default: []
+                
               hidden_hits:
                 description: >
                   A list of records to unconditionally hide from search results.
@@ -431,6 +481,8 @@ paths:
                 type: array
                 items:
                   type: string
+                default: []
+                
               highlight_fields:
                 description: >
                   A list of custom fields that must be highlighted even if you don't query 
@@ -438,6 +490,8 @@ paths:
                 type: array
                 items:
                   type: string
+                default: []
+                
               pre_segmented_query:
                 description: >
                   You can index content from any logographic language into Typesense if you
@@ -446,16 +500,18 @@ paths:
 
                   Set this parameter to tre to do the same
                 type: boolean
+                
               enable_overrides:
                 description: >
                   If you have some overrides defined but want to disable all of them during
                   query time, you can do that by setting this parameter to false
                 type: boolean
+                
               prioritize_exact_match:
                 description: >
                   Set this parameter to true to ensure that an exact match is ranked above
-                  the others 
-                type: boolean    
+                  the others
+                type: boolean
       responses:
         200:
           description: Search results
@@ -707,9 +763,12 @@ paths:
             type: string
         - name: exportDocumentsParameters
           in: query
-          schema: 
+          schema:
             type: object
-            properties: 
+            required:
+              - include_fields
+              - exclude_fields
+            properties:
               filter_by:
                 description:
                   Filter conditions for refining your search results. Separate
@@ -763,11 +822,18 @@ paths:
           in: query
           schema:
             type: object
-            properties: 
-              action: 
+            properties:
+              action:
                 type: string
               batch_size:
                 type: integer
+              dirty_values:
+                type: string
+                enum:
+                  - coerce_or_reject
+                  - coerce_or_drop
+                  - drop
+                  - reject
       requestBody:
         description: The json array of documents or the JSONL file to import
         content:
@@ -1180,24 +1246,34 @@ components:
             the search results are ranked when a sort_by clause is not provided during
             searching. This field must indicate some kind of popularity.
           example: num_employees
-    Collection:
+          default: ""
+    CollectionResponse:
       allOf:
         - $ref: "#/components/schemas/CollectionSchema"
         - type: object
           required:
             - num_documents
+            - created_at
+            - num_memory_shards
           properties:
             num_documents:
               type: integer
               description: Number of documents in the collection
               format: int64
               readOnly: true
+            created_at:
+              type: integer
+              description: Timestamp of when the collection was created
+              format: int64
+              readOnly: true
+            num_memory_shards:
+              type: integer
+              format: int64
+              readOnly: true
     Field:
       required:
         - name
         - type
-        - facet #only for codegen
-        - optional #only for codegen
       type: object
       properties:
         name:
@@ -1228,7 +1304,8 @@ components:
           default: false
         index:
           type: boolean
-          example: false
+          example: true
+          default: true
     CollectionAliasSchema:
       type: object
       required:
@@ -1267,8 +1344,9 @@ components:
         - grouped_hits
         - hits
         - found
-        - took_ms
+        - search_time_ms
         - page
+        - request_params
       properties:
         facet_counts:
           type: array
@@ -1277,7 +1355,7 @@ components:
         found:
           type: integer
           description: The number of documents found
-        took_ms:
+        search_time_ms:
           type: integer
           description: The number of milliseconds the search took
         page:
@@ -1292,6 +1370,20 @@ components:
           description: The documents that matched the search query
           items:
             $ref: "#/components/schemas/SearchResultHit"
+        request_params:
+          type: object
+          required:
+            - collection_name
+            - q
+            - per_page
+          properties:
+            collection_name:
+              type: string
+            q:
+              type: string
+            per_page:
+              type: integer
+          
     SearchGroupedHit:
       type: object
       required:
@@ -1321,6 +1413,8 @@ components:
         document:
           type: object
           description: Can be any key-value pair
+          additionalProperties:
+            type: object
       example:
         highlights:
           company_name:
@@ -1508,7 +1602,6 @@ components:
         - description
         - actions
         - collections
-        - expires_at
       properties:
         description:
           type: string
@@ -1564,6 +1657,18 @@ components:
       properties:
         snapshot_path:
           type: string
+    ErrorResponse:
+      type: object
+      properties:
+        message:
+          type: string
+    MultiSearchResponse:
+      type: object
+      properties:
+        results:
+          type: array
+          items:
+            $ref: "#/components/schemas/SearchResult"
   securitySchemes:
     api_key_header:
       type: apiKey
