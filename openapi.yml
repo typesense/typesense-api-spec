@@ -765,6 +765,9 @@ paths:
           in: query
           schema:
             type: object
+            required:
+              - include_fields
+              - exclude_fields
             properties:
               filter_by:
                 description:
@@ -824,6 +827,13 @@ paths:
                 type: string
               batch_size:
                 type: integer
+              dirty_values:
+                type: string
+                enum:
+                  - coerce_or_reject
+                  - coerce_or_drop
+                  - drop
+                  - reject
       requestBody:
         description: The json array of documents or the JSONL file to import
         content:
@@ -1592,7 +1602,6 @@ components:
         - description
         - actions
         - collections
-        - expires_at
       properties:
         description:
           type: string
