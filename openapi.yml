@@ -261,7 +261,6 @@ paths:
               - query_by
               - query_by_weights # only for codegen
               - sort_by # only for codegen
-              - required # only for codegen
               - facet_by # only for codegen
               - group_by # only for codegen
               - include_fields # only for codegen
@@ -512,6 +511,37 @@ paths:
                   Set this parameter to true to ensure that an exact match is ranked above
                   the others
                 type: boolean
+              exhaustive_search:
+                description: >
+                  Setting this to true will make Typesense consider all prefixes and typo 
+                  corrections of the words in the query without stopping early when enough results are found 
+                  (drop_tokens_threshold and typo_tokens_threshold configurations are ignored).
+                type: boolean
+              search_cutoff_ms:
+                description: >
+                  Typesense will attempt to return results early if the cutoff time has elapsed. 
+                  This is not a strict guarantee and facet computation is not bound by this parameter.
+                type: integer
+              use_cache:
+                description: >
+                  Enable server side caching of search query results. By default, caching is disabled.
+                type: boolean
+              cache_ttl:
+                description: >
+                  The duration (in seconds) that determines how long the search query is cached. 
+                  This value can be set on a per-query basis. Default: 60.
+                type: integer
+              min_len_1typo:
+                description: >
+                  Minimum word length for 1-typo correction to be applied. 
+                  The value of num_typos is still treated as the maximum allowed typos.
+                type: integer
+              min_len_2typo:
+                description: >
+                  Minimum word length for 2-typo correction to be applied. 
+                  The value of num_typos is still treated as the maximum allowed typos.
+                type: integer
+
       responses:
         200:
           description: Search results
