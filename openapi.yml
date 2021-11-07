@@ -1336,11 +1336,11 @@ components:
             - int64
             - float
             - bool
-            - string[]
-            - int32[]
-            - int64[]
-            - float[]
-            - bool[]
+            - string_array
+            - int32_array
+            - int64_array
+            - float_array
+            - bool_array
             - auto
         optional:
           type: boolean
