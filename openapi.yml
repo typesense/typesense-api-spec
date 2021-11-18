@@ -579,7 +579,7 @@ paths:
         200:
           description: List of all search overrides
           content:
-            applictrueation/json:
+            application/json:
               schema:
                 $ref: "#/components/schemas/SearchOverridesResponse"
   /collections/{collectionName}/overrides/{overrideId}:
