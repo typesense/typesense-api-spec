@@ -294,7 +294,7 @@ paths:
         200:
           description: List of all search overrides
           content:
-            applictrueation/json:
+            application/json:
               schema:
                 $ref: "#/components/schemas/SearchOverridesResponse"
   /collections/{collectionName}/overrides/{overrideId}:
@@ -1077,18 +1077,6 @@ components:
         type:
           type: string
           example: string
-          enum:
-            - string
-            - int32
-            - int64
-            - float
-            - bool
-            - string[]
-            - int32[]
-            - int64[]
-            - float[]
-            - bool[]
-            - auto
         optional:
           type: boolean
           example: true
