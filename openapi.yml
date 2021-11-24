@@ -673,7 +673,7 @@ paths:
               x-go-type: "interface{}"
         required: true
       responses:
-        200:
+        201:
           description: The document referenced by the ID was updated
           content:
             application/json:
@@ -1034,7 +1034,7 @@ components:
           items:
             type: string # characters only
           default: []
-        
+
         symbols_to_index:
           type: array
           description: >
@@ -1166,7 +1166,7 @@ components:
               type: string
             per_page:
               type: integer
-          
+
     SearchGroupedHit:
       type: object
       required:
@@ -1187,6 +1187,7 @@ components:
       required:
         - document
         - highlights
+        - text_match
       properties:
         highlights:
           type: array
@@ -1198,6 +1199,9 @@ components:
           description: Can be any key-value pair
           additionalProperties:
             type: object
+        text_match:
+          type: integer
+          format: int64
       example:
         highlights:
           company_name:
@@ -1208,6 +1212,7 @@ components:
           company_name: Stark Industries
           num_employees: 5215
           country: USA
+        text_match: 1234556
     SearchHighlight:
       type: object
       required:
@@ -1267,9 +1272,9 @@ components:
           items:
             $ref: "#/components/schemas/SearchOverrideExclude"
         filter_by:
-            type: string
-            description: >
-              A filter by clause that is applied to any search query that matches the override rule.
+          type: string
+          description: >
+            A filter by clause that is applied to any search query that matches the override rule.
         remove_matched_tokens:
           type: boolean
           description: >
