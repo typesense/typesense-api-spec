@@ -510,9 +510,6 @@ paths:
           in: query
           schema:
             type: object
-            required:
-              - include_fields
-              - exclude_fields
             properties:
               filter_by:
                 description:
@@ -521,14 +518,10 @@ paths:
                 type: string
               include_fields:
                 description: List of fields from the document to include in the search result
-                type: array
-                items:
-                  type: string
+                type: string
               exclude_fields:
                 description: List of fields from the document to exclude in the search result
-                type: array
-                items:
-                  type: string
+                type: string
       responses:
         200:
           description: Exports all the documents in a given collection.
@@ -996,8 +989,6 @@ components:
       required:
         - name
         - fields
-        - token_separators # only for codegen
-        - symbols_to_index # only for codegen
       type: object
       properties:
         name:
@@ -1050,7 +1041,6 @@ components:
           required:
             - num_documents
             - created_at
-            - num_memory_shards
           properties:
             num_documents:
               type: integer
@@ -1060,10 +1050,6 @@ components:
             created_at:
               type: integer
               description: Timestamp of when the collection was created
-              format: int64
-              readOnly: true
-            num_memory_shards:
-              type: integer
               format: int64
               readOnly: true
     Field:
@@ -1216,12 +1202,7 @@ components:
         text_match: 1234556
     SearchHighlight:
       type: object
-      required:
-        - field
-        - snippet
-        - snippets
-        - indices
-        - matched_tokens
+
       properties:
         field:
           type: string
@@ -1255,8 +1236,6 @@ components:
       type: object
       required:
         - rule
-        - includes #only for codegen
-        - excludes #only for codegen
       properties:
         rule:
           $ref: "#/components/schemas/SearchOverrideRule"
@@ -1396,7 +1375,6 @@ components:
     ApiKeySchema:
       type: object
       required:
-        - description
         - actions
         - collections
       properties:
@@ -1471,17 +1449,6 @@ components:
       required:
         - q
         - query_by
-        - query_by_weights # only for codegen
-        - sort_by # only for codegen
-        - facet_by # only for codegen
-        - group_by # only for codegen
-        - include_fields # only for codegen
-        - exclude_fields # only for codegen
-        - hidden_hits # only for codegen
-        - highlight_full_fields # only for codegen
-        - pinned_hits # only for codegen
-        - prefix # only for codegen
-
       properties:
         q:
           description: The query text to search for in the collection.
