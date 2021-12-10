@@ -1120,6 +1120,12 @@ components:
         search_time_ms:
           type: integer
           description: The number of milliseconds the search took
+        out_of:
+          type: integer
+          description: The total number of pages
+        search_cutoff:
+          type: boolean
+          description: Whether the search was cut off
         page:
           type: integer
           description: The search result page number
