@@ -1662,7 +1662,7 @@ components:
             are able to segment / split the text into space-separated words yourself 
             before indexing and querying.
 
-            Set this parameter to tre to do the same
+            Set this parameter to true to do the same
           type: boolean
 
         enable_overrides:
@@ -1899,7 +1899,7 @@ components:
             are able to segment / split the text into space-separated words yourself 
             before indexing and querying.
 
-            Set this parameter to tre to do the same
+            Set this parameter to true to do the same
           type: boolean
 
         enable_overrides:
