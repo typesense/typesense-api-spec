@@ -1492,18 +1492,6 @@ components:
             Multiple fields are separated with a comma.
           type: string
 
-        max_hits:
-          description: >
-            Maximum number of hits returned. Increasing this value might
-            increase search latency. Default: 500. Use `all` to return all hits found.
-          oneOf:
-            - type: integer
-              example: 500
-            - type: string
-              example: all
-              enum:
-                - all
-
         prefix:
           description:
             Boolean field to indicate that the last word in the query should
@@ -1729,18 +1717,6 @@ components:
             This can be used to boost fields in priority, when looking for matches.
             Multiple fields are separated with a comma.
           type: string
-
-        max_hits:
-          description: >
-            Maximum number of hits returned. Increasing this value might
-            increase search latency. Default: 500. Use `all` to return all hits found.
-          oneOf:
-            - type: integer
-              example: 500
-            - type: string
-              example: all
-              enum:
-                - all
 
         prefix:
           description:
