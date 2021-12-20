@@ -1111,35 +1111,7 @@ components:
         facet_counts:
           type: array
           items:
-            type: object
-            properties:
-              counts:
-                type: array
-                items:
-                  type: object
-                  properties:
-                    count:
-                      type: integer
-                    highlighted:
-                      type: string
-                    value:
-                      type: string
-              field_name:
-                type: string
-              stats:
-                type: object
-                properties:
-                  max:
-                    type: integer
-                  min:
-                    type: integer
-                  sum:
-                    type: integer
-                  total_values:
-                    type: integer
-                  avg:
-                    type: number
-                    format: float
+            $ref: "#/components/schemas/FacetCounts"
         found:
           type: integer
           description: The number of documents found
@@ -1941,6 +1913,36 @@ components:
               type: string
               description: >
                 The collection to search in.
+    FacetCounts:
+      type: object
+      properties:
+        counts:
+          type: array
+          items:
+            type: object
+            properties:
+              count:
+                type: integer
+              highlighted:
+                type: string
+              value:
+                type: string
+        field_name:
+          type: string
+        stats:
+          type: object
+          properties:
+            max:
+              type: integer
+            min:
+              type: integer
+            sum:
+              type: integer
+            total_values:
+              type: integer
+            avg:
+              type: number
+              format: float
   securitySchemes:
     api_key_header:
       type: apiKey
