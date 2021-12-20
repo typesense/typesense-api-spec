@@ -522,9 +522,9 @@ paths:
                 description: List of fields from the document to include in the search result
                 type: string
               exclude_fields:
-                description: List of fields from the document to exclude in the search result  
+                description: List of fields from the document to exclude in the search result
                 type: string
-                
+
       responses:
         200:
           description: Exports all the documents in a given collection.
@@ -979,8 +979,7 @@ paths:
           content:
             application/json:
               schema:
-               $ref: "#/components/schemas/MultiSearchResult"
-
+                $ref: "#/components/schemas/MultiSearchResult"
 
 components:
   schemas:
@@ -1110,9 +1109,35 @@ components:
       type: object
       properties:
         facet_counts:
-          type: array
-          items:
-            type: integer
+          type: object
+          properties:
+            counts:
+              type: array
+              items:
+                type: object
+                properties:
+                  count:
+                    type: integer
+                  highlighted:
+                    type: string
+                  value:
+                    type: string
+            field_name:
+              type: string
+            stats:
+              type: object
+              properties:
+                max:
+                  type: integer
+                min:
+                  type: integer
+                sum:
+                  type: integer
+                total_values:
+                  type: integer
+                avg:
+                  type: number
+                  format: float
         found:
           type: integer
           description: The number of documents found
@@ -1559,7 +1584,6 @@ components:
           description: List of fields from the document to exclude in the search result
           type: string
 
-
         highlight_full_fields:
           description: List of fields which should be highlighted fully without snippeting
           type: string
@@ -1682,7 +1706,7 @@ components:
             Minimum word length for 2-typo correction to be applied. 
             The value of num_typos is still treated as the maximum allowed typos.
           type: integer
-    
+
     MultiSearchParameters:
       description: >
         Parameters for the multi search API.
