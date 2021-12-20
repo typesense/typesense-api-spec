@@ -1109,35 +1109,37 @@ components:
       type: object
       properties:
         facet_counts:
-          type: object
-          properties:
-            counts:
-              type: array
-              items:
+          type: array
+          items:
+            type: object
+            properties:
+              counts:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    count:
+                      type: integer
+                    highlighted:
+                      type: string
+                    value:
+                      type: string
+              field_name:
+                type: string
+              stats:
                 type: object
                 properties:
-                  count:
+                  max:
                     type: integer
-                  highlighted:
-                    type: string
-                  value:
-                    type: string
-            field_name:
-              type: string
-            stats:
-              type: object
-              properties:
-                max:
-                  type: integer
-                min:
-                  type: integer
-                sum:
-                  type: integer
-                total_values:
-                  type: integer
-                avg:
-                  type: number
-                  format: float
+                  min:
+                    type: integer
+                  sum:
+                    type: integer
+                  total_values:
+                    type: integer
+                  avg:
+                    type: number
+                    format: float
         found:
           type: integer
           description: The number of documents found
