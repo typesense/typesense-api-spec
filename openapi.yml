@@ -2,7 +2,7 @@ openapi: 3.0.3
 info:
   title: Typesense API
   description: "An open source search engine for building delightful search experiences."
-  version: 0.21.0
+  version: 0.23.0
 externalDocs:
   description: Find out more about Typsesense
   url: https://typesense.org
@@ -23,19 +23,19 @@ tags:
     description: Promote certain documents over others
     externalDocs:
       description: Find out more
-      url: https://typesense.org/docs/0.21.0/api/#curation
+      url: https://typesense.org/docs/0.23.0/api/#curation
   - name: keys
     description: Manage API Keys with fine-grain access control
     externalDocs:
       description: Find out more
-      url: https://typesense.org/docs/0.21.0/api/#api-keys
+      url: https://typesense.org/docs/0.23.0/api/#api-keys
   - name: debug
     description: Debugging information
   - name: operations
     description: Manage Typesense cluster
     externalDocs:
       description: Find out more
-      url: https://typesense.org/docs/0.21.0/api/#cluster-operations
+      url: https://typesense.org/docs/0.23.0/api/#cluster-operations
 
 paths:
   /collections:
