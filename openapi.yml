@@ -2002,11 +2002,14 @@ components:
           type: object
           properties:
             max:
-              type: integer
+              type: number
+              format: float
             min:
-              type: integer
+              type: number
+              format: float
             sum:
-              type: integer
+              type: number
+              format: float
             total_values:
               type: integer
             avg:
