@@ -1714,6 +1714,10 @@ components:
             Set this parameter to true to ensure that an exact match is ranked above
             the others
           type: boolean
+        max_candidates:
+          description: >
+            Control the number of words that Typesense considers for typo and prefix searching.
+          type: integer
         prioritize_token_position:
           description: >
             Make Typesense prioritize documents where the query words appear earlier in the text.
