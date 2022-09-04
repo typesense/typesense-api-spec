@@ -1123,6 +1123,12 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/MultiSearchResult"
+        400:
+          description: Bad request, see error message for details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiResponse"
 
 components:
   schemas:
