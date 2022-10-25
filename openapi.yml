@@ -1668,6 +1668,31 @@ components:
             autocomplete and instant search interfaces. Defaults to true.
           type: string
 
+        infix:
+          description:
+            If infix index is enabled for this field, infix searching can be done on a per-field 
+            basis by sending a comma separated string parameter called infix to the search query. 
+            This parameter can have 3 values; `off` infix search is disabled, which is default
+             `always` infix search is performed along with regular search
+             `fallback` infix search is performed if regular search does not produce results
+          type: string
+
+        max_extra_prefix:
+          description:
+            There are also 2 parameters that allow you to control the extent of infix searching 
+            max_extra_prefix and max_extra_suffix which specify the maximum number of symbols before 
+            or after the query that can be present in the token. For example query "K2100" has 2 extra 
+            symbols in "6PK2100". By default, any number of prefixes/suffixes can be present for a match.
+          type: integer
+        
+        max_extra_suffix:
+          description:
+            There are also 2 parameters that allow you to control the extent of infix searching 
+            max_extra_prefix and max_extra_suffix which specify the maximum number of symbols before 
+            or after the query that can be present in the token. For example query "K2100" has 2 extra 
+            symbols in "6PK2100". By default, any number of prefixes/suffixes can be present for a match.
+          type: integer
+
         filter_by:
           description:
             Filter conditions for refining youropen api validator search results. Separate
@@ -1908,6 +1933,31 @@ components:
             be treated as a prefix, and not as a whole word. This is used for building
             autocomplete and instant search interfaces. Defaults to true.
           type: string
+
+        infix:
+          description:
+            If infix index is enabled for this field, infix searching can be done on a per-field 
+            basis by sending a comma separated string parameter called infix to the search query. 
+            This parameter can have 3 values; `off` infix search is disabled, which is default
+             `always` infix search is performed along with regular search
+             `fallback` infix search is performed if regular search does not produce results
+          type: string
+
+        max_extra_prefix:
+          description:
+            There are also 2 parameters that allow you to control the extent of infix searching 
+            max_extra_prefix and max_extra_suffix which specify the maximum number of symbols before 
+            or after the query that can be present in the token. For example query "K2100" has 2 extra 
+            symbols in "6PK2100". By default, any number of prefixes/suffixes can be present for a match.
+          type: integer
+        
+        max_extra_suffix:
+          description:
+            There are also 2 parameters that allow you to control the extent of infix searching 
+            max_extra_prefix and max_extra_suffix which specify the maximum number of symbols before 
+            or after the query that can be present in the token. For example query "K2100" has 2 extra 
+            symbols in "6PK2100". By default, any number of prefixes/suffixes can be present for a match.
+          type: integer
 
         filter_by:
           description:
