@@ -1177,7 +1177,13 @@ components:
             minLength: 1
             maxLength: 1
           default: []
-
+        enable_nested_fields:
+            type: boolean
+            description:
+              Enables experimental support at a collection level for nested object or object array fields.
+              This field is only available if the Typesense server is version `0.24.0.rcn34` or later.
+            default: false
+            example: true
         symbols_to_index:
           type: array
           description: >
