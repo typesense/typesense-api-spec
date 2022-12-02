@@ -2200,18 +2200,18 @@ components:
           properties:
             max:
               type: number
-              format: float
+              format: double
             min:
               type: number
-              format: float
+              format: double
             sum:
               type: number
-              format: float
+              format: double
             total_values:
               type: integer
             avg:
               type: number
-              format: float
+              format: double
   securitySchemes:
     api_key_header:
       type: apiKey
