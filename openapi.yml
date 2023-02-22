@@ -1591,18 +1591,11 @@ components:
       allOf:
         - $ref: "#/components/schemas/ApiKeySchema"
         - type: object
-          required:
-            - id
-            - value
-            - value_prefix
           properties:
             id:
               type: integer
               format: int64
-              readOnly: true
-            value:
-              type: string
-              readOnly: true
+              readOnly: true          
             value_prefix:
               type: string
               readOnly: true
