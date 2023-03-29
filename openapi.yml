@@ -1331,6 +1331,9 @@ components:
         drop:
           type: boolean
           example: true
+        num_dim:
+          type: integer
+          example: 1
           # omitting default value since we want it to be null
     CollectionAliasSchema:
       type: object
@@ -2212,6 +2215,11 @@ components:
             Minimum word length for 2-typo correction to be applied. 
             The value of num_typos is still treated as the maximum allowed typos.
           type: integer
+        vector_query:
+          description: >
+            The vector query to search for documents that contain a vec
+            field value closest to a given query vector.
+          type: string
     MultiSearchSearchesParameter:
       type: object
       required:
