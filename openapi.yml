@@ -2,7 +2,7 @@ openapi: 3.0.3
 info:
   title: Typesense API
   description: "An open source search engine for building delightful search experiences."
-  version: 0.23.0
+  version: 0.24.0
 externalDocs:
   description: Find out more about Typsesense
   url: https://typesense.org
