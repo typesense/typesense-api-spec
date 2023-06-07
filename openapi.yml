@@ -1941,6 +1941,12 @@ components:
             Set this parameter to true to do the same
           type: boolean
 
+        preset:
+          description: >
+            Search using a bunch of search parameters by setting this parameter to
+            the name of the existing Preset.
+          type: string
+
         enable_overrides:
           description: >
             If you have some overrides defined but want to disable all of them during
@@ -2202,6 +2208,12 @@ components:
 
             Set this parameter to true to do the same
           type: boolean
+
+        preset:
+          description: >
+            Search using a bunch of search parameters by setting this parameter to
+            the name of the existing Preset.
+          type: string
 
         enable_overrides:
           description: >
