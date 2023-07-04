@@ -1343,6 +1343,8 @@ components:
               items: string
             model_config:
               type: object
+              required:
+                - model_name
               properties:
                 model_name:
                   type: string
