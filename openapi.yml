@@ -718,6 +718,8 @@ paths:
                   - coerce_or_drop
                   - drop
                   - reject
+              remote_embedding_batch_size:
+                type: integer
       requestBody:
         description: The json array of documents or the JSONL file to import
         content:
@@ -2026,6 +2028,14 @@ components:
           description: >
             Vector query expression for fetching documents "closest" to a given query/document vector.
           type: string
+        remote_embedding_timeout_ms:
+          description: >
+            Timeout (in milliseconds) for fetching remote embeddings.
+          type: integer
+        remote_embedding_num_tries:
+          description: >
+            Number of times to retry fetching remote embeddings.
+          type: integer
 
     MultiSearchParameters:
       description: >
@@ -2286,6 +2296,14 @@ components:
           description: >
             Vector query expression for fetching documents "closest" to a given query/document vector.
           type: string
+        remote_embedding_timeout_ms:
+          description: >
+            Timeout (in milliseconds) for fetching remote embeddings.
+          type: integer
+        remote_embedding_num_tries:
+          description: >
+            Number of times to retry fetching remote embeddings.
+          type: integer
     MultiSearchSearchesParameter:
       type: object
       required:
