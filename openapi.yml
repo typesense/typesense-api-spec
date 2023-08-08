@@ -1342,7 +1342,8 @@ components:
           properties:
             from:
               type: array
-              items: string
+              items:
+                type: string
             model_config:
               type: object
               required:
