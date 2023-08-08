@@ -1292,7 +1292,7 @@ components:
               readOnly: true
             created_at:
               type: integer
-              description: Timestamp of when the collection was created
+              description: Timestamp of when the collection was created (Unix epoch in seconds)
               format: int64
               readOnly: true
     Field:
