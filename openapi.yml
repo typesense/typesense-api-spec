@@ -1462,7 +1462,12 @@ components:
         highlight:
           type: object
           description: Highlighted version of the matching document
-          additionalProperties: true
+          additionalProperties:
+            oneOf:
+              - $ref: "#/components/schemas/SearchHighlightV2"
+              - type: array
+                items:
+                  $ref: "#/components/schemas/SearchHighlightV2"
         document:
           type: object
           description: Can be any key-value pair
@@ -1534,6 +1539,27 @@ components:
           items:
             type: object
             x-go-type: "interface{}"
+    SearchHighlightV2:
+      type: object
+      required:
+        - snippet
+        - matched_tokens
+      properties:
+        snippet:
+          type: string
+          description: The highlighted snippet
+          example: <mark>Stark</mark> Industries
+        value:
+          type: string
+          description: Full field value with highlighting
+          example: <mark>Stark</mark> Industries is a major supplier of space equipment.
+        matched_tokens:
+          type: array
+          description: The matching tokens in the field value
+          items:
+            type: string
+          example:
+            - Stark
     SearchOverrideSchema:
       type: object
       required:
