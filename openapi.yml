@@ -2,7 +2,7 @@ openapi: 3.0.3
 info:
   title: Typesense API
   description: "An open source search engine for building delightful search experiences."
-  version: 0.24.0
+  version: 0.25.0
 externalDocs:
   description: Find out more about Typsesense
   url: https://typesense.org
@@ -1851,6 +1851,16 @@ components:
           description: "Number of results to fetch per page. Default: 10"
           type: integer
 
+        limit:
+          description: >
+            Number of hits to fetch. Can be used as an alternative to the per_page parameter. 
+            Default: 10.
+          type: integer
+
+        offset:
+          description: Identifies the starting point to return hits from a result set. Can be used as an alternative to the page parameter.
+          type: integer
+
         group_by:
           description:
             You can aggregate search results into groups or buckets by specify
@@ -2140,6 +2150,16 @@ components:
 
         per_page:
           description: "Number of results to fetch per page. Default: 10"
+          type: integer
+
+        limit:
+          description: >
+            Number of hits to fetch. Can be used as an alternative to the per_page parameter. 
+            Default: 10.
+          type: integer
+
+        offset:
+          description: Identifies the starting point to return hits from a result set. Can be used as an alternative to the page parameter.
           type: integer
 
         group_by:
