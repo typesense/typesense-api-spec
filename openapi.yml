@@ -1768,6 +1768,12 @@ components:
             Multiple fields are separated with a comma.
           type: string
 
+        text_match_type:
+          description:
+            In a multi-field matching context, this parameter determines how the representative text match 
+            score of a record is calculated. Possible values are max_score (default) or max_weight.
+          type: string
+
         prefix:
           description:
             Boolean field to indicate that the last word in the query should
@@ -2068,6 +2074,12 @@ components:
             The relative weight to give each `query_by` field when ranking results.
             This can be used to boost fields in priority, when looking for matches.
             Multiple fields are separated with a comma.
+          type: string
+
+        text_match_type:
+          description:
+            In a multi-field matching context, this parameter determines how the representative text match
+            score of a record is calculated. Possible values are max_score (default) or max_weight.
           type: string
 
         prefix:
