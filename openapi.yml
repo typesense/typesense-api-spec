@@ -1440,10 +1440,11 @@ components:
     SearchGroupedHit:
       type: object
       required:
-        - found
         - group_key
         - hits
       properties:
+        found:
+          type: integer
         group_key:
           type: array
           items: {}
