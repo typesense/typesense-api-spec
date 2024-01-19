@@ -24,6 +24,11 @@ tags:
     externalDocs:
       description: Find out more
       url: https://typesense.org/docs/0.23.0/api/#curation
+  - name: analytics
+    description: Typesense can aggregate search queries for both analytics purposes and for query suggestions.
+    externalDocs:
+      description: Find out more
+      url: https://typesense.org/docs/0.25.0/api/analytics-query-suggestions.html
   - name: keys
     description: Manage API Keys with fine-grain access control
     externalDocs:
@@ -260,7 +265,7 @@ paths:
                 example: "num_employees:>100 && country: [USA, UK]"
       responses:
         '200':
-          description: 
+          description:
             The response contains a single field, `num_updated`, indicating the number of documents affected.
           content:
             application/json:
@@ -1191,7 +1196,103 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ApiResponse"
-
+  /analytics/rules:
+    post:
+      tags:
+        - analytics
+      summary: Creates an analytics rule
+      description:
+        When an analytics rule is created, we give it a name and describe the type, the source collections and the destination collection.
+      operationId: createAnalyticsRule
+      requestBody:
+        description: The Analytics rule to be created
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AnalyticsRuleSchema"
+        required: true
+      responses:
+        201:
+          description: Analytics rule successfully created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AnalyticsRuleSchema"
+        400:
+          description: Bad request, see error message for details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiResponse"
+    get:
+      tags:
+        - analytics
+      summary: Retrieves all analytics rules
+      description:
+        Retrieve the details of all analytics rules
+      operationId: retrieveAnalyticsRules
+      responses:
+        200:
+          description: Analytics rules fetched
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AnalyticsRulesRetrieveSchema"
+  /analytics/rules/{ruleName}:
+    get:
+      tags:
+        - analytics
+      summary: Retrieves an analytics rule
+      description:
+        Retrieve the details of an analytics rule, given it's name
+      operationId: retrieveAnalyticsRule
+      parameters:
+        - in: path
+          name: ruleName
+          description: The name of the analytics rule to retrieve
+          schema:
+            type: string
+          required: true
+      responses:
+        200:
+          description: Analytics rule fetched
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AnalyticsRuleSchema"
+        404:
+          description: Analytics rule not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiResponse"
+    delete:
+      tags:
+        - analytics
+      summary: Delete an analytics rule
+      description:
+        Permanently deletes an analytics rule, given it's name
+      operationId: deleteAnalyticsRule
+      parameters:
+        - in: path
+          name: ruleName
+          description: The name of the analytics rule to delete
+          schema:
+            type: string
+          required: true
+      responses:
+        200:
+          description: Analytics rule deleted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AnalyticsRuleSchema"
+        404:
+          description: Analytics rule not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiResponse"
 components:
   schemas:
     CollectionSchema:
@@ -1357,7 +1458,7 @@ components:
                   type: string
                 client_id:
                   type: string
-                client_secret: 
+                client_secret:
                   type: string
                 project_id:
                   type: string
@@ -1705,7 +1806,7 @@ components:
             id:
               type: integer
               format: int64
-              readOnly: true          
+              readOnly: true
             value_prefix:
               type: string
               readOnly: true
@@ -1799,7 +1900,7 @@ components:
             or after the query that can be present in the token. For example query "K2100" has 2 extra 
             symbols in "6PK2100". By default, any number of prefixes/suffixes can be present for a match.
           type: integer
-        
+
         max_extra_suffix:
           description:
             There are also 2 parameters that allow you to control the extent of infix searching 
@@ -2107,7 +2208,7 @@ components:
             or after the query that can be present in the token. For example query "K2100" has 2 extra 
             symbols in "6PK2100". By default, any number of prefixes/suffixes can be present for a match.
           type: integer
-        
+
         max_extra_suffix:
           description:
             There are also 2 parameters that allow you to control the extent of infix searching 
@@ -2391,6 +2492,47 @@ components:
             avg:
               type: number
               format: double
+    AnalyticsRuleSchema:
+      type: object
+      required:
+        - name
+        - type
+        - params
+      properties:
+        name:
+          type: string
+        type:
+          type: string
+        params:
+          $ref: "#/components/schemas/AnalyticsRuleParameters"
+    AnalyticsRuleParameters:
+      type: object
+      required:
+        - source
+        - destination
+        - limit
+      properties:
+        source:
+          type: object
+          properties:
+            collections:
+              type: array
+              items:
+                type: string
+        destination:
+          type: object
+          properties:
+            collection:
+              type: string
+        limit:
+          type: integer
+    AnalyticsRulesRetrieveSchema:
+      type: object
+      properties:
+        rules:
+          type: array
+          items:
+            $ref: "#/components/schemas/AnalyticsRuleSchema"
   securitySchemes:
     api_key_header:
       type: apiKey
