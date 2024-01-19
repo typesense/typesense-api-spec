@@ -1341,12 +1341,12 @@ components:
             maxLength: 1
           default: []
         enable_nested_fields:
-          type: boolean
-          description:
-            Enables experimental support at a collection level for nested object or object array fields.
-            This field is only available if the Typesense server is version `0.24.0.rcn34` or later.
-          default: false
-          example: true
+            type: boolean
+            description:
+              Enables experimental support at a collection level for nested object or object array fields.
+              This field is only available if the Typesense server is version `0.24.0.rcn34` or later.
+            default: false
+            example: true
         symbols_to_index:
           type: array
           description: >
@@ -1873,7 +1873,7 @@ components:
 
         text_match_type:
           description:
-            In a multi-field matching context, this parameter determines how the representative text match
+            In a multi-field matching context, this parameter determines how the representative text match 
             score of a record is calculated. Possible values are max_score (default) or max_weight.
           type: string
 
@@ -1886,26 +1886,26 @@ components:
 
         infix:
           description:
-            If infix index is enabled for this field, infix searching can be done on a per-field
-            basis by sending a comma separated string parameter called infix to the search query.
+            If infix index is enabled for this field, infix searching can be done on a per-field 
+            basis by sending a comma separated string parameter called infix to the search query. 
             This parameter can have 3 values; `off` infix search is disabled, which is default
-            `always` infix search is performed along with regular search
-            `fallback` infix search is performed if regular search does not produce results
+             `always` infix search is performed along with regular search
+             `fallback` infix search is performed if regular search does not produce results
           type: string
 
         max_extra_prefix:
           description:
-            There are also 2 parameters that allow you to control the extent of infix searching
-            max_extra_prefix and max_extra_suffix which specify the maximum number of symbols before
-            or after the query that can be present in the token. For example query "K2100" has 2 extra
+            There are also 2 parameters that allow you to control the extent of infix searching 
+            max_extra_prefix and max_extra_suffix which specify the maximum number of symbols before 
+            or after the query that can be present in the token. For example query "K2100" has 2 extra 
             symbols in "6PK2100". By default, any number of prefixes/suffixes can be present for a match.
           type: integer
 
         max_extra_suffix:
           description:
-            There are also 2 parameters that allow you to control the extent of infix searching
-            max_extra_prefix and max_extra_suffix which specify the maximum number of symbols before
-            or after the query that can be present in the token. For example query "K2100" has 2 extra
+            There are also 2 parameters that allow you to control the extent of infix searching 
+            max_extra_prefix and max_extra_suffix which specify the maximum number of symbols before 
+            or after the query that can be present in the token. For example query "K2100" has 2 extra 
             symbols in "6PK2100". By default, any number of prefixes/suffixes can be present for a match.
           type: integer
 
@@ -2194,26 +2194,26 @@ components:
 
         infix:
           description:
-            If infix index is enabled for this field, infix searching can be done on a per-field
-            basis by sending a comma separated string parameter called infix to the search query.
+            If infix index is enabled for this field, infix searching can be done on a per-field 
+            basis by sending a comma separated string parameter called infix to the search query. 
             This parameter can have 3 values; `off` infix search is disabled, which is default
-            `always` infix search is performed along with regular search
-            `fallback` infix search is performed if regular search does not produce results
+             `always` infix search is performed along with regular search
+             `fallback` infix search is performed if regular search does not produce results
           type: string
 
         max_extra_prefix:
           description:
-            There are also 2 parameters that allow you to control the extent of infix searching
-            max_extra_prefix and max_extra_suffix which specify the maximum number of symbols before
-            or after the query that can be present in the token. For example query "K2100" has 2 extra
+            There are also 2 parameters that allow you to control the extent of infix searching 
+            max_extra_prefix and max_extra_suffix which specify the maximum number of symbols before 
+            or after the query that can be present in the token. For example query "K2100" has 2 extra 
             symbols in "6PK2100". By default, any number of prefixes/suffixes can be present for a match.
           type: integer
 
         max_extra_suffix:
           description:
-            There are also 2 parameters that allow you to control the extent of infix searching
-            max_extra_prefix and max_extra_suffix which specify the maximum number of symbols before
-            or after the query that can be present in the token. For example query "K2100" has 2 extra
+            There are also 2 parameters that allow you to control the extent of infix searching 
+            max_extra_prefix and max_extra_suffix which specify the maximum number of symbols before 
+            or after the query that can be present in the token. For example query "K2100" has 2 extra 
             symbols in "6PK2100". By default, any number of prefixes/suffixes can be present for a match.
           type: integer
 
