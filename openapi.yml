@@ -1239,6 +1239,40 @@ paths:
               schema:
                 $ref: "#/components/schemas/AnalyticsRulesRetrieveSchema"
   /analytics/rules/{ruleName}:
+    put:
+      tags:
+        - analytics
+      summary: Upserts an analytics rule
+      description:
+        Upserts an analytics rule with the given name.
+      operationId: upsertAnalyticsRule
+      parameters:
+        - in: path
+          name: ruleName
+          description: The name of the analytics rule to upsert
+          schema:
+            type: string
+          required: true
+      requestBody:
+        description: The Analytics rule to be upserted
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AnalyticsRuleSchema"
+        required: true
+      responses:
+        201:
+          description: Analytics rule successfully upserted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AnalyticsRuleSchema"
+        400:
+          description: Bad request, see error message for details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiResponse"
     get:
       tags:
         - analytics
