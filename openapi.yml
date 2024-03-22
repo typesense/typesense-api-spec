@@ -1462,6 +1462,9 @@ components:
           type: boolean
           example: true
           default: false
+        reference:
+          type: string
+          example: string
         num_dim:
           type: integer
           example: 256
@@ -2134,12 +2137,14 @@ components:
             If you have some overrides defined but want to disable all of them during
             query time, you can do that by setting this parameter to false
           type: boolean
+          default: false
 
         prioritize_exact_match:
           description: >
             Set this parameter to true to ensure that an exact match is ranked above
             the others
           type: boolean
+          default: true
         max_candidates:
           description: >
             Control the number of words that Typesense considers for typo and prefix searching.
@@ -2148,6 +2153,17 @@ components:
           description: >
             Make Typesense prioritize documents where the query words appear earlier in the text.
           type: boolean
+          default: false
+        prioritize_num_matching_fields:
+          description: >
+            Make Typesense prioritize documents where the query words appear in more number of fields.
+          type: boolean
+          default: true
+        enable_typos_for_numerical_tokens:
+          description: >
+            Make Typesense disable typos for numerical tokens.
+          type: boolean
+          default: true
         exhaustive_search:
           description: >
             Setting this to true will make Typesense consider all prefixes and typo 
@@ -2414,6 +2430,7 @@ components:
 
             Set this parameter to true to do the same
           type: boolean
+          default: false
 
         preset:
           description: >
@@ -2426,12 +2443,33 @@ components:
             If you have some overrides defined but want to disable all of them during
             query time, you can do that by setting this parameter to false
           type: boolean
+          default: false
 
         prioritize_exact_match:
           description: >
             Set this parameter to true to ensure that an exact match is ranked above
             the others
           type: boolean
+          default: true
+
+        prioritize_token_position:
+          description: >
+            Make Typesense prioritize documents where the query words appear earlier in the text.
+          type: boolean
+          default: false
+
+        prioritize_num_matching_fields:
+          description: >
+            Make Typesense prioritize documents where the query words appear in more number of fields.
+          type: boolean
+          default: true
+
+        enable_typos_for_numerical_tokens:
+          description: >
+            Make Typesense disable typos for numerical tokens.
+          type: boolean
+          default: true
+
         exhaustive_search:
           description: >
             Setting this to true will make Typesense consider all prefixes and typo 
