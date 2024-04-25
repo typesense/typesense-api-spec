@@ -41,6 +41,11 @@ tags:
     externalDocs:
       description: Find out more
       url: https://typesense.org/docs/0.23.0/api/#cluster-operations
+  - name: stopwords
+    description: Manage stopwords sets
+    externalDocs:
+      description: Find out more
+      url: https://typesense.org/docs/26.0/api/stopwords.html
 
 paths:
   /collections:
@@ -1327,6 +1332,120 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ApiResponse"
+  /stopwords:
+    get:
+      tags:
+        - stopwords
+      summary: Retrieves all stopwords sets.
+      description:
+        Retrieve the details of all stopwords sets
+      operationId: retrieveStopwordsSets
+      responses:
+        200:
+          description: Stopwords sets fetched.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StopwordsSetRetrieveSchema"
+  /stopwords/{setId}:
+    put:
+      tags:
+        - stopwords
+      summary: Upserts a stopwords set.
+      description:
+        When an analytics rule is created, we give it a name and describe the type, the source collections and the destination collection.
+      operationId: upsertStopwordsSet
+      parameters:
+        - in: path
+          name: setId
+          description: The ID of the stopwords set to upsert.
+          schema:
+            type: string
+          required: true
+          example: countries
+      requestBody:
+        description: The stopwords set to upsert.
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/StopwordsSetUpsertSchema"
+        required: true
+      responses:
+        200:
+          description: Stopwords set successfully upserted.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StopwordsSetSchema"
+        400:
+          description: Bad request, see error message for details.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiResponse"
+    get:
+      tags:
+        - stopwords
+      summary: Retrieves a stopwords set.
+      description:
+        Retrieve the details of a stopwords set, given it's name.
+      operationId: retrieveStopwordsSet
+      parameters:
+        - in: path
+          name: setId
+          description: The ID of the stopwords set to retrieve.
+          schema:
+            type: string
+          required: true
+          example: countries
+      responses:
+        200:
+          description: Stopwords set fetched.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StopwordsSetRetrieveSchema"
+        404:
+          description: Stopwords set not found.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiResponse"
+    delete:
+      tags:
+        - stopwords
+      summary: Delete a stopwords set.
+      description:
+        Permanently deletes a stopwords set, given it's name.
+      operationId: deleteStopwordsSet
+      parameters:
+        - in: path
+          name: setId
+          description: The ID of the stopwords set to delete.
+          schema:
+            type: string
+          required: true
+          example: countries
+      responses:
+        200:
+          description: Stopwords set rule deleted.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                required:
+                  - id
+                example: |
+                  {"id": "countries"}
+        404:
+          description: Stopwords set not found.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiResponse"
 components:
   schemas:
     CollectionSchema:
@@ -2606,6 +2725,46 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/AnalyticsRuleSchema"
+    StopwordsSetUpsertSchema:
+      type: object
+      properties:
+        stopwords:
+          type: array
+          items:
+            type: string
+        locale:
+          type: string
+      required:
+        - stopwords
+      example: |
+        {"stopwords": ["Germany", "France", "Italy"], "locale": "en"}
+    StopwordsSetSchema:
+      type: object
+      properties:
+        id:
+          type: string
+        stopwords:
+          type: array
+          items:
+            type: string
+        locale:
+          type: string
+      required:
+        - id
+        - stopwords
+      example: |
+        {"id": "countries", "stopwords": ["Germany", "France", "Italy"], "locale": "en"}
+    StopwordsSetRetrieveSchema:
+      type: object
+      properties:
+        stopwords:
+          type: array
+          items:
+            $ref: "#/components/schemas/StopwordsSetSchema"
+      required:
+        - stopwords
+      example: |
+        {"stopwords": [{"id": "countries", "stopwords": ["Germany", "France", "Italy"], "locale": "en"}]}
   securitySchemes:
     api_key_header:
       type: apiKey
