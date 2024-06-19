@@ -1848,6 +1848,11 @@ components:
           enum:
             - exact
             - contains
+        tags:
+          type: array
+          description: List of tags.
+          items:
+            type: string
     SearchOverrideInclude:
       type: object
       required:
@@ -2222,6 +2227,10 @@ components:
             finally `hidden_hits`.
           type: string
 
+        override_tags:
+          description: Comma separated list of tags to trigger the curations rules that match the tags.
+          type: string
+
         highlight_fields:
           description: >
             A list of custom fields that must be highlighted even if you don't query 
@@ -2538,6 +2547,10 @@ components:
             You could also use the Overrides feature to override search results based
             on rules. Overrides are applied first, followed by `pinned_hits` and
             finally `hidden_hits`.
+          type: string
+
+        override_tags:
+          description: Comma separated list of tags to trigger the curations rules that match the tags.
           type: string
 
         highlight_fields:
