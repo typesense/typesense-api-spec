@@ -2339,6 +2339,11 @@ components:
             Choose the underlying faceting strategy used. Comma separated string of allows values: 
             exhaustive, top_values or automatic (default).
           type: string
+        stopwords:
+          description: >
+            Name of the stopwords set to apply for this search,
+            the keywords present in the set will be removed from the search query.
+          type: string
 
     MultiSearchParameters:
       description: >
@@ -2653,6 +2658,11 @@ components:
           description: >
             Choose the underlying faceting strategy used. Comma separated string of allows values: 
             exhaustive, top_values or automatic (default).
+          type: string
+        stopwords:
+          description: >
+            Name of the stopwords set to apply for this search, 
+            the keywords present in the set will be removed from the search query.
           type: string
     MultiSearchSearchesParameter:
       type: object
