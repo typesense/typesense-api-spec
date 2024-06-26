@@ -2339,6 +2339,10 @@ components:
             Choose the underlying faceting strategy used. Comma separated string of allows values: 
             exhaustive, top_values or automatic (default).
           type: string
+        facet_return_parent:
+          description: >
+            Comma separated string of nested facet fields whose parent object should be returned in facet response.
+          type: string
 
     MultiSearchParameters:
       description: >
@@ -2653,6 +2657,10 @@ components:
           description: >
             Choose the underlying faceting strategy used. Comma separated string of allows values: 
             exhaustive, top_values or automatic (default).
+          type: string
+        facet_return_parent:
+          description: >
+            Comma separated string of nested facet fields whose parent object should be returned in facet response.
           type: string
     MultiSearchSearchesParameter:
       type: object
