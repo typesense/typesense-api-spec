@@ -2696,6 +2696,8 @@ components:
                 type: string
               value:
                 type: string
+              parent:
+                type: object
         field_name:
           type: string
         stats:
