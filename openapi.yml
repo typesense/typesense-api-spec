@@ -2,7 +2,7 @@ openapi: 3.0.3
 info:
   title: Typesense API
   description: "An open source search engine for building delightful search experiences."
-  version: 0.25.0
+  version: 26.0
 externalDocs:
   description: Find out more about Typsesense
   url: https://typesense.org
@@ -2343,6 +2343,9 @@ components:
           description: >
             Name of the stopwords set to apply for this search,
             the keywords present in the set will be removed from the search query.
+        facet_return_parent:
+          description: >
+            Comma separated string of nested facet fields whose parent object should be returned in facet response.
           type: string
 
     MultiSearchParameters:
@@ -2663,6 +2666,9 @@ components:
           description: >
             Name of the stopwords set to apply for this search, 
             the keywords present in the set will be removed from the search query.
+        facet_return_parent:
+          description: >
+            Comma separated string of nested facet fields whose parent object should be returned in facet response.
           type: string
     MultiSearchSearchesParameter:
       type: object
@@ -2698,6 +2704,8 @@ components:
                 type: string
               value:
                 type: string
+              parent:
+                type: object
         field_name:
           type: string
         stats:
