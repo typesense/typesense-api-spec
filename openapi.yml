@@ -2,7 +2,7 @@ openapi: 3.0.3
 info:
   title: Typesense API
   description: "An open source search engine for building delightful search experiences."
-  version: 26.0
+  version: '26.0'
 externalDocs:
   description: Find out more about Typsesense
   url: https://typesense.org
@@ -1451,19 +1451,19 @@ paths:
               schema:
                 $ref: "#/components/schemas/ApiResponse"
   /presets:
-      get:
-        tags:
-          - presets
-        summary: Retrieves all presets.
-        description: Retrieve the details of all presets
-        operationId: retrieveAllPresets
-        responses:
-          200:
-            description: Presets fetched.
-            content:
-              application/json:
-                schema:
-                  $ref: '#/components/schemas/PresetsRetrieveSchema'
+    get:
+      tags:
+        - presets
+      summary: Retrieves all presets.
+      description: Retrieve the details of all presets
+      operationId: retrieveAllPresets
+      responses:
+        200:
+          description: Presets fetched.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PresetsRetrieveSchema'
   /presets/{presetId}:
     get:
       tags:
@@ -2450,6 +2450,7 @@ components:
           description: >
             Name of the stopwords set to apply for this search,
             the keywords present in the set will be removed from the search query.
+          type: string
         facet_return_parent:
           description: >
             Comma separated string of nested facet fields whose parent object should be returned in facet response.
@@ -2773,6 +2774,7 @@ components:
           description: >
             Name of the stopwords set to apply for this search,
             the keywords present in the set will be removed from the search query.
+          type: string
         facet_return_parent:
           description: >
             Comma separated string of nested facet fields whose parent object should be returned in facet response.
