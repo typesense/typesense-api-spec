@@ -1968,7 +1968,7 @@ components:
         replace_query:
           type: string
           description: >
-           	Replaces the current search query with this value, when the search query matches the override rule.
+            Replaces the current search query with this value, when the search query matches the override rule.
         filter_curated_hits:
           type: boolean
           description: >
@@ -1999,23 +1999,13 @@ components:
               type: string
               readOnly: true
     SearchOverrideRule:
-      allOf:
-        - anyOf:
-            - $ref: "#/components/schemas/SearchOverrideRuleQuerySchema"
-            - $ref: "#/components/schemas/SearchOverrideRuleFilterSchema"
-        - type: object
-          properties:
-            tags:
-              type: array
-              description: List of tag values to associate with this override rule.
-              items:
-                type: string
-    SearchOverrideRuleQuerySchema:
       type: object
-      required:
-        - query
-        - match
       properties:
+        tags:
+          type: array
+          description: List of tag values to associate with this override rule.
+          items:
+            type: string
         query:
           type: string
           description: Indicates what search queries should be overridden
@@ -2028,11 +2018,6 @@ components:
           enum:
             - exact
             - contains
-    SearchOverrideRuleFilterSchema:
-      type: object
-      required:
-        - filter_by
-      properties:
         filter_by:
           type: string
           description: >
