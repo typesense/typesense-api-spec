@@ -1648,6 +1648,8 @@ components:
             minLength: 1
             maxLength: 1
           default: []
+        voice_query_model:
+          $ref: "#/components/schemas/VoiceQueryModelCollectionConfig"
     CollectionUpdateSchema:
       required:
         - fields
@@ -1755,6 +1757,14 @@ components:
                   type: string
                 project_id:
                   type: string
+    VoiceQueryModelCollectionConfig:
+      type: object
+      description: >
+        Configuration for the voice query model
+      properties:
+        model_name:
+          type: string
+          example: "ts/whisper/base.en"
     CollectionAliasSchema:
       type: object
       required:
@@ -1830,6 +1840,11 @@ components:
               type: string
             per_page:
               type: integer
+            voice_query:
+              type: object
+              properties:
+                transcribed_query:
+                  type: string
 
     SearchGroupedHit:
       type: object
@@ -2179,9 +2194,6 @@ components:
             $ref: "#/components/schemas/SearchResult"
     SearchParameters:
       type: object
-      required:
-        - q
-        - query_by
 
       properties:
         q:
@@ -2517,6 +2529,10 @@ components:
           description: >
             Comma separated string of nested facet fields whose parent object should be returned in facet response.
           type: string
+        voice_query:
+          description: >
+            The base64 encoded audio file in 16 khz 16-bit WAV format.
+          type: string
 
     MultiSearchParameters:
       description: >
@@ -2840,6 +2856,10 @@ components:
         facet_return_parent:
           description: >
             Comma separated string of nested facet fields whose parent object should be returned in facet response.
+          type: string
+        voice_query:
+          description: >
+            The base64 encoded audio file in 16 khz 16-bit WAV format.
           type: string
     MultiSearchSearchesParameter:
       type: object
