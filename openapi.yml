@@ -1730,6 +1730,10 @@ components:
           type: boolean
           example: true
           # omitting default value since we want it to be null
+        store:
+          type: boolean
+          description: >
+            Whether to store the image on disk.
         embed:
           type: object
           required:
@@ -2194,6 +2198,9 @@ components:
             $ref: "#/components/schemas/SearchResult"
     SearchParameters:
       type: object
+      required:
+        - q
+        - query_by
 
       properties:
         q:
