@@ -725,6 +725,12 @@ paths:
                 type: string
               batch_size:
                 type: integer
+              return_id:
+                type: boolean
+                description:
+                  Returning the id of the imported documents. If you want the
+                  import response to return the ingested document's id in the
+                  response, you can use the return_id parameter.
               dirty_values:
                 type: string
                 enum:
