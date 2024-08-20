@@ -2315,6 +2315,13 @@ components:
             Default: 3
           type: integer
 
+        group_missing_values:
+          description: >
+            Setting this parameter to true will place all documents that have a null value in the group_by field, into a single group.
+            Setting this parameter to false, will cause each document with a null value in the group_by field to not be grouped with other documents.
+            Default: true
+          type: boolean
+
         include_fields:
           description: List of fields from the document to include in the search result
           type: string
@@ -2652,6 +2659,13 @@ components:
             set as `K` then only the top K hits in each group are returned in the response.
             Default: 3
           type: integer
+
+        group_missing_values:
+          description: >
+            Setting this parameter to true will place all documents that have a null value in the group_by field, into a single group.
+            Setting this parameter to false, will cause each document with a null value in the group_by field to not be grouped with other documents.
+            Default: true
+          type: boolean
 
         include_fields:
           description: List of fields from the document to include in the search result
