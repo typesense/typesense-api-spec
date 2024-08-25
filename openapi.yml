@@ -225,6 +225,16 @@ paths:
             example: upsert
             enum:
               - upsert
+        - name: dirty_values
+          in: query
+          description: Dealing with Dirty Data
+          schema:
+            type: string
+            enum:
+              - coerce_or_reject
+              - coerce_or_drop
+              - drop
+              - reject
       requestBody:
         description: The document object to be indexed
         content:
@@ -329,6 +339,8 @@ paths:
           in: query
           schema:
             type: object
+            required:
+              - filter_by
             properties:
               filter_by:
                 type: string
@@ -339,6 +351,8 @@ paths:
                   at a time. A larger value will speed up deletions, but will impact performance
                   of other operations running on the server.
                 type: integer
+              ignore_not_found:
+                type: boolean
       responses:
         200:
           description: Documents successfully deleted
@@ -666,9 +680,6 @@ paths:
           in: query
           schema:
             type: object
-            required:
-              - include_fields
-              - exclude_fields
             properties:
               filter_by:
                 description:
@@ -723,6 +734,11 @@ paths:
             properties:
               action:
                 type: string
+                enum:
+                  - create
+                  - update
+                  - upsert
+                  - emplace
               batch_size:
                 type: integer
               return_id:
@@ -740,6 +756,10 @@ paths:
                   - reject
               remote_embedding_batch_size:
                 type: integer
+              return_doc:
+                type: boolean
+              return_id:
+                type: boolean
       requestBody:
         description: The json array of documents or the JSONL file to import
         content:
@@ -2321,6 +2341,13 @@ components:
             Default: 3
           type: integer
 
+        group_missing_values:
+          description: >
+            Setting this parameter to true will place all documents that have a null value in the group_by field, into a single group.
+            Setting this parameter to false, will cause each document with a null value in the group_by field to not be grouped with other documents.
+            Default: true
+          type: boolean
+
         include_fields:
           description: List of fields from the document to include in the search result
           type: string
@@ -2658,6 +2685,13 @@ components:
             set as `K` then only the top K hits in each group are returned in the response.
             Default: 3
           type: integer
+
+        group_missing_values:
+          description: >
+            Setting this parameter to true will place all documents that have a null value in the group_by field, into a single group.
+            Setting this parameter to false, will cause each document with a null value in the group_by field to not be grouped with other documents.
+            Default: true
+          type: boolean
 
         include_fields:
           description: List of fields from the document to include in the search result
@@ -3068,6 +3102,23 @@ components:
       properties:
         name:
           type: string
+    DocumentIndexParameters:
+      type: object
+      properties:
+        action:
+          type: string
+          enum:
+            - create
+            - update
+            - upsert
+            - emplace
+        dirty_values:
+          type: string
+          enum:
+            - coerce_or_reject
+            - coerce_or_drop
+            - drop
+            - reject
   securitySchemes:
     api_key_header:
       type: apiKey
