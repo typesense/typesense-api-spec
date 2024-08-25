@@ -28,7 +28,7 @@ tags:
     description: Typesense can aggregate search queries for both analytics purposes and for query suggestions.
     externalDocs:
       description: Find out more
-      url: https://typesense.org/docs/0.25.0/api/analytics-query-suggestions.html
+      url: https://typesense.org/docs/26.0/api/analytics-query-suggestions.html
   - name: keys
     description: Manage API Keys with fine-grain access control
     externalDocs:
@@ -1231,6 +1231,33 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ApiResponse"
+  /analytics/events:
+    post:
+      tags:
+        - analytics
+      summary: Create an analytics event
+      description: Sending events for analytics e.g rank search results based on popularity.
+      operationId: createAnalyticsEvent
+      requestBody:
+        description: The Analytics event to be created
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AnalyticsEventCreateSchema'
+        required: true
+      responses:
+        201:
+          description: Analytics event successfully created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AnalyticsEventCreateResponse'
+        400:
+          description: Bad request, see error message for details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
   /analytics/rules:
     post:
       tags:
@@ -1293,10 +1320,10 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/AnalyticsRuleSchema"
+              $ref: "#/components/schemas/AnalyticsRuleUpsertSchema"
         required: true
       responses:
-        201:
+        200:
           description: Analytics rule successfully upserted
           content:
             application/json:
@@ -1355,7 +1382,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/AnalyticsRuleSchema"
+                $ref: "#/components/schemas/AnalyticsRuleDeleteResponse"
         404:
           description: Analytics rule not found
           content:
@@ -2963,17 +2990,38 @@ components:
             avg:
               type: number
               format: double
-    AnalyticsRuleSchema:
+    AnalyticsEventCreateResponse:
       type: object
       required:
+        - ok
+      properties:
+        ok:
+          type: boolean
+    AnalyticsEventCreateSchema:
+      type: object
+      required:
+        - type
         - name
+        - data
+      properties:
+        type:
+          type: string
+        name:
+          type: string
+        data:
+          type: object
+    AnalyticsRuleUpsertSchema:
+      type: object
+      required:
         - type
         - params
       properties:
-        name:
-          type: string
         type:
           type: string
+          enum:
+            - popular_queries
+            - nohits_queries
+            - counter
         params:
           $ref: "#/components/schemas/AnalyticsRuleParameters"
     AnalyticsRuleParameters:
@@ -2981,22 +3029,65 @@ components:
       required:
         - source
         - destination
-        - limit
       properties:
         source:
-          type: object
-          properties:
-            collections:
-              type: array
-              items:
-                type: string
+          $ref: '#/components/schemas/AnalyticsRuleParametersSource'
         destination:
-          type: object
-          properties:
-            collection:
-              type: string
+          $ref: '#/components/schemas/AnalyticsRuleParametersDestination'
         limit:
           type: integer
+        expand_query:
+          type: boolean
+    AnalyticsRuleParametersSource:
+      type: object
+      required:
+        - collections
+      properties:
+        collections:
+          type: array
+          items:
+            type: string
+        events:
+          type: array
+          items:
+            type: object
+            required:
+              - type
+              - weight
+              - name
+            properties:
+              type:
+                type: string
+              weight:
+                type: number
+                format: float
+              name:
+                type: string
+    AnalyticsRuleParametersDestination:
+      type: object
+      required:
+        - collection
+      properties:
+        collection:
+          type: string
+        counter_field:
+          type: string
+    AnalyticsRuleDeleteResponse:
+      type: object
+      required:
+        - name
+      properties:
+        name:
+          type: string
+    AnalyticsRuleSchema:
+      allOf:
+        - $ref: '#/components/schemas/AnalyticsRuleUpsertSchema'
+        - type: object
+          required:
+            - name
+          properties:
+            name:
+              type: string
     AnalyticsRulesRetrieveSchema:
       type: object
       properties:
@@ -3004,6 +3095,7 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/AnalyticsRuleSchema"
+          x-go-type: '[]*AnalyticsRuleSchema'
     APIStatsResponse:
       type: object
       properties:
