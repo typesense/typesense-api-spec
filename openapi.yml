@@ -2137,6 +2137,14 @@ components:
           description: Array of words that should be considered as synonyms.
           items:
             type: string
+        locale:
+          type: string
+          description: Locale for the synonym, leave blank to use the standard tokenizer.
+        symbols_to_index:
+          type: array
+          description: By default, special characters are dropped from synonyms. Use this attribute to specify which special characters should be indexed as is.
+          items:
+            type: string
     SearchSynonym:
       allOf:
         - $ref: "#/components/schemas/SearchSynonymSchema"
