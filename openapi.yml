@@ -2,7 +2,7 @@ openapi: 3.0.3
 info:
   title: Typesense API
   description: "An open source search engine for building delightful search experiences."
-  version: '26.0'
+  version: '27.0'
 externalDocs:
   description: Find out more about Typsesense
   url: https://typesense.org
@@ -51,6 +51,11 @@ tags:
     externalDocs:
       description: Find out more
       url: https://typesense.org/docs/26.0/api/search.html#presets
+  - name: conversations
+    description: Conversational Search (RAG)
+    externalDocs:
+      description: Find out more
+      url: https://typesense.org/docs/27.0/api/conversational-search-rag.html
 paths:
   /collections:
     get:
@@ -904,6 +909,114 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ApiResponse"
+  /conversations/models:
+    get:
+      description: Retrieve all conversation models
+      operationId: retrieveAllConversationModels
+      responses:
+        200:
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: '#/components/schemas/ConversationModelSchema'
+                type: array
+                x-go-type: '[]*ConversationModelSchema'
+          description: List of all conversation models
+      summary: List all conversation models
+      tags:
+        - conversations
+    post:
+      description: Create a Conversation Model
+      operationId: createConversationModel
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ConversationModelCreateSchema'
+        required: true
+      responses:
+        200:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConversationModelSchema'
+          description: Created Conversation Model
+        400:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+          description: Bad request, see error message for details
+      tags:
+        - conversations
+  /conversations/models/{modelId}:
+    get:
+      description: Retrieve a conversation model
+      operationId: retrieveConversationModel
+      parameters:
+        - name: modelId
+          in: path
+          description: The id of the conversation model to retrieve
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConversationModelSchema'
+          description: A conversation model
+      summary: Retrieve a conversation model
+      tags:
+        - conversations
+    put:
+      description: Update a conversation model
+      operationId: updateConversationModel
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ConversationModelUpdateSchema'
+        required: true
+      parameters:
+        - name: modelId
+          in: path
+          description: The id of the conversation model to update
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConversationModelSchema'
+          description: The conversation model was successfully updated
+      summary: Update a conversation model
+      tags:
+        - conversations
+    delete:
+      description: Delete a conversation model
+      operationId: deleteConversationModel
+      parameters:
+        - name: modelId
+          in: path
+          description: The id of the conversation model to delete
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConversationModelSchema'
+          description: The conversation model was successfully deleted
+      summary: Delete a conversation model
+      tags:
+        - conversations
   /keys:
     get:
       tags:
@@ -1902,7 +2015,26 @@ components:
               properties:
                 transcribed_query:
                   type: string
-
+        conversation:
+          $ref: "#/components/schemas/SearchResultConversation"
+    SearchResultConversation:
+      type: object
+      required:
+        - answer
+        - conversation_history
+        - conversation_id
+        - query
+      properties:
+        answer:
+          type: string
+        conversation_history:
+          type: array
+          items:
+            type: object
+        conversation_id:
+          type: string
+        query:
+          type: string
     SearchGroupedHit:
       type: object
       required:
@@ -2257,6 +2389,8 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/SearchResult"
+        conversation:
+          $ref: "#/components/schemas/SearchResultConversation"
     SearchParameters:
       type: object
       required:
@@ -2608,6 +2742,18 @@ components:
           description: >
             The base64 encoded audio file in 16 khz 16-bit WAV format.
           type: string
+        conversation:
+          description: >
+            Enable conversational search.
+          type: boolean
+        conversation_model_id:
+          description: >
+             The Id of Conversation Model to be used.
+          type: string
+        conversation_id:
+          description: >
+            The Id of a previous conversation to continue, this tells Typesense to include prior context when communicating with the LLM.
+          type: string
 
     MultiSearchParameters:
       description: >
@@ -2943,6 +3089,18 @@ components:
           description: >
             The base64 encoded audio file in 16 khz 16-bit WAV format.
           type: string
+        conversation:
+          description: >
+            Enable conversational search.
+          type: boolean
+        conversation_model_id:
+          description: >
+             The Id of Conversation Model to be used.
+          type: string
+        conversation_id:
+          description: >
+            The Id of a previous conversation to continue, this tells Typesense to include prior context when communicating with the LLM.
+          type: string
     MultiSearchSearchesParameter:
       type: object
       required:
@@ -3246,6 +3404,49 @@ components:
             - coerce_or_drop
             - drop
             - reject
+    ConversationModelCreateSchema:
+      required:
+        - model_name
+        - max_bytes
+      allOf:
+        - $ref: '#/components/schemas/ConversationModelUpdateSchema'
+    ConversationModelUpdateSchema:
+      type: object
+      properties:
+        id:
+          type: string
+          description: An explicit id for the model, otherwise the API will return a response with an auto-generated conversation model id.
+        model_name:
+          description: Name of the LLM model offered by OpenAI, Cloudflare or vLLM
+          type: string
+        api_key:
+          description: The LLM service's API Key
+          type: string
+        history_collection:
+          type: string
+          description: Typesense collection that stores the historical conversations
+        account_id:
+          description: LLM service's account ID (only applicable for Cloudflare)
+          type: string
+        system_prompt:
+          description: The system prompt that contains special instructions to the LLM
+          type: string
+        ttl:
+          type: integer
+          description: |
+            Time interval in seconds after which the messages would be deleted. Default: 86400 (24 hours)
+        max_bytes:
+          description: |
+            The maximum number of bytes to send to the LLM in every API call. Consult the LLM's documentation on the number of bytes supported in the context window.
+          type: integer
+        vllm_url:
+          description: URL of vLLM service
+          type: string
+    ConversationModelSchema:
+      required:
+        - id
+      allOf:
+        - $ref: '#/components/schemas/ConversationModelUpdateSchema'
   securitySchemes:
     api_key_header:
       type: apiKey
