@@ -757,9 +757,7 @@ paths:
               remote_embedding_batch_size:
                 type: integer
               return_doc:
-                type: boolean
-              return_id:
-                type: boolean
+                type: boolean              
       requestBody:
         description: The json array of documents or the JSONL file to import
         content:
