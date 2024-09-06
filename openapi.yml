@@ -758,8 +758,6 @@ paths:
                 type: integer
               return_doc:
                 type: boolean
-              return_id:
-                type: boolean
       requestBody:
         description: The json array of documents or the JSONL file to import
         content:
