@@ -757,7 +757,7 @@ paths:
               remote_embedding_batch_size:
                 type: integer
               return_doc:
-                type: boolean              
+                type: boolean
       requestBody:
         description: The json array of documents or the JSONL file to import
         content:
@@ -1861,6 +1861,8 @@ components:
         found:
           type: integer
           description: The number of documents found
+        found_docs:
+          type: integer
         search_time_ms:
           type: integer
           description: The number of milliseconds the search took
