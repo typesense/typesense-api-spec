@@ -2588,7 +2588,7 @@ components:
             are dropped first. Set to 0 to disable. Default: 10
           type: integer
         drop_tokens_mode:
-           $ref: "#/components/schemas/DropTokensMode"
+          $ref: "#/components/schemas/DropTokensMode"
         typo_tokens_threshold:
           description: >
             If the number of results found for a specific query is less than this number,
@@ -2965,7 +2965,7 @@ components:
             are dropped first. Set to 0 to disable. Default: 10
           type: integer
         drop_tokens_mode:
-           $ref: "#/components/schemas/DropTokensMode"
+          $ref: "#/components/schemas/DropTokensMode"
         typo_tokens_threshold:
           description: >
             If the number of results found for a specific query is less than this number,
@@ -3461,6 +3461,22 @@ components:
         - max_bytes
       allOf:
         - $ref: '#/components/schemas/ConversationModelUpdateSchema'
+        - type: object
+          required:
+            - model_name
+            - max_bytes
+            - history_collection
+          properties:
+            model_name:
+              description: Name of the LLM model offered by OpenAI, Cloudflare or vLLM
+              type: string
+            max_bytes:
+              description: |
+                The maximum number of bytes to send to the LLM in every API call. Consult the LLM's documentation on the number of bytes supported in the context window.
+              type: integer
+            history_collection:
+              type: string
+              description: Typesense collection that stores the historical conversations
     ConversationModelUpdateSchema:
       type: object
       properties:
@@ -3494,10 +3510,15 @@ components:
           description: URL of vLLM service
           type: string
     ConversationModelSchema:
-      required:
-        - id
       allOf:
-        - $ref: '#/components/schemas/ConversationModelUpdateSchema'
+        - $ref: '#/components/schemas/ConversationModelCreateSchema'
+        - type: object
+          required:
+            - id
+          properties:
+            id:
+              type: string
+              description: An explicit id for the model, otherwise the API will return a response with an auto-generated conversation model id.
   securitySchemes:
     api_key_header:
       type: apiKey
