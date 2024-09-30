@@ -2,22 +2,17 @@
 
 This repository contains the API specs for the Typesense HTTP API.
 
+Some of the client libraries use the specs from this repo to generate types.
+
 ## Usage
 
 You can use Swagger Editor to view/edit the API spec files:
 
+```bash
+docker run -p 8080:8080 -v $(pwd):/tmp -e SWAGGER_FILE=/tmp/openapi.yml  swaggerapi/swagger-editor
 ```
-$ docker run -p 8080:8080 swaggerapi/swagger-editor
-```
 
-Now visit localhost:8080 in your browser, File -> Import File and select the spec file in this repository.
+Now visit localhost:8080 in your browser to view the spec file in your browser.
 
-## API Routes
-
-![alt text](screenshots/api-routes.png "API Routes")
-
-## API Data Models
-
-![alt text](screenshots/api-data-models.png "API Data Models")
-
+Once you've made edits, click on File -> Save as YAML. Then copy that file into this repo and rename the file to use a `.yml` extension.
 
