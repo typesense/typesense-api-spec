@@ -1919,6 +1919,8 @@ components:
                   type: string
                 api_key:
                   type: string
+                url:
+                  type: string
                 access_token:
                   type: string
                 client_id:
