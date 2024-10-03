@@ -842,6 +842,11 @@ paths:
           required: true
           schema:
             type: string
+        - name: dirty_values
+          in: query
+          description: Dealing with Dirty Data
+          schema:
+            $ref: "#/components/schemas/DirtyValues"
       requestBody:
         description: The document object with fields to be updated
         content:
