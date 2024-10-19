@@ -1924,11 +1924,17 @@ components:
                   type: string
                 access_token:
                   type: string
+                refresh_token:
+                  type: string
                 client_id:
                   type: string
                 client_secret:
                   type: string
                 project_id:
+                  type: string
+                indexing_prefix:
+                  type: string
+                query_prefix:
                   type: string
     VoiceQueryModelCollectionConfig:
       type: object
