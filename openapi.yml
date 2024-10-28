@@ -2404,10 +2404,6 @@ components:
           $ref: "#/components/schemas/SearchResultConversation"
     SearchParameters:
       type: object
-      required:
-        - q
-        - query_by
-
       properties:
         q:
           description: The query text to search for in the collection.
