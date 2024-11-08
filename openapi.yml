@@ -529,7 +529,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/SearchOverride"
+                $ref: "#/components/schemas/SearchOverrideDeleteResponse"
         404:
           description: Search override not found
           content:
@@ -2218,6 +2218,14 @@ components:
             id:
               type: string
               readOnly: true
+    SearchOverrideDeleteResponse:
+      type: object
+      required:
+        - id
+      properties:
+        id:
+          type: string
+          description: The id of the override that was deleted
     SearchOverrideRule:
       type: object
       properties:
