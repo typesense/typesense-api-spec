@@ -653,7 +653,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/SearchSynonym"
+                $ref: "#/components/schemas/SearchSynonymDeleteResponse"
         404:
           description: Search synonym not found
           content:
@@ -2298,6 +2298,14 @@ components:
             id:
               type: string
               readOnly: true
+    SearchSynonymDeleteResponse:
+      type: object
+      required:
+        - id
+      properties:
+        id:
+          type: string
+          description: The id of the synonym that was deleted
     SearchSynonymsResponse:
       type: object
       required:
