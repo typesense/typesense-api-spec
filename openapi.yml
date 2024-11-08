@@ -56,6 +56,11 @@ tags:
     externalDocs:
       description: Find out more
       url: https://typesense.org/docs/27.0/api/conversational-search-rag.html
+  - name: synonyms
+    description: Manage synonyms
+    externalDocs:
+      description: Find out more
+      url: https://typesense.org/docs/27.0/api/synonyms.html
 paths:
   /collections:
     get:
@@ -534,7 +539,7 @@ paths:
   /collections/{collectionName}/synonyms:
     get:
       tags:
-        - documents
+        - synonyms
       summary: List all collection synonyms
       operationId: getSearchSynonyms
       parameters:
@@ -560,7 +565,7 @@ paths:
   /collections/{collectionName}/synonyms/{synonymId}:
     get:
       tags:
-        - documents
+        - synonyms
       summary: Retrieve a single search synonym
       description: Retrieve the details of a search synonym, given its id.
       operationId: getSearchSynonym
@@ -592,7 +597,7 @@ paths:
                 $ref: "#/components/schemas/ApiResponse"
     put:
       tags:
-        - documents
+        - synonyms
       summary: Create or update a synonym
       description: Create or update a synonym  to define search terms that should be considered equivalent.
       operationId: upsertSearchSynonym
@@ -631,7 +636,7 @@ paths:
                 $ref: "#/components/schemas/ApiResponse"
     delete:
       tags:
-        - documents
+        - synonyms
       summary: Delete a synonym associated with a collection
       operationId: deleteSearchSynonym
       parameters:
