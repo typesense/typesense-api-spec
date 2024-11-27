@@ -2087,6 +2087,23 @@ components:
         text_match:
           type: integer
           format: int64
+        text_match_info:
+          type: object
+          properties:
+            best_field_score:
+              type: string
+            best_field_weight:
+              type: integer
+            fields_matched:
+              type: integer
+            num_tokens_dropped:
+              type: integer
+            score:
+              type: string
+            tokens_matched:
+              type: integer
+            typo_prefix_score:
+              type: integer
         geo_distance_meters:
           type: object
           description: Can be any key-value pair
