@@ -438,7 +438,7 @@ paths:
     get:
       tags:
         - documents
-        - override
+        - curation
       summary: Retrieve a single search override
       description: Retrieve the details of a search override, given its id.
       operationId: getSearchOverride
