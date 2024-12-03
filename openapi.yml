@@ -416,7 +416,6 @@ paths:
   /collections/{collectionName}/overrides:
     get:
       tags:
-        - documents
         - curation
       summary: List all collection overrides
       operationId: getSearchOverrides
@@ -437,7 +436,6 @@ paths:
   /collections/{collectionName}/overrides/{overrideId}:
     get:
       tags:
-        - documents
         - curation
       summary: Retrieve a single search override
       description: Retrieve the details of a search override, given its id.
@@ -464,7 +462,6 @@ paths:
                 $ref: "#/components/schemas/SearchOverride"
     put:
       tags:
-        - documents
         - curation
       summary: Create or update an override to promote certain documents over others
       description:
@@ -506,7 +503,6 @@ paths:
                 $ref: "#/components/schemas/ApiResponse"
     delete:
       tags:
-        - documents
         - curation
       summary: Delete an override associated with a collection
       operationId: deleteSearchOverride
