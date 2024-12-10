@@ -963,6 +963,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/ConversationModelSchema'
           description: A conversation model
+        '404':
+          description: Model not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiResponse"
       summary: Retrieve a conversation model
       tags:
         - conversations
@@ -1009,6 +1015,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/ConversationModelSchema'
           description: The conversation model was successfully deleted
+        '404':
+          description: Model not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiResponse"
       summary: Delete a conversation model
       tags:
         - conversations
