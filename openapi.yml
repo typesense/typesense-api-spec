@@ -462,6 +462,12 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/SearchOverride"
+        '404':
+          description: Search override was not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiResponse"
     put:
       tags:
         - documents
