@@ -2108,7 +2108,7 @@ components:
           type: object
           description: Can be any key-value pair
           additionalProperties:
-            type: integer
+            type: float
         vector_distance:
           type: number
           format: float
