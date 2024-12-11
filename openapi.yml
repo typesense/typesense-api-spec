@@ -810,7 +810,7 @@ paths:
     get:
       tags:
         - documents
-      summary: Retreive a document
+      summary: Retrieve a document
       description: Fetch an individual document from a collection by using its ID.
       operationId: getDocument
       parameters:
