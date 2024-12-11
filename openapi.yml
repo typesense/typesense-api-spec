@@ -375,6 +375,12 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ApiResponse"
+        '400':
+          description: Bad request, see error message for details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiResponse"
   /collections/{collectionName}/documents/search:
     get:
       tags:
