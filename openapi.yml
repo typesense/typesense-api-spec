@@ -1428,6 +1428,12 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ApiResponse"
+        '404':
+          description: Collection or field missing
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiResponse"
     get:
       tags:
         - analytics
