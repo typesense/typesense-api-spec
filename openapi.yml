@@ -2446,9 +2446,21 @@ components:
         results:
           type: array
           items:
-            $ref: "#/components/schemas/SearchResult"
+            $ref: "#/components/schemas/MultiSearchResultItem"
         conversation:
           $ref: "#/components/schemas/SearchResultConversation"
+    MultiSearchResultItem:
+      allOf:
+      - $ref: "#/components/schemas/SearchResult"
+      - type: object
+        properties:
+          code:
+            type: integer
+            description: HTTP error code
+            format: int64
+          error:
+            type: string
+            description: Error description
     SearchParameters:
       type: object
       properties:
@@ -3221,6 +3233,9 @@ components:
               type: string
               description: >
                 The collection to search in.
+            x-typesense-api-key:
+              type: string
+              description: A separate search API key for each search within a multi_search request
     FacetCounts:
       type: object
       properties:
