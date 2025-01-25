@@ -3214,8 +3214,6 @@ components:
       allOf:
         - $ref: "#/components/schemas/MultiSearchParameters"
         - type: object
-          required:
-            - collection
           properties:
             collection:
               type: string
