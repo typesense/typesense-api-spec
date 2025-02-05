@@ -2527,6 +2527,12 @@ components:
           type: string
           example: "num_employees:>100 && country: [USA, UK]"
 
+        max_filter_by_candidates:
+          description:
+            Controls the number of similar words that Typesense considers during fuzzy search
+            on filter_by values. Useful for controlling prefix matches like company_name:Acm*.
+          type: integer
+
         sort_by:
           description:
             A list of numerical fields and their corresponding sort orders
