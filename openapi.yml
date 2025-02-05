@@ -61,6 +61,11 @@ tags:
     externalDocs:
       description: Find out more
       url: https://typesense.org/docs/28.0/api/synonyms.html
+  - name: stemming
+    description: Manage stemming dictionaries
+    externalDocs:
+      description: Find out more
+      url: https://typesense.org/docs/28.0/api/stemming.html
 paths:
   /collections:
     get:
@@ -1761,6 +1766,97 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ApiResponse'
+  /stemming/dictionaries:
+    get:
+      tags:
+        - stemming
+      summary: List all stemming dictionaries
+      description: Retrieve a list of all available stemming dictionaries.
+      operationId: listStemmingDictionaries
+      responses:
+        '200':
+          description: List of all dictionaries
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  dictionaries:
+                    type: array
+                    items:
+                      type: string
+                    example: ["irregular-plurals", "company-terms"]
+
+  /stemming/dictionaries/{dictionaryId}:
+    get:
+      tags:
+        - stemming
+      summary: Retrieve a stemming dictionary
+      description: Fetch details of a specific stemming dictionary.
+      operationId: getStemmingDictionary
+      parameters:
+        - name: dictionaryId
+          in: path
+          description: The ID of the dictionary to retrieve
+          required: true
+          schema:
+            type: string
+          example: irregular-plurals
+      responses:
+        '200':
+          description: Stemming dictionary details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StemmingDictionary"
+        '404':
+          description: Dictionary not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiResponse"
+
+  /stemming/dictionaries/import:
+    post:
+      tags:
+        - stemming
+      summary: Import a stemming dictionary
+      description: Upload a JSONL file containing word mappings to create or update a stemming dictionary.
+      operationId: importStemmingDictionary
+      parameters:
+        - name: id
+          in: query
+          description: The ID to assign to the dictionary
+          required: true
+          schema:
+            type: string
+          example: irregular-plurals
+      requestBody:
+        description: The JSONL file containing word mappings
+        required: true
+        content:
+          application/json:
+            schema:
+              type: string
+              example: |
+                {"word": "people", "root": "person"}
+                {"word": "children", "root": "child"}
+      responses:
+        '200':
+          description: Dictionary successfully imported
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                example: >
+                  {"word": "people", "root": "person"}
+                  {"word": "children", "root": "child"}
+        '400':
+          description: Bad request, see error message for details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiResponse"
 components:
   schemas:
     CollectionSchema:
@@ -1925,6 +2021,10 @@ components:
           type: boolean
           description: >
             Values are stemmed before indexing in-memory. Default: false.
+        stem_dictionary:
+          type: string
+          description: Name of the stemming dictionary to use for this field
+          example: irregular-plurals
         token_separators:
           type: array
           description: >
@@ -3654,6 +3754,33 @@ components:
             id:
               type: string
               description: An explicit id for the model, otherwise the API will return a response with an auto-generated conversation model id.
+    StemmingDictionary:
+      type: object
+      required:
+        - id
+        - words
+      properties:
+        id:
+          type: string
+          description: Unique identifier for the dictionary
+          example: irregular-plurals
+        words:
+          type: array
+          description: List of word mappings in the dictionary
+          items:
+            type: object
+            required:
+              - word
+              - root
+            properties:
+              word:
+                type: string
+                description: The word form to be stemmed
+                example: people
+              root:
+                type: string
+                description: The root form of the word
+                example: person
   securitySchemes:
     api_key_header:
       type: apiKey
