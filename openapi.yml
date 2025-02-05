@@ -28,7 +28,7 @@ tags:
     description: Typesense can aggregate search queries for both analytics purposes and for query suggestions.
     externalDocs:
       description: Find out more
-      url: https://typesense.org/docs/26.0/api/analytics-query-suggestions.html
+      url: https://typesense.org/docs/28.0/api/analytics-query-suggestions.html
   - name: keys
     description: Manage API Keys with fine-grain access control
     externalDocs:
@@ -40,27 +40,27 @@ tags:
     description: Manage Typesense cluster
     externalDocs:
       description: Find out more
-      url: https://typesense.org/docs/26.0/api/cluster-operations.html
+      url: https://typesense.org/docs/28.0/api/cluster-operations.html
   - name: stopwords
     description: Manage stopwords sets
     externalDocs:
       description: Find out more
-      url: https://typesense.org/docs/26.0/api/stopwords.html
+      url: https://typesense.org/docs/28.0/api/stopwords.html
   - name: presets
     description: Store and reference search parameters
     externalDocs:
       description: Find out more
-      url: https://typesense.org/docs/26.0/api/search.html#presets
+      url: https://typesense.org/docs/28.0/api/search.html#presets
   - name: conversations
     description: Conversational Search (RAG)
     externalDocs:
       description: Find out more
-      url: https://typesense.org/docs/27.0/api/conversational-search-rag.html
+      url: https://typesense.org/docs/28.0/api/conversational-search-rag.html
   - name: synonyms
     description: Manage synonyms
     externalDocs:
       description: Find out more
-      url: https://typesense.org/docs/27.0/api/synonyms.html
+      url: https://typesense.org/docs/28.0/api/synonyms.html
 paths:
   /collections:
     get:
