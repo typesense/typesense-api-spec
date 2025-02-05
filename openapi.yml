@@ -1922,6 +1922,29 @@ components:
           type: boolean
           description: >
             Values are stemmed before indexing in-memory. Default: false.
+        token_separators:
+          type: array
+          description: >
+            List of symbols or special characters to be used for
+            splitting the text into individual words in addition to space and new-line characters.
+          items:
+            type: string # characters only
+            # Could `enum` be used instead, given it's symbols/special *characters*, e.g.:
+            # enum: ["@", "!", ".", "/", ","]
+            minLength: 1
+            maxLength: 1
+          default: []
+        symbols_to_index:
+          type: array
+          description: >
+            List of symbols or special characters to be indexed.
+          items:
+            type: string # characters only
+            # Could `enum` be used instead, given it's symbols/special *characters*, e.g.:
+            # enum: ["@", "!", ".", "/", ","]
+            minLength: 1
+            maxLength: 1
+          default: []
         embed:
           type: object
           required:
