@@ -3271,6 +3271,13 @@ components:
             x-typesense-api-key:
               type: string
               description: A separate search API key for each search within a multi_search request
+            rerank_hybrid_matches:
+              type: boolean
+              description: >
+                When true, computes both text match and vector distance scores for all matches in hybrid search.
+                Documents found only through keyword search will get a vector distance score, and
+                documents found only through vector search will get a text match score.
+              default: false
     FacetCounts:
       type: object
       properties:
