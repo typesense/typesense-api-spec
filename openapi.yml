@@ -357,6 +357,9 @@ paths:
                 type: integer
               ignore_not_found:
                 type: boolean
+              truncate:
+                description: When true, removes all documents from the collection while preserving the collection and its schema.
+                type: boolean
       responses:
         '200':
           description: Documents successfully deleted
