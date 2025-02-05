@@ -3224,6 +3224,9 @@ components:
       required:
         - searches
       properties:
+        union:
+          type: boolean
+          description: When true, merges the search results from each search query into a single ordered set of hits.
         searches:
           type: array
           items:
