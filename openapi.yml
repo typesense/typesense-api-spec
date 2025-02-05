@@ -1263,6 +1263,22 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+  /operations/schema_changes:
+    get:
+      tags:
+        - operations
+      summary: Get the status of in-progress schema change operations
+      description: Returns the status of any ongoing schema change operations. If no schema changes are in progress, returns an empty response.
+      operationId: getSchemaChanges
+      responses:
+        '200':
+          description: List of schema changes in progress
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/SchemaChangeStatus"
   /operations/snapshot:
     post:
       tags:
@@ -2353,6 +2369,18 @@ components:
       properties:
         ok:
           type: boolean
+    SchemaChangeStatus:
+      type: object
+      properties:
+        collection:
+          type: string
+          description: Name of the collection being modified
+        validated_docs:
+          type: integer
+          description: Number of documents that have been validated
+        altered_docs:
+          type: integer
+          description: Number of documents that have been altered
     SuccessStatus:
       type: object
       required:
