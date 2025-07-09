@@ -16,13 +16,13 @@ jobs:
           cache: 'npm'
       
       - name: Install Redocly CLI
-        run: npm install -g @redocly/cli@latest
+        run: npm install 
       
       - name: Lint OpenAPI specification
-        run: redocly lint openapi.yml
+        run: npm run lint
       
       - name: Bundle OpenAPI specification
-        run: redocly bundle openapi.yml --output bundled-openapi.yml
+        run: npm run bundle
       
       - name: Upload bundled specification
         uses: actions/upload-artifact@v4
