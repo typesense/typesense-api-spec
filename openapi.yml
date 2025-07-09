@@ -2718,14 +2718,6 @@ components:
           x-go-type: "[]*ApiKey"
           items:
             $ref: "#/components/schemas/ApiKey"
-    ScopedKeyParameters:
-      type: object
-      properties:
-        filter_by:
-          type: string
-        expires_at:
-          type: integer
-          format: int64
     SnapshotParameters:
       type: object
       properties:
