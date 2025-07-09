@@ -2718,11 +2718,6 @@ components:
           x-go-type: "[]*ApiKey"
           items:
             $ref: "#/components/schemas/ApiKey"
-    SnapshotParameters:
-      type: object
-      properties:
-        snapshot_path:
-          type: string
     MultiSearchResult:
       type: object
       required:
