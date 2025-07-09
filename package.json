@@ -1,0 +1,29 @@
+{
+  "name": "typesense-api-spec",
+  "version": "1.0.0",
+  "description": "Typesense OpenAPI spec",
+  "keywords": [
+    "openapi",
+    "typesense",
+    "search",
+    "api"
+  ],
+  "homepage": "https://github.com/typesense/typesense-api-spec#readme",
+  "bugs": {
+    "url": "https://github.com/typesense/typesense-api-spec/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/typesense/typesense-api-spec.git"
+  },
+  "license": "GPL-3.0",
+  "author": "typesense",
+  "type": "commonjs",
+  "main": "index.js",
+  "scripts": {
+    "test": "test"
+  },
+  "dependencies": {
+    "@redocly/cli": "^1.34.4"
+  }
+}
