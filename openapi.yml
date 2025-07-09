@@ -936,6 +936,7 @@ paths:
       tags:
         - conversations
     post:
+      summary: Create a conversation model
       description: Create a Conversation Model
       operationId: createConversationModel
       requestBody:
