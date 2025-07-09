@@ -2731,11 +2731,6 @@ components:
       properties:
         snapshot_path:
           type: string
-    ErrorResponse:
-      type: object
-      properties:
-        message:
-          type: string
     MultiSearchResult:
       type: object
       required:
