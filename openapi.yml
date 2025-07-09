@@ -3820,12 +3820,6 @@ components:
       properties:
         name:
           type: string
-    # client libraries already have .create, .upsert,... methods so we omit the `action` param
-    DocumentIndexParameters:
-      type: object
-      properties:
-        dirty_values:
-          $ref: "#/components/schemas/DirtyValues"
     DirtyValues:
       type: string
       enum: [coerce_or_reject, coerce_or_drop, drop, reject]
