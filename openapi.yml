@@ -3,6 +3,19 @@ info:
   title: Typesense API
   description: "An open source search engine for building delightful search experiences."
   version: '28.0'
+servers:
+  - url: "{protocol}://{hostname}:{port}"
+    description: Typesense Server
+    variables:
+      protocol:
+        default: http
+        description: The protocol of your Typesense server
+      hostname:
+        default: localhost
+        description: The hostname of your Typesense server
+      port:
+        default: "8108"
+        description: The port of your Typesense server
 externalDocs:
   description: Find out more about Typsesense
   url: https://typesense.org
