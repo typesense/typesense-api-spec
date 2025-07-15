@@ -3,6 +3,22 @@ info:
   title: Typesense API
   description: "An open source search engine for building delightful search experiences."
   version: '28.0'
+  license:
+    name: GPL-3.0
+    url: https://opensource.org/licenses/GPL-3.0
+servers:
+  - url: "{protocol}://{hostname}:{port}"
+    description: Typesense Server
+    variables:
+      protocol:
+        default: http
+        description: The protocol of your Typesense server
+      hostname:
+        default: localhost
+        description: The hostname of your Typesense server
+      port:
+        default: "8108"
+        description: The port of your Typesense server
 externalDocs:
   description: Find out more about Typsesense
   url: https://typesense.org
@@ -72,6 +88,7 @@ tags:
       description: Find out more
       url: https://typesense.org/docs/29.0/api/natural-language-search.html
 
+paths:
   /collections:
     get:
       tags:
@@ -935,6 +952,7 @@ tags:
       tags:
         - conversations
     post:
+      summary: Create a conversation model
       description: Create a Conversation Model
       operationId: createConversationModel
       requestBody:
@@ -2716,24 +2734,6 @@ components:
           x-go-type: "[]*ApiKey"
           items:
             $ref: "#/components/schemas/ApiKey"
-    ScopedKeyParameters:
-      type: object
-      properties:
-        filter_by:
-          type: string
-        expires_at:
-          type: integer
-          format: int64
-    SnapshotParameters:
-      type: object
-      properties:
-        snapshot_path:
-          type: string
-    ErrorResponse:
-      type: object
-      properties:
-        message:
-          type: string
     MultiSearchResult:
       type: object
       required:
@@ -3820,12 +3820,6 @@ components:
       properties:
         name:
           type: string
-    # client libraries already have .create, .upsert,... methods so we omit the `action` param
-    DocumentIndexParameters:
-      type: object
-      properties:
-        dirty_values:
-          $ref: "#/components/schemas/DirtyValues"
     DirtyValues:
       type: string
       enum: [coerce_or_reject, coerce_or_drop, drop, reject]
