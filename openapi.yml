@@ -405,6 +405,12 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ApiResponse"
+        '400':
+          description: Bad request, see error message for details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiResponse"
   /collections/{collectionName}/documents/search:
     get:
       tags:
@@ -464,6 +470,12 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/SearchOverridesResponse"
+        '404':
+          description: List of search overrides not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiResponse"
   /collections/{collectionName}/overrides/{overrideId}:
     get:
       tags:
@@ -492,6 +504,12 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/SearchOverride"
+        '404':
+          description: Search override not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiResponse"
     put:
       tags:
         - documents
@@ -822,7 +840,7 @@ paths:
     get:
       tags:
         - documents
-      summary: Retreive a document
+      summary: Retrieve a document
       description: Fetch an individual document from a collection by using its ID.
       operationId: getDocument
       parameters:
@@ -994,6 +1012,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/ConversationModelSchema'
           description: A conversation model
+        '404':
+          description: Model not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiResponse"
       summary: Retrieve a conversation model
       tags:
         - conversations
@@ -1020,6 +1044,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/ConversationModelSchema'
           description: The conversation model was successfully updated
+        '404':
+          description: Model not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiResponse"
       summary: Update a conversation model
       tags:
         - conversations
@@ -1040,6 +1070,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/ConversationModelSchema'
           description: The conversation model was successfully deleted
+        '404':
+          description: Model not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiResponse"
       summary: Delete a conversation model
       tags:
         - conversations
@@ -1435,6 +1471,12 @@ paths:
                 $ref: "#/components/schemas/AnalyticsRuleSchema"
         '400':
           description: Bad request, see error message for details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiResponse"
+        '404':
+          description: Collection or field missing
           content:
             application/json:
               schema:
