@@ -2314,25 +2314,32 @@ components:
           items:
             $ref: "#/components/schemas/SearchResultHit"
         request_params:
-          type: object
-          required:
-            - collection_name
-            - q
-            - per_page
-          properties:
-            collection_name:
-              type: string
-            q:
-              type: string
-            per_page:
-              type: integer
-            voice_query:
-              type: object
-              properties:
-                transcribed_query:
-                  type: string
+            $ref: "#/components/schemas/SearchRequestParams"
         conversation:
           $ref: "#/components/schemas/SearchResultConversation"
+        union_request_params:
+          type: array
+          description: Returned only for union query response.
+          items:
+            $ref: "#/components/schemas/SearchRequestParams"
+    SearchRequestParams:
+      type: object
+      required:
+        - collection_name
+        - q
+        - per_page
+      properties:
+        collection_name:
+          type: string
+        q:
+          type: string
+        per_page:
+          type: integer
+        voice_query:
+          type: object
+          properties:
+            transcribed_query:
+              type: string
     SearchResultConversation:
       type: object
       required:
@@ -2423,6 +2430,9 @@ components:
               type: number
               format: float
               description: Combined score from rank fusion of text and vector search
+        search_index:
+          type: integer
+          description: Returned only for union query response. Indicates the index of the query which this document matched to.
       example:
         highlights:
           company_name:
@@ -3538,6 +3548,7 @@ components:
       properties:
         union:
           type: boolean
+          default: false
           description: When true, merges the search results from each search query into a single ordered set of hits.
         searches:
           type: array
