@@ -2422,6 +2422,14 @@ components:
           type: number
           format: float
           description: Distance between the query vector and matching document's vector value
+        hybrid_search_info:
+          type: object
+          description: Information about hybrid search scoring
+          properties:
+            rank_fusion_score:
+              type: number
+              format: float
+              description: Combined score from rank fusion of text and vector search
         search_index:
           type: integer
           description: Returned only for union query response. Indicates the index of the query which this document matched to.
