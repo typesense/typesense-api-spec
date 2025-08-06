@@ -99,6 +99,23 @@ paths:
         returned sorted by creation date, with the most recent collections appearing
         first.
       operationId: getCollections
+      parameters:
+        - name: getCollectionsParameters
+          in: query
+          schema:
+            type: object
+            properties:
+              exclude_fields:
+                description: Comma-separated list of fields from the collection to exclude from the response
+                type: string
+              limit:
+                description: >
+                  Number of collections to fetch.
+                  Default: returns all collections.
+                type: integer
+              offset:
+                description: Identifies the starting point to return collections when paginating.
+                type: integer
       responses:
         '200':
           description: List of all collections
