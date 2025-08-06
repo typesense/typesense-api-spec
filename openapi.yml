@@ -99,6 +99,23 @@ paths:
         returned sorted by creation date, with the most recent collections appearing
         first.
       operationId: getCollections
+      parameters:
+        - name: getCollectionsParameters
+          in: query
+          schema:
+            type: object
+            properties:
+              exclude_fields:
+                description: Comma-separated list of fields from the collection to exclude from the response
+                type: string
+              limit:
+                description: >
+                  Number of collections to fetch.
+                  Default: returns all collections.
+                type: integer
+              offset:
+                description: Identifies the starting point to return collections when paginating.
+                type: integer
       responses:
         '200':
           description: List of all collections
@@ -2082,6 +2099,10 @@ components:
           default: []
         voice_query_model:
           $ref: "#/components/schemas/VoiceQueryModelCollectionConfig"
+        metadata:
+          type: object
+          description: >
+            Optional details about the collection, e.g., when it was created, who created it etc.
     CollectionUpdateSchema:
       required:
         - fields
@@ -2102,6 +2123,10 @@ components:
               facet: true
           items:
             $ref: "#/components/schemas/Field"
+        metadata:
+          type: object
+          description: >
+            Optional details about the collection, e.g., when it was created, who created it etc.
     CollectionResponse:
       allOf:
         - $ref: "#/components/schemas/CollectionSchema"
