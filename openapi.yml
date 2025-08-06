@@ -2099,6 +2099,10 @@ components:
           default: []
         voice_query_model:
           $ref: "#/components/schemas/VoiceQueryModelCollectionConfig"
+        metadata:
+          type: object
+          description: >
+            Optional details about the collection, e.g., when it was created, who created it etc.
     CollectionUpdateSchema:
       required:
         - fields
@@ -2119,6 +2123,10 @@ components:
               facet: true
           items:
             $ref: "#/components/schemas/Field"
+        metadata:
+          type: object
+          description: >
+            Optional details about the collection, e.g., when it was created, who created it etc.
     CollectionResponse:
       allOf:
         - $ref: "#/components/schemas/CollectionSchema"
