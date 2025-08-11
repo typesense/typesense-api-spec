@@ -72,11 +72,11 @@ tags:
     externalDocs:
       description: Find out more
       url: https://typesense.org/docs/28.0/api/conversational-search-rag.html
-  - name: synonyms
-    description: Manage synonyms
+  - name: synonym_sets
+    description: Manage synonym sets
     externalDocs:
       description: Find out more
-      url: https://typesense.org/docs/28.0/api/synonyms.html
+      url: https://typesense.org/docs/28.0/api/synonym-sets.html
   - name: stemming
     description: Manage stemming dictionaries
     externalDocs:
@@ -579,135 +579,6 @@ paths:
                 $ref: "#/components/schemas/SearchOverrideDeleteResponse"
         '404':
           description: Search override not found
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ApiResponse"
-  /collections/{collectionName}/synonyms:
-    get:
-      tags:
-        - synonyms
-      summary: List all collection synonyms
-      operationId: getSearchSynonyms
-      parameters:
-        - name: collectionName
-          in: path
-          description: The name of the collection
-          required: true
-          schema:
-            type: string
-      responses:
-        '200':
-          description: List of all search synonyms
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/SearchSynonymsResponse"
-        '404':
-          description: Search synonyms was not found
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ApiResponse"
-  /collections/{collectionName}/synonyms/{synonymId}:
-    get:
-      tags:
-        - synonyms
-      summary: Retrieve a single search synonym
-      description: Retrieve the details of a search synonym, given its id.
-      operationId: getSearchSynonym
-      parameters:
-        - name: collectionName
-          in: path
-          description: The name of the collection
-          required: true
-          schema:
-            type: string
-        - name: synonymId
-          in: path
-          description: The id of the search synonym
-          required: true
-          schema:
-            type: string
-      responses:
-        '200':
-          description: Search synonym fetched
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/SearchSynonym"
-        '404':
-          description: Search synonym was not found
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ApiResponse"
-    put:
-      tags:
-        - synonyms
-      summary: Create or update a synonym
-      description: Create or update a synonym  to define search terms that should be considered equivalent.
-      operationId: upsertSearchSynonym
-      parameters:
-        - name: collectionName
-          in: path
-          description: The name of the collection
-          required: true
-          schema:
-            type: string
-        - name: synonymId
-          in: path
-          description: The ID of the search synonym to create/update
-          required: true
-          schema:
-            type: string
-      requestBody:
-        description: The search synonym object to be created/updated
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/SearchSynonymSchema"
-        required: true
-      responses:
-        '200':
-          description: Created/updated search synonym
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/SearchSynonym"
-        '404':
-          description: Search synonym was not found
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ApiResponse"
-    delete:
-      tags:
-        - synonyms
-      summary: Delete a synonym associated with a collection
-      operationId: deleteSearchSynonym
-      parameters:
-        - name: collectionName
-          in: path
-          description: The name of the collection
-          required: true
-          schema:
-            type: string
-        - name: synonymId
-          in: path
-          description: The ID of the search synonym to delete
-          required: true
-          schema:
-            type: string
-      responses:
-        '200':
-          description: The ID of the deleted search synonym
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/SearchSynonymDeleteResponse"
-        '404':
-          description: Search synonym not found
           content:
             application/json:
               schema:
@@ -2117,6 +1988,104 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiResponse'
 
+  /synonym_sets:
+    get:
+      tags:
+        - synonym_sets
+      summary: List all synonym sets
+      description: Retrieve the list of all synonym sets.
+      operationId: getSynonymSets
+      responses:
+        '200':
+          description: List of synonym sets
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SynonymSetsListResponse'
+
+  /synonym_sets/{name}:
+    get:
+      tags:
+        - synonym_sets
+      summary: Get a synonym set
+      description: Retrieve a specific synonym set by name.
+      operationId: getSynonymSet
+      parameters:
+        - in: path
+          name: name
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Synonym set fetched
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SynonymSet'
+        '404':
+          description: Synonym set not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+    put:
+      tags:
+        - synonym_sets
+      summary: Create or replace a synonym set
+      description: Create or replace a synonym set with the given name.
+      operationId: upsertSynonymSet
+      parameters:
+        - in: path
+          name: name
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SynonymSetUpsert'
+      responses:
+        '200':
+          description: Created/updated synonym set
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SynonymSet'
+        '400':
+          description: Bad request, see error message for details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+    delete:
+      tags:
+        - synonym_sets
+      summary: Delete a synonym set
+      description: Delete the specified synonym set.
+      operationId: deleteSynonymSet
+      parameters:
+        - in: path
+          name: name
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Synonym set deleted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SynonymSetDeleteResponse'
+        '404':
+          description: Synonym set not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+
 components:
   schemas:
     CollectionSchema:
@@ -2758,6 +2727,61 @@ components:
             id:
               type: string
               readOnly: true
+    SynonymObject:
+      type: object
+      required:
+        - id
+        - root
+        - synonyms
+      properties:
+        id: { type: string }
+        root: { type: string }
+        synonyms:
+          type: array
+          items: { type: string }
+        locale: { type: string }
+        symbols_to_index:
+          type: array
+          items: { type: string }
+    SynonymSetUpsert:
+      type: object
+      required:
+        - synonyms
+      properties:
+        synonyms:
+          type: array
+          items:
+            $ref: '#/components/schemas/SynonymObject'
+    SynonymSet:
+      type: object
+      required:
+        - synonyms
+      properties:
+        synonyms:
+          type: array
+          items:
+            $ref: '#/components/schemas/SynonymObject'
+    SynonymSetsListEntry:
+      type: object
+      required:
+        - name
+        - synonyms
+      properties:
+        name: { type: string }
+        synonyms:
+          type: array
+          items:
+            $ref: '#/components/schemas/SynonymObject'
+    SynonymSetsListResponse:
+      type: array
+      items:
+        $ref: '#/components/schemas/SynonymSetsListEntry'
+    SynonymSetDeleteResponse:
+      type: object
+      required:
+        - name
+      properties:
+        name: { type: string }
     SearchSynonymDeleteResponse:
       type: object
       required:
