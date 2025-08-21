@@ -2,7 +2,7 @@ openapi: 3.0.3
 info:
   title: Typesense API
   description: "An open source search engine for building delightful search experiences."
-  version: '28.0'
+  version: '30.0'
   license:
     name: GPL-3.0
     url: https://opensource.org/licenses/GPL-3.0
