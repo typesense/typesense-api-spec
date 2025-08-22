@@ -713,6 +713,110 @@ paths:
               schema:
                 $ref: "#/components/schemas/ApiResponse"
 
+  /synonym_sets:
+    get:
+      tags:
+        - synonyms
+      summary: List all synonym sets
+      description: Retrieve all synonym sets
+      operationId: retrieveSynonymSets
+      responses:
+        "200":
+          description: List of all synonym sets
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/SynonymSetSchema"
+
+  /synonym_sets/{synonymSetName}:
+    get:
+      tags:
+        - synonyms
+      summary: Retrieve a synonym set
+      description: Retrieve a specific synonym set by its name
+      operationId: retrieveSynonymSet
+      parameters:
+        - name: synonymSetName
+          in: path
+          description: The name of the synonym set to retrieve
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Synonym set fetched
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SynonymSetRetrieveSchema"
+        "404":
+          description: Synonym set not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiResponse"
+    put:
+      tags:
+        - synonyms
+      summary: Create or update a synonym set
+      description: Create or update a synonym set with the given name
+      operationId: upsertSynonymSet
+      parameters:
+        - name: synonymSetName
+          in: path
+          description: The name of the synonym set to create/update
+          required: true
+          schema:
+            type: string
+      requestBody:
+        description: The synonym set to be created/updated
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SynonymSetCreateSchema"
+        required: true
+      responses:
+        "200":
+          description: Synonym set successfully created/updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SynonymSetSchema"
+        "400":
+          description: Bad request, see error message for details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiResponse"
+    delete:
+      tags:
+        - synonyms
+      summary: Delete a synonym set
+      description: Delete a specific synonym set by its name
+      operationId: deleteSynonymSet
+      parameters:
+        - name: synonymSetName
+          in: path
+          description: The name of the synonym set to delete
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Synonym set successfully deleted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SynonymSetDeleteSchema"
+        "404":
+          description: Synonym set not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiResponse"
+
   /collections/{collectionName}/documents/export:
     get:
       tags:
@@ -2079,6 +2183,12 @@ components:
             minLength: 1
             maxLength: 1
           default: []
+        synonym_sets:
+          type: array
+          description: List of synonym set names to associate with this collection
+          items:
+            type: string
+            example: "synonym_set_1"
         enable_nested_fields:
           type: boolean
           description:
@@ -2123,6 +2233,12 @@ components:
               facet: true
           items:
             $ref: "#/components/schemas/Field"
+        synonym_sets:
+          type: array
+          description: List of synonym set names to associate with this collection
+          items:
+            type: string
+            example: "synonym_set_1"
         metadata:
           type: object
           description: >
@@ -2996,6 +3112,11 @@ components:
             Field values under this length will be fully highlighted, instead of showing
             a snippet of relevant portion. Default: 30
           type: integer
+
+        synonym_sets:
+          type: string
+          description: List of synonym set names to associate with this search query
+          example: "synonym_set_1,synonym_set_2"
 
         drop_tokens_threshold:
           description: >
@@ -4060,6 +4181,77 @@ components:
         id:
           type: string
           description: ID of the deleted NL search model
+
+    SynonymItemSchema:
+      type: object
+      required:
+        - id
+        - synonyms
+      properties:
+        id:
+          type: string
+          description: Unique identifier for the synonym item
+        synonyms:
+          type: array
+          description: Array of words that should be considered as synonyms
+          items:
+            type: string
+        root:
+          type: string
+          description: For 1-way synonyms, indicates the root word that words in the synonyms parameter map to
+        locale:
+          type: string
+          description: Locale for the synonym, leave blank to use the standard tokenizer
+        symbols_to_index:
+          type: array
+          description: By default, special characters are dropped from synonyms. Use this attribute to specify which special characters should be indexed as is
+          items:
+            type: string
+
+    SynonymSetCreateSchema:
+      type: object
+      required:
+        - items
+      properties:
+        items:
+          type: array
+          description: Array of synonym items
+          items:
+            $ref: "#/components/schemas/SynonymItemSchema"
+
+    SynonymSetSchema:
+      allOf:
+        - $ref: "#/components/schemas/SynonymSetCreateSchema"
+        - type: object
+          required:
+            - name
+          properties:
+            name:
+              type: string
+              description: Name of the synonym set
+
+    SynonymSetsRetrieveSchema:
+      type: object
+      required:
+        - synonym_sets
+      properties:
+        synonym_sets:
+          type: array
+          description: Array of synonym sets
+          items:
+            $ref: "#/components/schemas/SynonymSetSchema"
+
+    SynonymSetRetrieveSchema:
+      $ref: "#/components/schemas/SynonymSetCreateSchema"
+
+    SynonymSetDeleteSchema:
+      type: object
+      required:
+        - name
+      properties:
+        name:
+          type: string
+          description: Name of the deleted synonym set
 
   securitySchemes:
     api_key_header:
