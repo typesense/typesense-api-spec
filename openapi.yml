@@ -839,7 +839,7 @@ paths:
     get:
       tags:
         - documents
-      summary: Retreive a document
+      summary: Retrieve a document
       description: Fetch an individual document from a collection by using its ID.
       operationId: getDocument
       parameters:
@@ -2869,7 +2869,7 @@ components:
 
         filter_by:
           description:
-            Filter conditions for refining youropen api validator search results. Separate
+            Filter conditions for refining your open api validator search results. Separate
             multiple conditions with &&.
           type: string
           example: "num_employees:>100 && country: [USA, UK]"
@@ -3876,7 +3876,7 @@ components:
       description: >
         Dictates the direction in which the words in the query must be dropped when the original words in the query do not appear in any document.
         Values: right_to_left (default), left_to_right, both_sides:3
-        A note on both_sides:3 - for queries upto 3 tokens (words) in length, this mode will drop tokens from both sides and exhaustively rank all matching results.
+        A note on both_sides:3 - for queries up to 3 tokens (words) in length, this mode will drop tokens from both sides and exhaustively rank all matching results.
         If query length is greater than 3 words, Typesense will just fallback to default behavior of right_to_left
     ConversationModelCreateSchema:
       required:
