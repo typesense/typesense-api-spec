@@ -1368,6 +1368,21 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/SuccessStatus"
+  /operations/cache/clear:
+    post:
+      tags:
+        - operations
+      summary: Clear the cached responses of search requests in the LRU cache.
+      description:
+        Clear the cached responses of search requests that are sent with `use_cache` parameter in the LRU cache.
+      operationId: clearCache
+      responses:
+        '200':
+          description: Clear cache succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessStatus"
   /multi_search:
     post:
       operationId: multiSearch
