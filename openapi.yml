@@ -1383,6 +1383,22 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/SuccessStatus"
+  /operations/db/compact:
+    post:
+      tags:
+        - operations
+      summary: Compacting the on-disk database
+      description:
+        Typesense uses RocksDB to store your documents on the disk. If you do frequent writes or updates, you could benefit from running a compaction of the underlying RocksDB database.
+        This could reduce the size of the database and decrease read latency. While the database will not block during this operation, we recommend running it during off-peak hours.
+      operationId: compactDb
+      responses:
+        '200':
+          description: Compacting the on-disk database succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessStatus"
   /multi_search:
     post:
       operationId: multiSearch
