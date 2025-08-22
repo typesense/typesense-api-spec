@@ -3690,6 +3690,8 @@ components:
           type: array
           items:
             type: string
+        enable_auto_aggregation:
+          type: boolean
         events:
           type: array
           items:
