@@ -1399,6 +1399,35 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/SuccessStatus"
+  /config:
+    post:
+      tags:
+        - operations
+      summary: Toggle Slow Request Log
+      description:
+        Enable logging of requests that take over a defined threshold of time.
+        Default is `-1` which disables slow request logging.
+        Slow requests are logged to the primary log file, with the prefix SLOW REQUEST.
+      operationId: toggleSlowRequestLog
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                log-slow-requests-time-ms:
+                  type: integer
+              required:
+                - log-slow-requests-time-ms
+              example: |
+                {"log-slow-requests-time-ms": 2000}
+      responses:
+        '200':
+          description: Compacting the on-disk database succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessStatus"
   /multi_search:
     post:
       operationId: multiSearch
