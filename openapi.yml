@@ -3123,6 +3123,13 @@ components:
           type: boolean
           default: true
 
+        enable_analytics:
+          description: >
+            Flag for enabling/disabling analytics aggregation for specific search
+            queries (for e.g. those originating from a test script).
+          type: boolean
+          default: true
+
         snippet_threshold:
           description: >
             Field values under this length will be fully highlighted, instead of showing
@@ -3539,6 +3546,14 @@ components:
           type: boolean
           description: >
             If you have some synonyms defined but want to disable all of them for a particular search query, set enable_synonyms to false. Default: true
+
+        enable_analytics:
+          description: >
+            Flag for enabling/disabling analytics aggregation for specific search
+            queries (for e.g. those originating from a test script).
+          type: boolean
+          default: true
+
         synonym_prefix:
           type: boolean
           description: >
