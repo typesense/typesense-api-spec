@@ -2479,6 +2479,10 @@ components:
           description: Returned only for union query response.
           items:
             $ref: "#/components/schemas/SearchRequestParams"
+        metadata:
+          type: object
+          description: Custom JSON object that can be returned in the search response
+          additionalProperties: true
     SearchRequestParams:
       type: object
       required:
