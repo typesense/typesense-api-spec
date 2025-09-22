@@ -1922,71 +1922,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ApiResponse'
-    put:
-      tags:
-        - nl_search_models
-      summary: Update a NL search model
-      description: Update an existing NL search model.
-      operationId: updateNLSearchModel
-      parameters:
-        - name: modelId
-          in: path
-          description: The ID of the NL search model to update
-          required: true
-          schema:
-            type: string
-      requestBody:
-        description: The NL search model fields to update
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/NLSearchModelUpdateSchema'
-        required: true
-      responses:
-        '200':
-          description: NL search model successfully updated
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/NLSearchModelSchema'
-        '400':
-          description: Bad request, see error message for details
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ApiResponse'
-        '404':
-          description: NL search model not found
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ApiResponse'
-    delete:
-      tags:
-        - nl_search_models
-      summary: Delete a NL search model
-      description: Delete a specific NL search model by its ID.
-      operationId: deleteNLSearchModel
-      parameters:
-        - name: modelId
-          in: path
-          description: The ID of the NL search model to delete
-          required: true
-          schema:
-            type: string
-      responses:
-        '200':
-          description: NL search model successfully deleted
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/NLSearchModelDeleteSchema'
-        '404':
-          description: NL search model not found
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ApiResponse'
 
   /synonym_sets:
     get:
@@ -2003,6 +1938,171 @@ paths:
               schema:
                 $ref: '#/components/schemas/SynonymSetsListResponse'
 
+  /override_sets:
+    get:
+      tags:
+        - override_sets
+      summary: List all override sets
+      description: Retrieve the list of all override sets.
+      operationId: getOverrideSets
+      responses:
+        '200':
+          description: List of override sets
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+    
+  /override_sets/{name}:
+    get:
+      tags:
+        - override_sets
+      summary: Get an override set
+      description: Retrieve a specific override set by name.
+      operationId: getOverrideSet
+      parameters:
+        - name: name
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Override set
+          content:
+            application/json:
+              schema:
+                type: object
+    put:
+      tags:
+        - override_sets
+      summary: Upsert an override set
+      operationId: putOverrideSet
+      parameters:
+        - name: name
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                items:
+                  type: array
+                  items:
+                    type: object
+      responses:
+        '200':
+          description: Override set upserted
+    delete:
+      tags:
+        - override_sets
+      summary: Delete an override set
+      operationId: deleteOverrideSet
+      parameters:
+        - name: name
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Override set deleted
+
+  /override_sets/{name}/items:
+    get:
+      tags:
+        - override_sets
+      summary: List override items in a set
+      operationId: listOverrideItems
+      parameters:
+        - name: name
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: limit
+          in: query
+          schema:
+            type: integer
+        - name: offset
+          in: query
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: List of override items
+
+  /override_sets/{name}/items/{id}:
+    get:
+      tags:
+        - override_sets
+      summary: Get override item
+      operationId: getOverrideItem
+      parameters:
+        - name: name
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Override item
+    put:
+      tags:
+        - override_sets
+      summary: Upsert override item
+      operationId: putOverrideItem
+      parameters:
+        - name: name
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '200':
+          description: Override item upserted
+    delete:
+      tags:
+        - override_sets
+      summary: Delete override item
+      operationId: deleteOverrideItem
+      parameters:
+        - name: name
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Override item deleted
   /synonym_sets/{name}:
     get:
       tags:
@@ -2081,6 +2181,71 @@ paths:
                 $ref: '#/components/schemas/SynonymSetDeleteResponse'
         '404':
           description: Synonym set not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+    put:
+      tags:
+        - nl_search_models
+      summary: Update a NL search model
+      description: Update an existing NL search model.
+      operationId: updateNLSearchModel
+      parameters:
+        - name: modelId
+          in: path
+          description: The ID of the NL search model to update
+          required: true
+          schema:
+            type: string
+      requestBody:
+        description: The NL search model fields to update
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NLSearchModelUpdateSchema'
+        required: true
+      responses:
+        '200':
+          description: NL search model successfully updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NLSearchModelSchema'
+        '400':
+          description: Bad request, see error message for details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+        '404':
+          description: NL search model not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+    delete:
+      tags:
+        - nl_search_models
+      summary: Delete a NL search model
+      description: Delete a specific NL search model by its ID.
+      operationId: deleteNLSearchModel
+      parameters:
+        - name: modelId
+          in: path
+          description: The ID of the NL search model to delete
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: NL search model successfully deleted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NLSearchModelDeleteSchema'
+        '404':
+          description: NL search model not found
           content:
             application/json:
               schema:
