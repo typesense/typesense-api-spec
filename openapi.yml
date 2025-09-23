@@ -1962,6 +1962,143 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ApiResponse'
+
+  /synonym_sets/{name}/items:
+    get:
+      tags:
+        - synonym_sets
+      summary: List synonym items in a set
+      operationId: listSynonymItems
+      parameters:
+        - name: name
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: limit
+          in: query
+          schema:
+            type: integer
+        - name: offset
+          in: query
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: List of synonym items
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/SynonymObject'
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+
+  /synonym_sets/{name}/items/{id}:
+    get:
+      tags:
+        - synonym_sets
+      summary: Get synonym item
+      operationId: getSynonymItem
+      parameters:
+        - name: name
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Synonym item
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SynonymObject'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+    put:
+      tags:
+        - synonym_sets
+      summary: Upsert synonym item
+      operationId: putSynonymItem
+      parameters:
+        - name: name
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SynonymObject'
+      responses:
+        '200':
+          description: Synonym item upserted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SynonymObject'
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+        '404':
+          description: Synonym set not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+    delete:
+      tags:
+        - synonym_sets
+      summary: Delete synonym item
+      operationId: deleteSynonymItem
+      parameters:
+        - name: name
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Synonym item deleted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SynonymItemDeleteResponse'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
   /curation_sets:
     get:
       tags:
@@ -2684,37 +2821,6 @@ components:
           items:
             type: object
             x-go-type: "interface{}"
-    SearchSynonymSchema:
-      type: object
-      required:
-        - synonyms
-      properties:
-        root:
-          type: string
-          description: For 1-way synonyms, indicates the root word that words in the `synonyms` parameter map to.
-        synonyms:
-          type: array
-          description: Array of words that should be considered as synonyms.
-          items:
-            type: string
-        locale:
-          type: string
-          description: Locale for the synonym, leave blank to use the standard tokenizer.
-        symbols_to_index:
-          type: array
-          description: By default, special characters are dropped from synonyms. Use this attribute to specify which special characters should be indexed as is.
-          items:
-            type: string
-    SearchSynonym:
-      allOf:
-        - $ref: "#/components/schemas/SearchSynonymSchema"
-        - type: object
-          required:
-            - id
-          properties:
-            id:
-              type: string
-              readOnly: true
     SynonymObject:
       type: object
       required:
@@ -2734,18 +2840,18 @@ components:
     SynonymSetUpsert:
       type: object
       required:
-        - synonyms
+        - items
       properties:
-        synonyms:
+        items:
           type: array
           items:
             $ref: '#/components/schemas/SynonymObject'
     SynonymSet:
       type: object
       required:
-        - synonyms
+        - items
       properties:
-        synonyms:
+        items:
           type: array
           items:
             $ref: '#/components/schemas/SynonymObject'
@@ -2753,10 +2859,10 @@ components:
       type: object
       required:
         - name
-        - synonyms
+        - items
       properties:
         name: { type: string }
-        synonyms:
+        items:
           type: array
           items:
             $ref: '#/components/schemas/SynonymObject'
@@ -2764,6 +2870,12 @@ components:
       type: array
       items:
         $ref: '#/components/schemas/SynonymSetsListEntry'
+    SynonymItemDeleteResponse:
+      type: object
+      required:
+        - name
+      properties:
+        name: { type: string }
     SynonymSetDeleteResponse:
       type: object
       required:
@@ -2871,24 +2983,6 @@ components:
       required: [id]
       properties:
         id: { type: string }
-    SearchSynonymDeleteResponse:
-      type: object
-      required:
-        - id
-      properties:
-        id:
-          type: string
-          description: The id of the synonym that was deleted
-    SearchSynonymsResponse:
-      type: object
-      required:
-        - synonyms
-      properties:
-        synonyms:
-          type: array
-          x-go-type: "[]*SearchSynonym"
-          items:
-            $ref: "#/components/schemas/SearchSynonym"
     HealthStatus:
       type: object
       required:
