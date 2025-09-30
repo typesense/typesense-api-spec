@@ -4501,6 +4501,10 @@ components:
           description: >
             When set to true, curation processing will stop at the first matching rule. When set to false curation processing will continue and multiple curation actions will be triggered in sequence.
             Curations are processed in the lexical sort order of their id field.
+        id:
+          type: string
+          description: ID of the curation item
+
 
     CurationItemSchema:
       allOf:
