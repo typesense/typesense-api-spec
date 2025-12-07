@@ -502,7 +502,7 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ApiResponse"
-    
+
     put:
       tags:
         - synonyms
@@ -650,7 +650,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/SynonymItemSchema"
+              $ref: "#/components/schemas/SynonymItemUpsertSchema"
         required: true
       responses:
         "200":
@@ -4041,7 +4041,7 @@ components:
         query_counter_events: { type: integer }
         doc_log_events: { type: integer }
         doc_counter_events: { type: integer }
-    
+
     APIStatsResponse:
       type: object
       properties:
@@ -4364,15 +4364,11 @@ components:
           type: string
           description: ID of the deleted NL search model
 
-    SynonymItemSchema:
+    SynonymItemUpsertSchema:
       type: object
       required:
-        - id
         - synonyms
       properties:
-        id:
-          type: string
-          description: Unique identifier for the synonym item
         synonyms:
           type: array
           description: Array of words that should be considered as synonyms
@@ -4389,6 +4385,17 @@ components:
           description: By default, special characters are dropped from synonyms. Use this attribute to specify which special characters should be indexed as is
           items:
             type: string
+
+    SynonymItemSchema:
+      allOf:
+        - type: object
+          required:
+            - id
+          properties:
+            id:
+              type: string
+              description: Unique identifier for the synonym item
+        - $ref: "#/components/schemas/SynonymItemUpsertSchema"
 
     SynonymSetCreateSchema:
       type: object
