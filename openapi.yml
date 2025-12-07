@@ -1647,7 +1647,7 @@ paths:
                 {"log-slow-requests-time-ms": 2000}
       responses:
         '200':
-          description: Compacting the on-disk database succeeded.
+          description: Toggle Slow Request Log database succeeded.
           content:
             application/json:
               schema:
