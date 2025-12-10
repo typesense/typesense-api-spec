@@ -495,14 +495,14 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/SynonymSetRetrieveSchema"
+                $ref: "#/components/schemas/SynonymSetSchema"
         "404":
           description: Synonym set not found
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/ApiResponse"
-    
+
     put:
       tags:
         - synonyms
@@ -4041,7 +4041,7 @@ components:
         query_counter_events: { type: integer }
         doc_log_events: { type: integer }
         doc_counter_events: { type: integer }
-    
+
     APIStatsResponse:
       type: object
       properties:
@@ -4422,9 +4422,6 @@ components:
           description: Array of synonym sets
           items:
             $ref: "#/components/schemas/SynonymSetSchema"
-
-    SynonymSetRetrieveSchema:
-      $ref: "#/components/schemas/SynonymSetCreateSchema"
 
     SynonymSetDeleteSchema:
       type: object
