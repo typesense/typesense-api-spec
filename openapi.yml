@@ -3734,6 +3734,14 @@ components:
             for them
           type: string
 
+        rerank_hybrid_matches:
+          type: boolean
+          description: >
+            When true, computes both text match and vector distance scores for all matches in hybrid search.
+            Documents found only through keyword search will get a vector distance score, and
+            documents found only through vector search will get a text match score.
+          default: false
+
         pre_segmented_query:
           description: >
             You can index content from any logographic language into Typesense if you
