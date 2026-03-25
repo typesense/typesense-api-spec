@@ -3854,6 +3854,13 @@ components:
           description: >
             The Id of a previous conversation to continue, this tells Typesense to include prior context when communicating with the LLM.
           type: string
+        validate_field_names:
+          description: >
+            Controls whether Typesense should validate if the fields exist in the schema.
+            When set to false, Typesense will not throw an error if a field is missing.
+            This is useful for programmatic grouping where not all fields may exist.
+          type: boolean
+
     MultiSearchSearchesParameter:
       type: object
       required:
