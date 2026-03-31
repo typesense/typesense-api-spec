@@ -3142,6 +3142,14 @@ components:
           type: string
           example: "num_employees:>100 && country: [USA, UK]"
 
+        enable_lazy_filter:
+          description: >
+            Applies the filtering operation incrementally / lazily.
+            Set this to true when you are potentially filtering on large values
+            but the tokens in the query are expected to match very few documents.
+            Default: false
+          type: boolean
+
         max_filter_by_candidates:
           description:
             Controls the number of similar words that Typesense considers during fuzzy search
@@ -3177,6 +3185,11 @@ components:
             by `category`, you can set `facet_query=category:shoe` to return only
             facet values that contain the prefix "shoe".
           type: string
+
+        facet_query_num_typos:
+          description: >
+            Controls the fuzziness of the facet query filter. Default: 2.
+          type: integer
 
         num_typos:
           description: >
@@ -3222,6 +3235,12 @@ components:
             Setting this parameter to false, will cause each document with a null value in the group_by field to not be grouped with other documents.
             Default: true
           type: boolean
+
+        group_max_candidates:
+          description: >
+            Overrides the behavior of group_by queries where found value is an approximation.
+            When group_max_candidates is passed, found will be accurate up until its value.
+          type: integer
 
         include_fields:
           description: List of fields from the document to include in the search result
@@ -3309,6 +3328,11 @@ components:
           type: boolean
           description: >
             Allow synonym resolution on word prefixes in the query. Default: false
+        demote_synonym_match:
+          type: boolean
+          description: >
+            When set to true, search results that matched via synonyms will be demoted in ranking,
+            appearing below results that have a direct match. Default: false
         synonym_num_typos:
           type: integer
           description: >
@@ -3415,6 +3439,11 @@ components:
             Typesense will attempt to return results early if the cutoff time has elapsed.
             This is not a strict guarantee and facet computation is not bound by this parameter.
           type: integer
+        limit_hits:
+          description: >
+            Maximum number of hits that can be fetched from the collection.
+            page * per_page should be less than this number for the search request to return results.
+          type: integer
         use_cache:
           description: >
             Enable server side caching of search query results. By default, caching is disabled.
@@ -3460,6 +3489,20 @@ components:
           description: >
             Comma separated string of nested facet fields whose parent object should be returned in facet response.
           type: string
+        facet_sample_percent:
+          description: >
+            Percentage of hits that will be used to estimate facet counts. Default: 100.
+          type: integer
+        facet_sample_threshold:
+          description: >
+            Minimum number of hits above which the facet counts are sampled. Default: 0.
+          type: integer
+        facet_sample_slope:
+          description: >
+            Controls how steeply facet_sample_percent falls as the collection grows.
+            facet_sample_threshold should be non-zero for facet_sample_slope to be effective.
+            Default: 0.
+          type: number
         voice_query:
           description: >
             The base64 encoded audio file in 16 khz 16-bit WAV format.
@@ -3545,6 +3588,20 @@ components:
           type: string
           example: "num_employees:>100 && country: [USA, UK]"
 
+        enable_lazy_filter:
+          description: >
+            Applies the filtering operation incrementally / lazily.
+            Set this to true when you are potentially filtering on large values
+            but the tokens in the query are expected to match very few documents.
+            Default: false
+          type: boolean
+
+        max_filter_by_candidates:
+          description:
+            Controls the number of similar words that Typesense considers during fuzzy search
+            on filter_by values. Useful for controlling prefix matches like company_name:Acm*.
+          type: integer
+
         sort_by:
           description:
             A list of numerical fields and their corresponding sort orders
@@ -3573,6 +3630,11 @@ components:
             by `category`, you can set `facet_query=category:shoe` to return only
             facet values that contain the prefix "shoe".
           type: string
+
+        facet_query_num_typos:
+          description: >
+            Controls the fuzziness of the facet query filter. Default: 2.
+          type: integer
 
         num_typos:
           description: >
@@ -3618,6 +3680,12 @@ components:
             Setting this parameter to false, will cause each document with a null value in the group_by field to not be grouped with other documents.
             Default: true
           type: boolean
+
+        group_max_candidates:
+          description: >
+            Overrides the behavior of group_by queries where found value is an approximation.
+            When group_max_candidates is passed, found will be accurate up until its value.
+          type: integer
 
         include_fields:
           description: List of fields from the document to include in the search result
@@ -3694,6 +3762,11 @@ components:
           type: boolean
           description: >
             Allow synonym resolution on word prefixes in the query. Default: false
+        demote_synonym_match:
+          type: boolean
+          description: >
+            When set to true, search results that matched via synonyms will be demoted in ranking,
+            appearing below results that have a direct match. Default: false
         synonym_num_typos:
           type: integer
           description: >
@@ -3801,6 +3874,11 @@ components:
             Typesense will attempt to return results early if the cutoff time has elapsed.
             This is not a strict guarantee and facet computation is not bound by this parameter.
           type: integer
+        limit_hits:
+          description: >
+            Maximum number of hits that can be fetched from the collection.
+            page * per_page should be less than this number for the search request to return results.
+          type: integer
         use_cache:
           description: >
             Enable server side caching of search query results. By default, caching is disabled.
@@ -3846,6 +3924,20 @@ components:
           description: >
             Comma separated string of nested facet fields whose parent object should be returned in facet response.
           type: string
+        facet_sample_percent:
+          description: >
+            Percentage of hits that will be used to estimate facet counts. Default: 100.
+          type: integer
+        facet_sample_threshold:
+          description: >
+            Minimum number of hits above which the facet counts are sampled. Default: 0.
+          type: integer
+        facet_sample_slope:
+          description: >
+            Controls how steeply facet_sample_percent falls as the collection grows.
+            facet_sample_threshold should be non-zero for facet_sample_slope to be effective.
+            Default: 0.
+          type: number
         voice_query:
           description: >
             The base64 encoded audio file in 16 khz 16-bit WAV format.
