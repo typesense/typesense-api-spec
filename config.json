@@ -1,0 +1,14 @@
+{
+  "root_dir": "",
+  "route_file": "src/main/typesense_server.cpp",
+  "source_branch": "v30",
+  "output_path": "./output/typesense_api_spec.json",
+  "diagnostics_output_path": "./output/typesense_api_diagnostics.json",
+  "max_call_depth": 4,
+  "fail_on_unresolved": false,
+  "blacklist": {
+    "paths": ["/proxy", "/proxy_sse", "/operations/reset_peers", "/limits"],
+    "params": ["_ArraySize_"]
+  },
+  "overrides": []
+}
