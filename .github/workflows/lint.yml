@@ -19,10 +19,10 @@ jobs:
         run: npm install 
       
       - name: Lint OpenAPI specification
-        run: npm run lint
+        run: npm run spec:lint
       
       - name: Bundle OpenAPI specification
-        run: npm run bundle
+        run: npm run spec:bundle
       
       - name: Upload bundled specification
         uses: actions/upload-artifact@v4
