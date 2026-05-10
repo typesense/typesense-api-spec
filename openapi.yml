@@ -2478,6 +2478,7 @@ components:
           type: object
           description: >
             Optional details about the collection, e.g., when it was created, who created it etc.
+          additionalProperties: true
     CollectionUpdateSchema:
       required:
         - fields
