@@ -1,5 +1,4 @@
-import type { SyntaxNode } from "tree-sitter";
-import { childForField, parseCpp } from "./cpp-ast.js";
+import { childForField, extractDeclaratorName, extractStringLiteral, parseCpp } from "./cpp-ast.js";
 import { CountingSemaphore } from "./concurrency.js";
 import { readTextFile } from "./fs.js";
 import { listSourceFiles, resolveRawGithubUrl } from "./source.js";
@@ -121,49 +120,4 @@ function parseDeclarationConstant(sourceLine: string): ConstantEntry | undefined
     return undefined;
   }
   return { name, value };
-}
-
-function extractDeclaratorName(
-  node: SyntaxNode | undefined,
-): string | undefined {
-  if (node === undefined) {
-    return undefined;
-  }
-
-  if (node.type === "identifier" || node.type === "field_identifier") {
-    return node.text;
-  }
-
-  const nestedDeclarator = childForField(node, "declarator");
-  if (nestedDeclarator !== undefined) {
-    return extractDeclaratorName(nestedDeclarator);
-  }
-
-  for (const child of node.namedChildren) {
-    const name = extractDeclaratorName(child);
-    if (name !== undefined) {
-      return name;
-    }
-  }
-
-  return undefined;
-}
-
-function extractStringLiteral(value: string): string | undefined {
-  const trimmedValue = value.trim();
-  return trimmedValue.startsWith('"') && trimmedValue.endsWith('"')
-    ? trimmedValue.slice(1, trimmedValue.length - 1)
-    : undefined;
-}
-
-export function resolveConstantValue(
-  token: string,
-  constants: ReadonlyMap<string, string>,
-): string | undefined {
-  const trimmedToken = token.trim();
-  const literalValue = extractStringLiteral(trimmedToken);
-  if (literalValue !== undefined) {
-    return literalValue;
-  }
-  return constants.get(trimmedToken);
 }

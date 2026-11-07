@@ -1,10 +1,6 @@
 import type { ParameterLocation } from "../config-schema.js";
-import { isValueType } from "../types.js";
-import type {
-  CollectedParameter,
-  RouteRegistration,
-  ValueType,
-} from "../types.js";
+import { mergeValueTypes } from "../types.js";
+import type { CollectedParameter, RouteRegistration } from "../types.js";
 
 export class ParameterCollector {
   readonly #path = new Map<string, CollectedParameter>();
@@ -78,31 +74,6 @@ function mergeCollectedParameter(
     ...incoming,
     valueType: mergeValueTypes(existing.valueType, incoming.valueType),
   };
-}
-
-function mergeValueTypes(
-  left: ValueType | undefined,
-  right: ValueType | undefined,
-): ValueType | undefined {
-  if (left === undefined) {
-    return right;
-  }
-  if (right === undefined || left === right) {
-    return left;
-  }
-  if (left === "array" && right.endsWith("[]")) {
-    return right;
-  }
-  if (right === "array" && left.endsWith("[]")) {
-    return left;
-  }
-
-  const variants = new Set([...left.split(" | "), ...right.split(" | ")]);
-  const merged = [...variants].sort((a, b) => a.localeCompare(b)).join(" | ");
-  if (isValueType(merged)) {
-    return merged;
-  }
-  return left;
 }
 
 function collectPathParams(

@@ -25,3 +25,35 @@ export function walkNamed(node: SyntaxNode, visit: (node: SyntaxNode) => void): 
 export function childForField(node: SyntaxNode, fieldName: string): SyntaxNode | undefined {
   return node.childForFieldName(fieldName) ?? undefined;
 }
+
+export function extractStringLiteral(value: string): string | undefined {
+  const trimmedValue = value.trim();
+  if (trimmedValue.startsWith('"') && trimmedValue.endsWith('"')) {
+    return trimmedValue.slice(1, trimmedValue.length - 1);
+  }
+  return undefined;
+}
+
+export function extractDeclaratorName(node: SyntaxNode | undefined): string | undefined {
+  if (node === undefined) {
+    return undefined;
+  }
+
+  if (node.type === "identifier" || node.type === "field_identifier") {
+    return node.text;
+  }
+
+  const nestedDeclarator = childForField(node, "declarator");
+  if (nestedDeclarator !== undefined) {
+    return extractDeclaratorName(nestedDeclarator);
+  }
+
+  for (const child of node.namedChildren) {
+    const name = extractDeclaratorName(child);
+    if (name !== undefined) {
+      return name;
+    }
+  }
+
+  return undefined;
+}

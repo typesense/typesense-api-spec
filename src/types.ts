@@ -41,6 +41,28 @@ export function isValueType(value: string): value is ValueType {
   return value.split(" | ").every((part) => KNOWN_VALUE_TYPES.has(part));
 }
 
+export function mergeValueTypes(left: ValueType | undefined, right: ValueType | undefined): ValueType | undefined {
+  if (left === undefined) {
+    return right;
+  }
+  if (right === undefined || left === right) {
+    return left;
+  }
+  if (left === "array" && right.endsWith("[]")) {
+    return right;
+  }
+  if (right === "array" && left.endsWith("[]")) {
+    return left;
+  }
+
+  const variants = new Set([...left.split(" | "), ...right.split(" | ")]);
+  const merged = [...variants].sort((a, b) => a.localeCompare(b)).join(" | ");
+  if (isValueType(merged)) {
+    return merged;
+  }
+  return left;
+}
+
 export interface SourceLocation {
   readonly filePath: string;
   readonly line: number;

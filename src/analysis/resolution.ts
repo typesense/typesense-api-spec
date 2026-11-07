@@ -1,8 +1,7 @@
-import { childForField } from "../cpp-ast.js";
+import { childForField, extractStringLiteral } from "../cpp-ast.js";
 import type { AliasTarget, FunctionParameter } from "../types.js";
 import type { SyntaxNode } from "tree-sitter";
 import {
-  extractStringLiteral,
   extractSubscriptIndexNode,
   parseCallExpressionNode,
   parseFieldExpression,

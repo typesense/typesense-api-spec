@@ -1,4 +1,4 @@
-import { childForField } from "../cpp-ast.js";
+import { childForField, extractDeclaratorName } from "../cpp-ast.js";
 import type { SyntaxNode } from "tree-sitter";
 
 export interface ParsedCall {
@@ -39,14 +39,6 @@ export function parseCallExpressionNode(
     methodName: undefined,
     arguments: argumentsList,
   };
-}
-
-export function extractStringLiteral(value: string): string | undefined {
-  const trimmedValue = value.trim();
-  if (trimmedValue.startsWith('"') && trimmedValue.endsWith('"')) {
-    return trimmedValue.slice(1, trimmedValue.length - 1);
-  }
-  return undefined;
 }
 
 export function parseFieldExpression(node: SyntaxNode):
@@ -99,32 +91,6 @@ export function extractIdentifierName(node: SyntaxNode): string | undefined {
   if (normalizedNode.type === "identifier") {
     return normalizedNode.text;
   }
-  return undefined;
-}
-
-export function extractDeclaratorName(
-  node: SyntaxNode | undefined,
-): string | undefined {
-  if (node === undefined) {
-    return undefined;
-  }
-
-  if (node.type === "identifier" || node.type === "field_identifier") {
-    return node.text;
-  }
-
-  const nestedDeclarator = childForField(node, "declarator");
-  if (nestedDeclarator !== undefined) {
-    return extractDeclaratorName(nestedDeclarator);
-  }
-
-  for (const child of node.namedChildren) {
-    const name = extractDeclaratorName(child);
-    if (name !== undefined) {
-      return name;
-    }
-  }
-
   return undefined;
 }
 

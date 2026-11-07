@@ -1,6 +1,6 @@
 import { loadStringConstants } from "./constants.js";
 import { loadConfig } from "./config.js";
-import { readTextFile, writeTextFile } from "./fs.js";
+import { writeTextFile } from "./fs.js";
 import { ProgressReporter } from "./progress.js";
 import { discoverRoutes } from "./routes.js";
 import { extractRouteData } from "./analysis.js";
@@ -57,9 +57,4 @@ export async function runExtraction(cliOptions: CliOptions): Promise<ApiSpec> {
   }
 
   return spec;
-}
-
-export async function readSpec(filePath: string): Promise<ApiSpec> {
-  const sourceText = await readTextFile(filePath);
-  return JSON.parse(sourceText) as ApiSpec;
 }

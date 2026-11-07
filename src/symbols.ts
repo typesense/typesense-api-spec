@@ -1,5 +1,5 @@
 import type { SyntaxNode } from "tree-sitter";
-import { childForField, parseCpp } from "./cpp-ast.js";
+import { childForField, extractDeclaratorName, parseCpp } from "./cpp-ast.js";
 import { readTextFile } from "./fs.js";
 import { normalizeNewlines } from "./text.js";
 import { resolveRawGithubUrl, resolveSourcePath } from "./source.js";
@@ -79,6 +79,11 @@ function materializeFunctionDefinition(
   }
 
   const nameNode = childForField(declaratorNode, "declarator");
+  const terminalNameNode =
+    nameNode?.type === "qualified_identifier" ? childForField(nameNode, "name") : nameNode;
+  if (terminalNameNode?.type === "destructor_name" || terminalNameNode?.type === "operator_name") {
+    return undefined;
+  }
   const functionName = extractDeclaratorName(nameNode);
   if (functionName === undefined) {
     return undefined;
@@ -117,21 +122,4 @@ function parseParametersFromDeclarator(declaratorNode: SyntaxNode): readonly Fun
           : parameterNode.text.slice(0, parameterNode.text.length - nestedDeclarator.text.length).trim();
       return [{ name, typeText }];
     });
-}
-
-function extractDeclaratorName(node: SyntaxNode | undefined): string | undefined {
-  if (node === undefined) {
-    return undefined;
-  }
-
-  if (node.type === "identifier" || node.type === "field_identifier") {
-    return node.text;
-  }
-
-  const nestedDeclarator = childForField(node, "declarator");
-  if (nestedDeclarator !== undefined) {
-    return extractDeclaratorName(nestedDeclarator);
-  }
-
-  return node.namedChildren.find((child) => child.type === "identifier" || child.type === "field_identifier")?.text;
 }

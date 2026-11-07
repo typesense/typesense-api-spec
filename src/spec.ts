@@ -1,6 +1,6 @@
 import type { ParameterLocation } from "./config-schema.js";
 import { extractPathName, normalizePathSegments, sortedReadonly } from "./text.js";
-import { isValueType } from "./types.js";
+import { mergeValueTypes } from "./types.js";
 import type {
   ApiDiagnostic,
   ApiParameterSpec,
@@ -96,28 +96,6 @@ function materializeParameters(
 
 function isValidCanonicalPath(canonicalPath: string): boolean {
   return canonicalPath.length > 0 && !canonicalPath.endsWith(".") && !canonicalPath.includes("..");
-}
-
-function mergeValueTypes(left: ValueType | undefined, right: ValueType | undefined): ValueType | undefined {
-  if (left === undefined) {
-    return right;
-  }
-  if (right === undefined || left === right) {
-    return left;
-  }
-  if (left === "array" && right.endsWith("[]")) {
-    return right;
-  }
-  if (right === "array" && left.endsWith("[]")) {
-    return left;
-  }
-
-  const variants = new Set([...left.split(" | "), ...right.split(" | ")]);
-  const merged = [...variants].sort((a, b) => a.localeCompare(b)).join(" | ");
-  if (isValueType(merged)) {
-    return merged;
-  }
-  return left;
 }
 
 function normalizeValueType(valueType: ValueType | undefined, location: ParameterLocation): ValueType {

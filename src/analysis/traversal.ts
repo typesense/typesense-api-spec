@@ -1,4 +1,4 @@
-import { parseCpp, findFirstNamedNode, walkNamed, childForField } from "../cpp-ast.js";
+import { parseCpp, findFirstNamedNode, walkNamed, childForField, extractDeclaratorName } from "../cpp-ast.js";
 import { normalizePathSegments } from "../text.js";
 import type { SyntaxNode } from "tree-sitter";
 import { isValueType } from "../types.js";
@@ -18,12 +18,12 @@ import {
   resolveStringTokenNode,
 } from "./resolution.js";
 import {
-  extractDeclaratorName,
   extractIdentifierName,
   extractLoopAliasName,
   extractSubscriptIndexNode,
   isConstantIdentifier,
   parseCallExpressionNode,
+  unwrapExpressionNode,
 } from "./syntax.js";
 
 const bodyMethods = new Set(["count", "find", "contains", "at"]);
@@ -719,7 +719,7 @@ function inferTemplateType(callText: string): InferredValueType | undefined {
 }
 
 function resolveValueTypeNode(node: SyntaxNode, state: AnalysisState): TypePrimitives | undefined {
-  const normalizedNode = unwrapTypeNode(node);
+  const normalizedNode = unwrapExpressionNode(node);
   if (normalizedNode.type === "string_literal") {
     return "string";
   }
@@ -843,17 +843,4 @@ function inferWrappedAliasTarget(
       segments: rightTarget.segments.slice(0, -1),
     },
   };
-}
-
-function unwrapTypeNode(node: SyntaxNode): SyntaxNode {
-  let current = node;
-  while (
-    (current.type === "parenthesized_expression" ||
-      current.type === "reference_expression" ||
-      current.type === "qualified_identifier") &&
-    current.namedChildren.length > 0
-  ) {
-    current = current.namedChildren[current.namedChildren.length - 1] ?? current;
-  }
-  return current;
 }

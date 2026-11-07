@@ -1,4 +1,4 @@
-import { childForField, parseCpp, walkNamed } from './cpp-ast.js';
+import { childForField, extractStringLiteral, parseCpp, walkNamed } from './cpp-ast.js';
 import { readTextFile } from './fs.js';
 import { normalizeNewlines } from './text.js';
 import { type CppHttpMethod, type RouteRegistration, HttpMethodMap } from './types.js';
@@ -76,8 +76,4 @@ function parseFieldExpression(node: { readonly type: string; readonly text: stri
 
 function isHttpMethodToken(token: string): token is CppHttpMethod {
   return token in HttpMethodMap;
-}
-
-function extractStringLiteral(value: string): string | undefined {
-  return value.startsWith('"') && value.endsWith('"') ? value.slice(1, value.length - 1) : undefined;
 }

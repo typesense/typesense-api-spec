@@ -1,5 +1,4 @@
-import { mkdir, readFile, writeFile } from "node:fs/promises";
-import path from "node:path";
+import { readTextFile, writeTextFile } from "./fs.js";
 import type {
   ApiParameterSpec,
   ApiRouteSpec,
@@ -55,7 +54,7 @@ export async function runSemanticDiff(options: {
 }
 
 async function readSpec(filePath: string): Promise<ApiSpec> {
-  const sourceText = await readFile(filePath, "utf8");
+  const sourceText = await readTextFile(filePath);
   return JSON.parse(sourceText) as ApiSpec;
 }
 
@@ -216,9 +215,4 @@ function renderMarkdown(summary: DiffSummary): string {
 
 function formatType(valueType: ValueType | undefined): string {
   return valueType ?? "undefined";
-}
-
-async function writeTextFile(filePath: string, contents: string): Promise<void> {
-  await mkdir(path.dirname(filePath), { recursive: true });
-  await writeFile(filePath, contents, "utf8");
 }
