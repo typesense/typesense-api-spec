@@ -19,6 +19,10 @@ permissions:
   contents: write
   issues: write
 
+concurrency:
+  group: extract-api
+  cancel-in-progress: false
+
 jobs:
   extract:
     runs-on: ubuntu-latest
@@ -114,30 +118,35 @@ jobs:
             const commitSha = "${{ steps.commit_artifacts.outputs.sha }}";
             const shortSha = commitSha.slice(0, 12);
             const commitUrl = `https://github.com/${owner}/${repo}/commit/${commitSha}`;
+            const marker = "<!-- typesense-api-sync-issue -->";
             const title = `Update openapi.yml for extracted Typesense API changes [${shortSha}]`;
-            const existing = await github.paginate(github.rest.issues.listForRepo, {
+            const bodyPath = `${process.env.RUNNER_TEMP}/typesense-api-diff.md`;
+            const diffBody = fs.readFileSync(bodyPath, "utf8");
+            const details = [`Commit: ${commitUrl}`, "", diffBody].join("\n");
+
+            const openIssues = await github.paginate(github.rest.issues.listForRepo, {
               owner,
               repo,
               state: "open",
               per_page: 100,
             });
-            const alreadyOpen = existing.some((issue) => issue.title === title);
-            if (alreadyOpen) {
-              core.info(`Open issue already exists: ${title}`);
+            const existing = openIssues.find(
+              (issue) => !issue.pull_request && (issue.body ?? "").includes(marker),
+            );
+            if (existing !== undefined) {
+              await github.rest.issues.createComment({
+                owner,
+                repo,
+                issue_number: existing.number,
+                body: details,
+              });
+              core.info(`Added API changes to open issue #${existing.number}`);
               return;
             }
 
-            const bodyPath = `${process.env.RUNNER_TEMP}/typesense-api-diff.md`;
-            const diffBody = fs.readFileSync(bodyPath, "utf8");
-            const body = [
-              "<!-- typesense-api-sync-issue -->",
-              `Commit: ${commitUrl}`,
-              "",
-              diffBody,
-            ].join("\n");
             await github.rest.issues.create({
               owner,
               repo,
               title,
-              body,
+              body: [marker, details].join("\n"),
             });
