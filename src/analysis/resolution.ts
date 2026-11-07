@@ -186,12 +186,14 @@ export function resolveLoopItemTarget(
   constants: ReadonlyMap<string, string>,
 ): AliasTarget | undefined {
   const resolved = resolveExpressionNode(expressionNode, aliases, constants);
-  if (resolved === undefined || resolved.location === "query-root") {
+  // Iterating req->params or a query map yields key/value pairs, not
+  // addressable fields; only JSON body arrays/objects produce item aliases.
+  if (resolved === undefined || resolved.location !== "body-root") {
     return undefined;
   }
 
   return {
-    location: "body-root",
+    location: resolved.location,
     segments: [...resolved.segments, "[]"],
   };
 }
