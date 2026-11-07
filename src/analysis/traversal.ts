@@ -166,14 +166,41 @@ function analyzeStatement(
     return;
   }
 
-  if (statement.type === "if_statement" || statement.type === "while_statement") {
-    statement.namedChildren.forEach((child) => {
-      if (child.type === "compound_statement") {
-        analyzeBlock(child, cloneState(state), context, visited, depth);
-      } else {
-        walkExpression(child, state, context, visited, depth);
-      }
+  if (statement.type === "if_statement") {
+    const scopedState = cloneState(state);
+    analyzeOptionalDeclaration(childForField(statement, "condition"), scopedState, context, visited, depth);
+    const consequence = childForField(statement, "consequence");
+    if (consequence !== undefined) {
+      analyzeStatement(consequence, cloneState(scopedState), context, visited, depth);
+    }
+    const alternative = childForField(statement, "alternative");
+    alternative?.namedChildren.forEach((branch) => {
+      analyzeStatement(branch, cloneState(scopedState), context, visited, depth);
     });
+    return;
+  }
+
+  if (
+    statement.type === "while_statement" ||
+    statement.type === "do_statement" ||
+    statement.type === "switch_statement"
+  ) {
+    const scopedState = cloneState(state);
+    analyzeOptionalDeclaration(childForField(statement, "condition"), scopedState, context, visited, depth);
+    const body = childForField(statement, "body");
+    if (body !== undefined) {
+      analyzeStatement(body, cloneState(scopedState), context, visited, depth);
+    }
+    return;
+  }
+
+  if (statement.type === "case_statement") {
+    const valueNode = childForField(statement, "value");
+    statement.namedChildren
+      .filter((child) => valueNode === undefined || child.id !== valueNode.id)
+      .forEach((child) => {
+        analyzeStatement(child, state, context, visited, depth);
+      });
     return;
   }
 
@@ -205,7 +232,11 @@ function handleDeclaration(
   depth: number,
 ): void {
   walkNamed(statement, (child) => {
-    if (child === statement || child.type !== "init_declarator") {
+    // `auto x = ...;` nests an init_declarator; a condition such as
+    // `if (auto x = ...)` puts declarator/value directly on the declaration.
+    const isConditionDeclaration =
+      child.type === "declaration" && childForField(child, "value") !== undefined;
+    if (child.type !== "init_declarator" && !isConditionDeclaration) {
       return;
     }
 
@@ -264,7 +295,7 @@ function handleForRangeLoop(
 
   const aliasName = extractLoopAliasName(statement);
   if (aliasName === undefined) {
-    analyzeBlock(bodyNode, cloneState(state), context, visited, depth);
+    analyzeStatement(bodyNode, cloneState(state), context, visited, depth);
     return;
   }
 
@@ -275,7 +306,7 @@ function handleForRangeLoop(
     state.debug(`loop ${aliasName} => ${resolved.location}:${normalizePathSegments(resolved.segments)}`);
   }
 
-  analyzeBlock(bodyNode, scopedState, context, visited, depth);
+  analyzeStatement(bodyNode, scopedState, context, visited, depth);
 }
 
 function handleForLoop(
@@ -285,13 +316,27 @@ function handleForLoop(
   visited: Set<string>,
   depth: number,
 ): void {
-  for (const child of statement.namedChildren) {
-    if (child.type === "compound_statement") {
-      analyzeBlock(child, cloneState(state), context, visited, depth);
-      continue;
-    }
+  const scopedState = cloneState(state);
+  const body = childForField(statement, "body");
+  statement.namedChildren
+    .filter((child) => body === undefined || child.id !== body.id)
+    .forEach((child) => {
+      analyzeOptionalDeclaration(child, scopedState, context, visited, depth);
+    });
+  if (body !== undefined) {
+    analyzeStatement(body, cloneState(scopedState), context, visited, depth);
+  }
+}
 
-    walkExpression(child, state, context, visited, depth);
+function analyzeOptionalDeclaration(
+  node: SyntaxNode | undefined,
+  state: AnalysisState,
+  context: ExtractionContext,
+  visited: Set<string>,
+  depth: number,
+): void {
+  if (node !== undefined) {
+    handleDeclaration(node, state, context, visited, depth);
   }
 }
 
