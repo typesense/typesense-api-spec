@@ -62,6 +62,10 @@ interface AnalysisState {
   readonly aliases: Map<string, AliasTarget>;
   readonly constants: Map<string, string>;
   readonly valueTypes: Map<string, TypePrimitives>;
+  /** Enclosing scope; assignments propagate to it unless the name is declared here. */
+  readonly parent: AnalysisState | undefined;
+  /** Variable names declared in this scope (they shadow outer ones). */
+  readonly declared: Set<string>;
   readonly definition: FunctionDefinition; readonly collector: ParameterCollector;
   readonly pathParamNames: ReadonlySet<string>;
   readonly routeKey: string;
@@ -113,6 +117,8 @@ export function analyzeFunction(
     aliases: inheritedAliases,
     constants: new Map(context.constants),
     valueTypes: new Map<string, TypePrimitives>(),
+    parent: undefined,
+    declared: new Set<string>(),
     definition,
     collector,
     pathParamNames: context.pathParamNames,
@@ -231,6 +237,16 @@ function handleDeclaration(
   visited: Set<string>,
   depth: number,
 ): void {
+  statement.childrenForFieldName("declarator").forEach((declarator) => {
+    const declaredName = extractDeclaratorName(declarator);
+    if (declaredName !== undefined) {
+      state.declared.add(declaredName);
+      // A new variable shadows any alias inherited from an outer scope.
+      state.aliases.delete(declaredName);
+      state.valueTypes.delete(declaredName);
+    }
+  });
+
   walkNamed(statement, (child) => {
     // `auto x = ...;` nests an init_declarator; a condition such as
     // `if (auto x = ...)` puts declarator/value directly on the declaration.
@@ -300,6 +316,7 @@ function handleForRangeLoop(
   }
 
   const scopedState = cloneState(state);
+  scopedState.declared.add(aliasName);
   const resolved = resolveLoopItemTarget(iterableNode, scopedState.aliases, scopedState.constants);
   if (resolved !== undefined) {
     scopedState.aliases.set(aliasName, resolved);
@@ -382,18 +399,20 @@ function collectAssignmentExpression(node: SyntaxNode, state: AnalysisState): vo
   if (aliasName !== undefined) {
     const resolved = resolveExpressionNode(rightNode, state.aliases, state.constants);
     if (resolved !== undefined) {
-      state.aliases.set(aliasName, resolved);
+      assignInScope(state, aliasName, (scope) => scope.aliases.set(aliasName, resolved));
       state.debug(`assign ${aliasName} => ${resolved.location}:${normalizePathSegments(resolved.segments)}`);
     }
     if (inferredType !== undefined) {
-      state.valueTypes.set(aliasName, inferredType);
+      assignInScope(state, aliasName, (scope) => scope.valueTypes.set(aliasName, inferredType));
     }
   }
 
   const rightTarget = resolveExpressionNode(rightNode, state.aliases, state.constants);
   const wrappedAlias = inferWrappedAliasTarget(leftNode, rightTarget, state);
   if (wrappedAlias !== undefined) {
-    state.aliases.set(wrappedAlias.aliasName, wrappedAlias.target);
+    assignInScope(state, wrappedAlias.aliasName, (scope) =>
+      scope.aliases.set(wrappedAlias.aliasName, wrappedAlias.target),
+    );
     state.debug(
       `assign ${wrappedAlias.aliasName} => ${wrappedAlias.target.location}:${normalizePathSegments(wrappedAlias.target.segments)}`,
     );
@@ -671,11 +690,29 @@ function serializeVisitKey(functionName: string, aliases: ReadonlyMap<string, Al
   ].join("|");
 }
 
+/**
+ * Applies an assignment to the current scope and every enclosing scope up to
+ * the one that declared the variable, so `json j; if (...) { j = parse(...); }`
+ * keeps the alias after the branch.
+ */
+function assignInScope(state: AnalysisState, name: string, apply: (scope: AnalysisState) => void): void {
+  let scope: AnalysisState | undefined = state;
+  while (scope !== undefined) {
+    apply(scope);
+    if (scope.declared.has(name)) {
+      return;
+    }
+    scope = scope.parent;
+  }
+}
+
 function cloneState(state: AnalysisState): AnalysisState {
   return {
     aliases: new Map(state.aliases),
     constants: new Map(state.constants),
     valueTypes: new Map(state.valueTypes),
+    parent: state,
+    declared: new Set<string>(),
     definition: state.definition,
     collector: state.collector,
     pathParamNames: state.pathParamNames,
