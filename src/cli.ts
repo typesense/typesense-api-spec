@@ -35,8 +35,10 @@ async function main(): Promise<void> {
 }
 
 function parseCli(argv: readonly string[]): CommandLineOptions {
-  const command = argv[0] ?? "extract";
-  const commandArgs = argv[0] === undefined ? argv : argv.slice(1);
+  const firstArg = argv[0];
+  const hasCommand = firstArg !== undefined && !firstArg.startsWith("-");
+  const command = hasCommand ? firstArg : "extract";
+  const commandArgs = hasCommand ? argv.slice(1) : argv;
   if (command === "extract") {
     return parseExtractCli(commandArgs);
   }
