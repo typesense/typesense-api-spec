@@ -573,6 +573,10 @@ function addParameter(
 ): void {
   const combinedSegments = [...target.segments, ...segments];
 
+  if (target.location === "request-root") {
+    return;
+  }
+
   if (target.location === "query-root") {
     const firstSegment = firstConcreteSegment(combinedSegments);
     if (firstSegment !== undefined) {

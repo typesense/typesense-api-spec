@@ -184,7 +184,9 @@ export interface AliasTarget {
     | ParameterLocation
     | "params-root"
     | "query-root"
-    | "body-root";
+    | "body-root"
+    /** The http_req object itself; `->params` / `->body` resolve from it. */
+    | "request-root";
   readonly segments: readonly string[];
 }
 

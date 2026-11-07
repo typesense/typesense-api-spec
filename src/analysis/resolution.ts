@@ -15,11 +15,15 @@ export function resolveExpressionNode(
 ): AliasTarget | undefined {
   const normalizedNode = unwrapExpressionNode(expressionNode);
 
-  const requestRoot = resolveRequestRoot(normalizedNode);
+  const requestRoot = resolveRequestRoot(normalizedNode, aliases);
   if (requestRoot !== undefined) return requestRoot;
 
   const directAlias = getDirectAlias(normalizedNode, aliases);
   if (directAlias !== undefined) return directAlias;
+
+  if (isRequestIdentifier(normalizedNode, aliases)) {
+    return { location: "request-root", segments: [] };
+  }
 
   if (normalizedNode.type === "call_expression") {
     return resolveCallExpression(normalizedNode, aliases, constants);
@@ -254,6 +258,12 @@ export function bootstrapAliases(
   const aliases = new Map(inherited);
 
   parameters
+    .filter((parameter) => parameter.name.length > 0 && parameter.typeText.includes("http_req"))
+    .forEach((parameter) =>
+      aliases.set(parameter.name, { location: "request-root", segments: [] }),
+    );
+
+  parameters
     .filter(
       (parameter) =>
         parameter.name.length > 0 &&
@@ -266,17 +276,16 @@ export function bootstrapAliases(
   return aliases;
 }
 
-function resolveRequestRoot(node: SyntaxNode): AliasTarget | undefined {
+function resolveRequestRoot(
+  node: SyntaxNode,
+  aliases: ReadonlyMap<string, AliasTarget>,
+): AliasTarget | undefined {
   const fieldParts = parseFieldExpression(node);
   if (fieldParts === undefined) {
     return undefined;
   }
 
-  if (
-    fieldParts.operator !== "->" ||
-    fieldParts.baseNode.type !== "identifier" ||
-    fieldParts.baseNode.text !== "req"
-  ) {
+  if (fieldParts.operator !== "->" || !isRequestIdentifier(fieldParts.baseNode, aliases)) {
     return undefined;
   }
 
@@ -289,4 +298,17 @@ function resolveRequestRoot(node: SyntaxNode): AliasTarget | undefined {
   }
 
   return undefined;
+}
+
+// `req` is the conventional handler parameter name; other names are bound to
+// request-root by bootstrapAliases from their http_req parameter type.
+function isRequestIdentifier(node: SyntaxNode, aliases: ReadonlyMap<string, AliasTarget>): boolean {
+  if (node.type !== "identifier") {
+    return false;
+  }
+  const alias = aliases.get(node.text);
+  if (alias !== undefined) {
+    return alias.location === "request-root";
+  }
+  return node.text === "req";
 }
