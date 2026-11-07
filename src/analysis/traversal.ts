@@ -26,7 +26,7 @@ import {
   unwrapExpressionNode,
 } from "./syntax.js";
 
-const bodyMethods = new Set(["count", "find", "contains", "at"]);
+const bodyMethods = new Set(["count", "find", "contains", "at", "value"]);
 
 const typeMethods = {
   is_string: "string",
@@ -439,7 +439,11 @@ function collectCallExpression(node: SyntaxNode, state: AnalysisState, context: 
         const segment = resolveStringTokenNode(firstArgument, state.constants);
         if (segment !== undefined) {
           state.debug(`call ${callInfo.calleeName} => ${segment}`);
-          addParameter(resolved, [segment], state, node);
+          // nlohmann `.value(key, default)`: the default value's type is the field's type.
+          const defaultArgument = normalizedMethodName === "value" ? callInfo.arguments[1] : undefined;
+          const valueType =
+            defaultArgument === undefined ? undefined : resolveValueTypeNode(defaultArgument, state);
+          addParameter(resolved, [segment], state, node, valueType);
           if (
             normalizedMethodName === "find" ||
             normalizedMethodName === "contains" ||
