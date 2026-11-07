@@ -164,7 +164,9 @@ export interface RouteRegistration {
 
 export interface FunctionParameter {
   readonly typeText: string;
+  /** Empty for unnamed parameters. */
   readonly name: string;
+  readonly hasDefault: boolean;
 }
 
 export interface FunctionDefinition {

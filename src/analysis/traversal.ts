@@ -540,7 +540,7 @@ function collectHelperCallExpression(
   const nextAliases = new Map<string, AliasTarget>();
   helperDefinition.parameters.forEach((parameter, parameterIndex) => {
     const argument = callInfo.arguments[parameterIndex];
-    if (argument === undefined) return;
+    if (argument === undefined || parameter.name.length === 0) return;
     const resolved = resolveExpressionNode(argument, state.aliases, state.constants);
     if (resolved === undefined) return;
     nextAliases.set(parameter.name, resolved);

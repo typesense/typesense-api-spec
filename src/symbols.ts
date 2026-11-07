@@ -36,9 +36,13 @@ export async function indexFunctions(
 
   const functions = new Map<string, FunctionDefinition>();
   allDefinitions.forEach((definition) => {
-    const overloadKey = serializeOverloadKey(definition.name, definition.parameters.length);
-    if (!functions.has(overloadKey)) {
-      functions.set(overloadKey, definition);
+    const maxArity = definition.parameters.length;
+    const minArity = definition.parameters.filter((parameter) => !parameter.hasDefault).length;
+    for (let arity = minArity; arity <= maxArity; arity += 1) {
+      const overloadKey = serializeOverloadKey(definition.name, arity);
+      if (!functions.has(overloadKey)) {
+        functions.set(overloadKey, definition);
+      }
     }
     if (!functions.has(definition.name)) {
       functions.set(definition.name, definition);
@@ -110,16 +114,28 @@ function parseParametersFromDeclarator(declaratorNode: SyntaxNode): readonly Fun
     return [];
   }
 
+  // Keep unnamed and defaulted parameters so parameters[i] lines up with the
+  // i-th call argument.
   return parameterListNode.namedChildren
-    .filter((parameterNode) => parameterNode.type === "parameter_declaration")
-    .flatMap((parameterNode) => {
+    .filter((parameterNode) => parameterDeclarationTypes.has(parameterNode.type))
+    .map((parameterNode) => {
       const nestedDeclarator = childForField(parameterNode, "declarator");
-      const name = extractDeclaratorName(nestedDeclarator);
-      if (name === undefined) return [];
-      const typeText =
-        nestedDeclarator === undefined
-          ? parameterNode.text.trim()
-          : parameterNode.text.slice(0, parameterNode.text.length - nestedDeclarator.text.length).trim();
-      return [{ name, typeText }];
+      const defaultValue = childForField(parameterNode, "default_value");
+      const typeEnd = nestedDeclarator?.startIndex ?? defaultValue?.startIndex ?? parameterNode.endIndex;
+      const typeText = parameterNode.text
+        .slice(0, typeEnd - parameterNode.startIndex)
+        .replace(/=\s*$/, "")
+        .trim();
+      return {
+        name: extractDeclaratorName(nestedDeclarator) ?? "",
+        typeText,
+        hasDefault: defaultValue !== undefined,
+      };
     });
 }
+
+const parameterDeclarationTypes: ReadonlySet<string> = new Set([
+  "parameter_declaration",
+  "optional_parameter_declaration",
+  "variadic_parameter_declaration",
+]);

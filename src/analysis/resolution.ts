@@ -254,8 +254,10 @@ export function bootstrapAliases(
   const aliases = new Map(inherited);
 
   parameters
-    .filter((parameter) =>
-      parameter.typeText.includes("std::map<std::string, std::string>"),
+    .filter(
+      (parameter) =>
+        parameter.name.length > 0 &&
+        parameter.typeText.includes("std::map<std::string, std::string>"),
     )
     .forEach((parameter) =>
       aliases.set(parameter.name, { location: "query-root", segments: [] }),
