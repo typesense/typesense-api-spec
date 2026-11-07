@@ -1,3 +1,4 @@
+import type { SyntaxNode } from "tree-sitter";
 import { childForField, extractDeclaratorName, extractStringLiteral, parseCpp } from "./cpp-ast.js";
 import { CountingSemaphore } from "./concurrency.js";
 import { readTextFile } from "./fs.js";
@@ -20,10 +21,14 @@ export async function loadStringConstants(
     }),
   );
 
-  const allEntries = sourceTexts.flatMap(scanConstants);
-  return new Map(
-    [...allEntries].reverse().map(({ name, value }): [string, string] => [name, value]),
-  );
+  // First definition wins for both bare and namespace-qualified names.
+  const constants = new Map<string, string>();
+  sourceTexts.flatMap(scanConstants).forEach(({ name, value }) => {
+    if (!constants.has(name)) {
+      constants.set(name, value);
+    }
+  });
+  return constants;
 }
 
 interface ConstantEntry {
@@ -31,93 +36,65 @@ interface ConstantEntry {
   readonly value: string;
 }
 
-interface ScanAccumulator {
-  readonly pendingLines: readonly string[];
-  readonly entries: readonly ConstantEntry[];
-}
+const scopeNameFields: Readonly<Record<string, string>> = {
+  namespace_definition: "name",
+  class_specifier: "name",
+  struct_specifier: "name",
+};
 
+/**
+ * Parses the file once and collects string constants from #define lines and
+ * from declarations initialised with a string literal. Each constant is
+ * recorded under its bare name and, inside namespaces/classes, under its
+ * qualified name too (e.g. both `type` and `fields::type`).
+ */
 function scanConstants(sourceText: string): readonly ConstantEntry[] {
-  return sourceText
-    .replaceAll("\r\n", "\n")
-    .split("\n")
-    .reduce<ScanAccumulator>(
-      (acc, line) => scanConstantLine(line, acc),
-      { pendingLines: [], entries: [] },
-    ).entries;
-}
+  const entries: ConstantEntry[] = [];
+  const visit = (node: SyntaxNode, scope: readonly string[]): void => {
+    const entry = parseConstantNode(node);
+    if (entry !== undefined) {
+      entries.push(entry);
+      if (scope.length > 0) {
+        entries.push({ name: [...scope, entry.name].join("::"), value: entry.value });
+      }
+    }
 
-function scanConstantLine(line: string, acc: ScanAccumulator): ScanAccumulator {
-  const trimmedLine = line.trim();
-  if (trimmedLine.length === 0) {
-    return { pendingLines: [], entries: acc.entries };
-  }
-
-  if (trimmedLine.startsWith("#define")) {
-    const entry = parseDefineConstant(trimmedLine);
-    return {
-      pendingLines: [],
-      entries: entry !== undefined ? [...acc.entries, entry] : acc.entries,
-    };
-  }
-
-  const pendingLines = [...acc.pendingLines, trimmedLine];
-  if (!trimmedLine.endsWith(";")) {
-    return { pendingLines, entries: acc.entries };
-  }
-
-  const entry = parseDeclarationConstant(pendingLines.join(" "));
-  return {
-    pendingLines: [],
-    entries: entry !== undefined ? [...acc.entries, entry] : acc.entries,
+    const scopeField = scopeNameFields[node.type];
+    const scopeName = scopeField === undefined ? undefined : childForField(node, scopeField)?.text;
+    const childScope = scopeName === undefined ? scope : [...scope, scopeName];
+    node.namedChildren.forEach((child) => visit(child, childScope));
   };
+  visit(parseCpp(sourceText.replaceAll("\r\n", "\n")), []);
+  return entries;
 }
 
-function parseDefineConstant(sourceLine: string): ConstantEntry | undefined {
-  const rootNode = parseCpp(`${sourceLine}\n`);
-  const defineNode = rootNode.namedChildren.find(
-    (child) => child.type === "preproc_def",
-  );
-  if (defineNode === undefined) {
-    return undefined;
+function parseConstantNode(node: SyntaxNode): ConstantEntry | undefined {
+  if (node.type === "preproc_def") {
+    const name = childForField(node, "name")?.text;
+    const valueNode = childForField(node, "value");
+    const value = valueNode === undefined ? undefined : extractStringLiteral(valueNode.text);
+    return name === undefined || value === undefined ? undefined : { name, value };
   }
 
-  const nameNode = defineNode.namedChildren.find(
-    (child) => child.type === "identifier",
-  );
-  const valueNode = childForField(defineNode, "value");
-  const name = nameNode?.text;
-  const value =
-    valueNode === undefined ? undefined : extractStringLiteral(valueNode.text);
-  if (name === undefined || value === undefined) {
-    return undefined;
+  if (node.type === "init_declarator") {
+    return toEntry(childForField(node, "declarator"), childForField(node, "value"));
   }
-  return { name, value };
+
+  if (node.type === "field_declaration") {
+    return toEntry(childForField(node, "declarator"), childForField(node, "default_value"));
+  }
+
+  return undefined;
 }
 
-function parseDeclarationConstant(sourceLine: string): ConstantEntry | undefined {
-  const rootNode = parseCpp(`${sourceLine}\n`);
-  const declarationNode = rootNode.namedChildren.find(
-    (child) => child.type === "declaration",
-  );
-  if (declarationNode === undefined) {
+function toEntry(
+  declaratorNode: SyntaxNode | undefined,
+  valueNode: SyntaxNode | undefined,
+): ConstantEntry | undefined {
+  if (valueNode?.type !== "string_literal") {
     return undefined;
   }
-
-  const initDeclaratorNode = childForField(declarationNode, "declarator");
-  if (
-    initDeclaratorNode === undefined ||
-    initDeclaratorNode.type !== "init_declarator"
-  ) {
-    return undefined;
-  }
-
-  const declaratorNode = childForField(initDeclaratorNode, "declarator");
-  const valueNode = childForField(initDeclaratorNode, "value");
   const name = extractDeclaratorName(declaratorNode);
-  const value =
-    valueNode === undefined ? undefined : extractStringLiteral(valueNode.text);
-  if (name === undefined || value === undefined) {
-    return undefined;
-  }
-  return { name, value };
+  const value = extractStringLiteral(valueNode.text);
+  return name === undefined || value === undefined ? undefined : { name, value };
 }

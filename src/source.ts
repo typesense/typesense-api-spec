@@ -5,7 +5,19 @@ const GITHUB_REPO = "typesense" as const;
 const GITHUB_RAW_BASE_URL =
   `https://raw.githubusercontent.com/${GITHUB_OWNER}/${GITHUB_REPO}` as const;
 const GITHUB_API_VERSION = "2022-11-28" as const;
-const octokit = new Octokit();
+const MAX_RATE_LIMIT_WAIT_SECONDS = 60;
+
+// Unauthenticated requests share a 60/hour per-IP quota, which CI runners
+// exhaust quickly; set GITHUB_TOKEN to use the authenticated quota.
+const octokit = new Octokit({
+  auth: process.env.GITHUB_TOKEN,
+  throttle: {
+    onRateLimit: (retryAfter: number, _options: unknown, _octokit: unknown, retryCount: number) =>
+      retryCount < 1 && retryAfter <= MAX_RATE_LIMIT_WAIT_SECONDS,
+    onSecondaryRateLimit: (retryAfter: number, _options: unknown, _octokit: unknown, retryCount: number) =>
+      retryCount < 1 && retryAfter <= MAX_RATE_LIMIT_WAIT_SECONDS,
+  },
+});
 
 export function resolveSourcePath(rootDir: string, filePath: string): string {
   const normalizedRootDir = normalizeRepoPath(rootDir);
@@ -45,15 +57,21 @@ export async function listSourceFiles(
   rootDir: string,
   extensions: readonly string[],
 ): Promise<readonly string[]> {
-  const response = await octokit.rest.git.getTree({
-    owner: GITHUB_OWNER,
-    repo: GITHUB_REPO,
-    tree_sha: sourceBranch,
-    recursive: "1",
-    headers: {
-      "X-GitHub-Api-Version": GITHUB_API_VERSION,
-    },
-  });
+  const response = await octokit.rest.git
+    .getTree({
+      owner: GITHUB_OWNER,
+      repo: GITHUB_REPO,
+      tree_sha: sourceBranch,
+      recursive: "1",
+      headers: {
+        "X-GitHub-Api-Version": GITHUB_API_VERSION,
+      },
+    })
+    .catch((error: unknown) => {
+      const message = error instanceof Error ? error.message : String(error);
+      const hint = process.env.GITHUB_TOKEN === undefined ? " Set GITHUB_TOKEN to avoid the anonymous rate limit." : "";
+      throw new Error(`Could not list ${GITHUB_OWNER}/${GITHUB_REPO}@${sourceBranch}: ${message}.${hint}`);
+    });
 
   if (response.data.truncated === true) {
     throw new Error(`GitHub tree response for ${sourceBranch} was truncated.`);

@@ -56,6 +56,8 @@ jobs:
       - name: Run extractor
         id: extract
         continue-on-error: true
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
         run: node dist/cli.js extract --config ./config.json --fail-on-diagnostics
 
       - name: Upload extractor artifacts for debugging

@@ -15,19 +15,26 @@ export async function runExtraction(cliOptions: CliOptions): Promise<ApiSpec> {
   const config = await loadConfig(cliOptions.configPath ?? "./config.json", cliOptions);
   configStep.done();
 
+  // These steps are independent, so fetch and parse their sources concurrently.
   const routesStep = progress.startStep("discovering routes");
-  const routes = await discoverRoutes(
-    resolveRawGithubUrl(config.sourceBranch, resolveSourcePath(config.rootDir, config.routeFile)),
-  );
-  routesStep.done(`${routes.length} routes`);
-
   const constantsStep = progress.startStep("loading constants");
-  const constants = await loadStringConstants(config.rootDir, config.sourceBranch);
-  constantsStep.done(`${constants.size} constants`);
-
   const symbolsStep = progress.startStep("indexing functions");
-  const functions = await indexFunctions(config.rootDir, config.includeHelpers, config.sourceBranch);
-  symbolsStep.done(`${functions.size} functions`);
+  const [routes, constants, functions] = await Promise.all([
+    discoverRoutes(
+      resolveRawGithubUrl(config.sourceBranch, resolveSourcePath(config.rootDir, config.routeFile)),
+    ).then((result) => {
+      routesStep.done(`${result.length} routes`);
+      return result;
+    }),
+    loadStringConstants(config.rootDir, config.sourceBranch).then((result) => {
+      constantsStep.done(`${result.size} constants`);
+      return result;
+    }),
+    indexFunctions(config.rootDir, config.includeHelpers, config.sourceBranch).then((result) => {
+      symbolsStep.done(`${result.size} functions`);
+      return result;
+    }),
+  ]);
 
   const extractStep = progress.startStep("extracting route parameters");
   const routeExtractions = routes.map((route) =>
