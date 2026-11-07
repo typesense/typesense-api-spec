@@ -202,6 +202,13 @@ export function resolveStringTokenNode(
   node: SyntaxNode,
   constants: ReadonlyMap<string, string>,
 ): string | undefined {
+  // Check qualified names before unwrapping: unwrapExpressionNode reduces
+  // `fields::type` to its terminal identifier `type`.
+  const qualifiedNode = unwrapParentheses(node);
+  if (qualifiedNode.type === "qualified_identifier") {
+    return resolveQualifiedIdentifierToken(qualifiedNode.text, constants);
+  }
+
   const normalizedNode = unwrapExpressionNode(node);
   if (normalizedNode.type === "string_literal") {
     return extractStringLiteral(normalizedNode.text);
@@ -215,11 +222,15 @@ export function resolveStringTokenNode(
     return constants.get(normalizedNode.text);
   }
 
-  if (normalizedNode.type === "qualified_identifier") {
-    return resolveQualifiedIdentifierToken(normalizedNode.text, constants);
-  }
-
   return undefined;
+}
+
+function unwrapParentheses(node: SyntaxNode): SyntaxNode {
+  let current = node;
+  while (current.type === "parenthesized_expression" && current.namedChildren[0] !== undefined) {
+    current = current.namedChildren[0];
+  }
+  return current;
 }
 
 function resolveConcatenatedString(node: SyntaxNode): string | undefined {
@@ -241,8 +252,14 @@ function resolveQualifiedIdentifierToken(
   tokenText: string,
   constants: ReadonlyMap<string, string>,
 ): string | undefined {
-  if (tokenText.startsWith("fields::")) {
-    return tokenText.slice("fields::".length);
+  const qualifiedName = tokenText.replace(/\s+/g, "").replace(/^::/, "");
+  const qualifiedValue = constants.get(qualifiedName);
+  if (qualifiedValue !== undefined) {
+    return qualifiedValue;
+  }
+
+  if (qualifiedName.startsWith("fields::")) {
+    return qualifiedName.slice("fields::".length);
   }
 
   const terminalName = extractTerminalName(tokenText);
