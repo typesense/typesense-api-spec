@@ -506,6 +506,41 @@ describe("JSON objects used as maps", () => {
     expect(body).toEqual(["sometimes"]);
   });
 
+  test("a key skip list covers every key it names", async () => {
+    const { body } = await extractHandler(
+      handlerWithBody(`
+        for (auto& it : body.items()) {
+          if (it.key() == "a" || (it.key() == "b" || it.key() == "c")) { continue; }
+          if (it.key() == "kept") { use(); }
+        }`),
+    );
+    expect(body).toEqual(["kept"]);
+  });
+
+  test("a skipped key still counts when the field is read directly", async () => {
+    // add_event skips doc_ids while copying custom fields, but reads it directly elsewhere.
+    const { body } = await extractHandler(
+      handlerWithBody(`
+        body["before"];
+        for (auto& it : body.items()) {
+          if (it.key() == "before" || it.key() == "after") { continue; }
+        }
+        body["after"];`),
+    );
+    expect(body).toEqual(["after", "before"]);
+  });
+
+  test("filling in a default for a missing field doesn't make it a field", async () => {
+    const { body } = await extractHandler(
+      handlerWithBody(`
+        if (body.count("filled") == 0) { body["filled"] = 1; }
+        if (body.count("used") == 0) { body["used"] = 1; }
+        body["used"];
+        if (body.count("required") == 0) { return false; }`),
+    );
+    expect(body).toEqual(["required", "used"]);
+  });
+
   test("copying a body's items into another object keeps tracking its fields", async () => {
     // update_model merges the request into a copy of the stored model, then validates it.
     const { body } = await extractHandler(
@@ -809,14 +844,14 @@ describe("server-side writes", () => {
 
   test("a body default keeps the field reported, through its read", async () => {
     const { body } = await extractHandler(
-      handlerWithBody(`if (body.count("optional") == 0) { body["optional"] = 10; }`),
+      handlerWithBody(`if (body.count("optional") == 0) { body["optional"] = 10; } use(body["optional"]);`),
     );
     expect(body).toEqual(["optional"]);
   });
 
   test("a stored value's type applies to a field clients also send", async () => {
     const { body, types } = await extractHandler(
-      handlerWithBody(`if (body.count("flag") == 0) { body["flag"] = false; }`),
+      handlerWithBody(`if (body.count("flag") == 0) { body["flag"] = false; } use(body["flag"]);`),
     );
     expect(body).toEqual(["flag"]);
     expect(types.get("flag")).toBe("boolean");

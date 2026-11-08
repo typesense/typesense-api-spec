@@ -675,7 +675,12 @@ function collectCallExpression(node: SyntaxNode, state: AnalysisState, context: 
       : resolveExpressionNode(callInfo.baseNode, state.aliases, state.constants);
     if (resolved !== undefined) {
       const firstArgument = callInfo.arguments[0];
-      if (firstArgument !== undefined) {
+      const fillsDefault =
+        normalizedMethodName === "count" &&
+        firstArgument !== undefined &&
+        callInfo.baseNode !== undefined &&
+        isDefaultFillCheck(node, callInfo.baseNode, firstArgument);
+      if (firstArgument !== undefined && !fillsDefault) {
         const segment = resolveStringTokenNode(firstArgument, state.constants);
         if (segment !== undefined) {
           state.debug(`call ${callInfo.calleeName} => ${segment}`);
@@ -796,7 +801,14 @@ function isRejectingKeyCheck(comparison: SyntaxNode): boolean {
   if (childForField(comparison, "operator")?.text !== "==") {
     return false;
   }
-  const condition = comparison.parent;
+  // Any one of `key == "a" || key == "b"` is enough to take the branch.
+  let condition = comparison.parent;
+  while (
+    condition?.type === "parenthesized_expression" ||
+    (condition?.type === "binary_expression" && childForField(condition, "operator")?.text === "||")
+  ) {
+    condition = condition.parent;
+  }
   const ifStatement = condition?.type === "condition_clause" ? condition.parent : undefined;
   if (ifStatement?.type !== "if_statement" || childForField(ifStatement, "alternative") !== undefined) {
     return false;
@@ -805,6 +817,31 @@ function isRejectingKeyCheck(comparison: SyntaxNode): boolean {
   const consequence = childForField(ifStatement, "consequence");
   const lastStatement = consequence?.type === "compound_statement" ? consequence.namedChildren.filter((child) => child.type !== "comment").at(-1) : consequence;
   return lastStatement?.type === "continue_statement" || lastStatement?.type === "return_statement";
+}
+
+/** `if (x.count(k) == 0) { x[k] = default; }` fills in a default; it doesn't use what the client sent. */
+function isDefaultFillCheck(countCall: SyntaxNode, baseNode: SyntaxNode, keyNode: SyntaxNode): boolean {
+  const comparison = countCall.parent;
+  if (
+    comparison?.type !== "binary_expression" ||
+    childForField(comparison, "operator")?.text !== "==" ||
+    childForField(comparison, "right")?.text !== "0"
+  ) {
+    return false;
+  }
+  const ifStatement = comparison.parent?.type === "condition_clause" ? comparison.parent.parent : undefined;
+  if (ifStatement?.type !== "if_statement" || childForField(ifStatement, "alternative") !== undefined) {
+    return false;
+  }
+
+  const consequence = childForField(ifStatement, "consequence");
+  const statements = consequence?.type === "compound_statement" ? consequence.namedChildren.filter((child) => child.type !== "comment") : [consequence];
+  const assignment = statements.length === 1 ? statements[0]?.namedChild(0) : undefined;
+  if (assignment?.type !== "assignment_expression") {
+    return false;
+  }
+  const target = childForField(assignment, "left");
+  return target?.type === "subscript_expression" && target.text === `${baseNode.text}[${keyNode.text}]`;
 }
 
 function collectHelperCallExpression(

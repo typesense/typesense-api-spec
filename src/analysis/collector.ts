@@ -12,6 +12,7 @@ export class ParameterCollector {
   readonly #bodyTypeHints = new Map<string, ValueType>();
   readonly #overwrittenBodyPaths = new Set<string>();
   readonly #rejectedBodyPaths = new Set<string>();
+  readonly #mirroredBodyPaths = new Set<string>();
   readonly #queryMirrorPrefixes = new Set<string>();
 
   constructor(route: RouteRegistration) {
@@ -43,9 +44,10 @@ export class ParameterCollector {
       return;
     }
     if (parameter.location === "body") {
-      if (this.#overwrittenBodyPaths.has(parameter.canonicalPath) || this.#rejectedBodyPaths.has(parameter.canonicalPath)) {
+      if (this.#overwrittenBodyPaths.has(parameter.canonicalPath)) {
         return;
       }
+      this.#mirroredBodyPaths.delete(parameter.canonicalPath);
       this.#body.set(
         parameter.canonicalPath,
         mergeCollectedParameter(
@@ -68,10 +70,15 @@ export class ParameterCollector {
     }
   }
 
-  /** The server refuses or ignores this field. */
+  /**
+   * A loop over the body refuses or skips this key, so it never reaches the params
+   * map. Code elsewhere can still read the field directly, and those reads count.
+   */
   markBodyPathRejected(canonicalPath: string): void {
     this.#rejectedBodyPaths.add(canonicalPath);
-    this.#body.delete(canonicalPath);
+    if (this.#mirroredBodyPaths.delete(canonicalPath)) {
+      this.#body.delete(canonicalPath);
+    }
   }
 
   /**
@@ -84,7 +91,15 @@ export class ParameterCollector {
 
   #mirrorToBody(parameter: CollectedParameter): void {
     for (const prefix of this.#queryMirrorPrefixes) {
-      this.add({ ...parameter, location: "body", canonicalPath: `${prefix}.${parameter.canonicalPath}` });
+      const canonicalPath = `${prefix}.${parameter.canonicalPath}`;
+      if (this.#rejectedBodyPaths.has(canonicalPath)) {
+        continue;
+      }
+      const isDirectRead = this.#body.has(canonicalPath) && !this.#mirroredBodyPaths.has(canonicalPath);
+      this.add({ ...parameter, location: "body", canonicalPath });
+      if (!isDirectRead) {
+        this.#mirroredBodyPaths.add(canonicalPath);
+      }
     }
   }
 

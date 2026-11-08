@@ -1555,8 +1555,8 @@
           "sources": [
             {
               "filePath": "https://raw.githubusercontent.com/typesense/typesense/v30/src/field.cpp",
-              "line": 405,
-              "column": 12
+              "line": 385,
+              "column": 13
             }
           ]
         },
@@ -1568,8 +1568,8 @@
           "sources": [
             {
               "filePath": "https://raw.githubusercontent.com/typesense/typesense/v30/src/field.cpp",
-              "line": 409,
-              "column": 12
+              "line": 391,
+              "column": 13
             }
           ]
         },
@@ -1609,19 +1609,6 @@
               "filePath": "https://raw.githubusercontent.com/typesense/typesense/v30/src/field.cpp",
               "line": 474,
               "column": 76
-            }
-          ]
-        },
-        {
-          "name": "model_config",
-          "canonicalPath": "fields[].model_config",
-          "location": "body",
-          "valueType": "object",
-          "sources": [
-            {
-              "filePath": "https://raw.githubusercontent.com/typesense/typesense/v30/src/field.cpp",
-              "line": 66,
-              "column": 9
             }
           ]
         },
@@ -2460,8 +2447,8 @@
           "sources": [
             {
               "filePath": "https://raw.githubusercontent.com/typesense/typesense/v30/src/field.cpp",
-              "line": 405,
-              "column": 12
+              "line": 385,
+              "column": 13
             }
           ]
         },
@@ -2473,8 +2460,8 @@
           "sources": [
             {
               "filePath": "https://raw.githubusercontent.com/typesense/typesense/v30/src/field.cpp",
-              "line": 409,
-              "column": 12
+              "line": 391,
+              "column": 13
             }
           ]
         },
@@ -2514,19 +2501,6 @@
               "filePath": "https://raw.githubusercontent.com/typesense/typesense/v30/src/field.cpp",
               "line": 474,
               "column": 76
-            }
-          ]
-        },
-        {
-          "name": "model_config",
-          "canonicalPath": "fields[].model_config",
-          "location": "body",
-          "valueType": "object",
-          "sources": [
-            {
-              "filePath": "https://raw.githubusercontent.com/typesense/typesense/v30/src/field.cpp",
-              "line": 66,
-              "column": 9
             }
           ]
         },
