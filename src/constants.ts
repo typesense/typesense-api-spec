@@ -2,13 +2,17 @@ import type { SyntaxNode } from "tree-sitter";
 import { childForField, extractDeclaratorName, extractStringLiteral, parseCpp } from "./cpp-ast.js";
 import { CountingSemaphore } from "./concurrency.js";
 import { readTextFile } from "./fs.js";
-import { listSourceFiles, resolveRawGithubUrl } from "./source.js";
+import { listSourceFiles, resolveRawGithubUrl, resolveSourcePath } from "./source.js";
 
 export async function loadStringConstants(
   rootDir: string,
   sourceBranch: string,
 ): Promise<ReadonlyMap<string, string>> {
-  const candidateFiles = await listSourceFiles(sourceBranch, rootDir, [".h", ".hpp", ".cpp"]);
+  // Test and tool sources could otherwise claim a bare name first.
+  const productionDirs = ["include", "src"].map((dir) => `${resolveSourcePath(rootDir, dir)}/`);
+  const candidateFiles = (await listSourceFiles(sourceBranch, rootDir, [".h", ".hpp", ".cpp"])).filter((filePath) =>
+    productionDirs.some((dir) => filePath.startsWith(dir)),
+  );
   const semaphore = new CountingSemaphore(8);
   const sourceTexts = await Promise.all(
     candidateFiles.map(async (filePath) => {

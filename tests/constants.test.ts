@@ -48,15 +48,25 @@ describe("loadStringConstants", () => {
     expect(constants.get("KEY")).toBe("first");
   });
 
-  test("only scans C++ sources inside the root directory", async () => {
+  test("only scans C++ sources in include and src of the root directory", async () => {
     const constants = await load(
       {
-        "server/include/a.h": `#define INSIDE "yes"`,
-        "server/notes.txt": `#define WRONG_EXTENSION "no"`,
-        "other/b.h": `#define OUTSIDE "no"`,
+        "server/include/a.h": `#define IN_INCLUDE "yes"`,
+        "server/src/a.cpp": `#define IN_SRC "yes"`,
+        "server/test/a_test.cpp": `#define IN_TEST "no"`,
+        "server/include/notes.txt": `#define WRONG_EXTENSION "no"`,
+        "other/include/b.h": `#define OUTSIDE "no"`,
       },
       "server",
     );
-    expect([...constants.keys()]).toEqual(["INSIDE"]);
+    expect([...constants.keys()].sort()).toEqual(["IN_INCLUDE", "IN_SRC"]);
+  });
+
+  test("a test file cannot claim a bare name", async () => {
+    const constants = await load({
+      "aaa_test/a_test.cpp": `#define KEY "from_test"`,
+      "include/a.h": `#define KEY "from_header"`,
+    });
+    expect(constants.get("KEY")).toBe("from_header");
   });
 });

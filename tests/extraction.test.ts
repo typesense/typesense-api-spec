@@ -329,6 +329,17 @@ describe("constants", () => {
     expect(body).toContain("locale");
   });
 
+  test("inside a class method, a bare name means that class's constant", async () => {
+    const { query } = await extractHandler(
+      handlerWithBody(
+        `Args::parse(req->params);`,
+        `void Args::parse(std::map<std::string, std::string>& params) { params[LIMIT]; }`,
+      ),
+      { constants: { LIMIT: "wrong_global", "Args::LIMIT": "limit" } },
+    );
+    expect(query).toEqual(["limit"]);
+  });
+
   test("resolves a plain constant identifier", async () => {
     const { body } = await extractHandler(handlerWithBody(`body[SOME_KEY];`), {
       constants: { SOME_KEY: "resolved_key" },

@@ -120,6 +120,7 @@ export function analyzeFunction(
   // A parameter hides any constant of the same name, unless the caller passed a
   // known string for it.
   const constants = new Map(context.constants);
+  applyClassConstants(constants, definition.qualifiedName);
   definition.parameters.forEach((parameter) => constants.delete(parameter.name));
   context.boundStrings.forEach((value, name) => constants.set(name, value));
 
@@ -139,6 +140,20 @@ export function analyzeFunction(
 
   state.debug(`analyzing ${definition.name}`);
   analyzeBlock(bodyNode, state, context, visited, depth);
+}
+
+/** Inside `Foo::bar`, a bare `KEY` means `Foo::KEY` before any global `KEY`. */
+function applyClassConstants(constants: Map<string, string>, qualifiedName: string): void {
+  const scopeEnd = qualifiedName.lastIndexOf("::");
+  if (scopeEnd < 0) {
+    return;
+  }
+  const prefix = qualifiedName.slice(0, scopeEnd + 2);
+  for (const [name, value] of [...constants]) {
+    if (name.startsWith(prefix)) {
+      constants.set(name.slice(prefix.length), value);
+    }
+  }
 }
 
 function analyzeBlock(
