@@ -105,19 +105,6 @@
               "column": 71
             }
           ]
-        },
-        {
-          "name": "name",
-          "canonicalPath": "name",
-          "location": "body",
-          "valueType": "string",
-          "sources": [
-            {
-              "filePath": "https://raw.githubusercontent.com/typesense/typesense/v30/src/core_api.cpp",
-              "line": 2264,
-              "column": 5
-            }
-          ]
         }
       ],
       "source": {
@@ -334,8 +321,8 @@
           "sources": [
             {
               "filePath": "https://raw.githubusercontent.com/typesense/typesense/v30/src/core_api.cpp",
-              "line": 3689,
-              "column": 5
+              "line": 3680,
+              "column": 31
             }
           ]
         }
@@ -680,8 +667,8 @@
           "sources": [
             {
               "filePath": "https://raw.githubusercontent.com/typesense/typesense/v30/src/field.cpp",
-              "line": 406,
-              "column": 13
+              "line": 405,
+              "column": 12
             }
           ]
         },
@@ -693,8 +680,8 @@
           "sources": [
             {
               "filePath": "https://raw.githubusercontent.com/typesense/typesense/v30/src/field.cpp",
-              "line": 410,
-              "column": 13
+              "line": 409,
+              "column": 12
             }
           ]
         },
@@ -745,7 +732,7 @@
           "sources": [
             {
               "filePath": "https://raw.githubusercontent.com/typesense/typesense/v30/src/field.cpp",
-              "line": 67,
+              "line": 66,
               "column": 9
             }
           ]
@@ -797,8 +784,8 @@
           "sources": [
             {
               "filePath": "https://raw.githubusercontent.com/typesense/typesense/v30/src/field.cpp",
-              "line": 890,
-              "column": 5
+              "line": 872,
+              "column": 22
             }
           ]
         },
@@ -1401,21 +1388,7 @@
           ]
         }
       ],
-      "bodyParams": [
-        {
-          "name": "id",
-          "canonicalPath": "id",
-          "location": "body",
-          "valueType": "string",
-          "sources": [
-            {
-              "filePath": "https://raw.githubusercontent.com/typesense/typesense/v30/src/collection.cpp",
-              "line": 727,
-              "column": 17
-            }
-          ]
-        }
-      ],
+      "bodyParams": [],
       "source": {
         "filePath": "https://raw.githubusercontent.com/typesense/typesense/v30/src/main/typesense_server.cpp",
         "line": 38,
@@ -1530,8 +1503,8 @@
           "sources": [
             {
               "filePath": "https://raw.githubusercontent.com/typesense/typesense/v30/src/core_api.cpp",
-              "line": 1998,
-              "column": 13
+              "line": 1965,
+              "column": 26
             }
           ]
         }
@@ -1921,9 +1894,9 @@
           "valueType": "string",
           "sources": [
             {
-              "filePath": "https://raw.githubusercontent.com/typesense/typesense/v30/src/main/typesense_server.cpp",
-              "line": 25,
-              "column": 5
+              "filePath": "https://raw.githubusercontent.com/typesense/typesense/v30/src/collection_manager.cpp",
+              "line": 830,
+              "column": 12
             }
           ]
         }
@@ -1939,19 +1912,6 @@
               "filePath": "https://raw.githubusercontent.com/typesense/typesense/v30/src/core_api.cpp",
               "line": 873,
               "column": 35
-            }
-          ]
-        },
-        {
-          "name": "collection",
-          "canonicalPath": "collection",
-          "location": "query",
-          "valueType": "string",
-          "sources": [
-            {
-              "filePath": "https://raw.githubusercontent.com/typesense/typesense/v30/src/collection_manager.cpp",
-              "line": 830,
-              "column": 12
             }
           ]
         },
@@ -2054,8 +2014,8 @@
           "sources": [
             {
               "filePath": "https://raw.githubusercontent.com/typesense/typesense/v30/src/core_api.cpp",
-              "line": 714,
-              "column": 9
+              "line": 649,
+              "column": 25
             }
           ]
         },
@@ -2365,8 +2325,8 @@
           "sources": [
             {
               "filePath": "https://raw.githubusercontent.com/typesense/typesense/v30/src/core_api.cpp",
-              "line": 4000,
-              "column": 5
+              "line": 3994,
+              "column": 22
             }
           ]
         }
@@ -2427,12 +2387,13 @@
           ]
         }
       ],
-      "queryParams": [
+      "queryParams": [],
+      "bodyParams": [
         {
           "name": "items",
           "canonicalPath": "items",
-          "location": "query",
-          "valueType": "array | string",
+          "location": "body",
+          "valueType": "object[]",
           "sources": [
             {
               "filePath": "https://raw.githubusercontent.com/typesense/typesense/v30/src/core_api.cpp",
@@ -2440,9 +2401,21 @@
               "column": 56
             }
           ]
+        },
+        {
+          "name": "id",
+          "canonicalPath": "items[].id",
+          "location": "body",
+          "valueType": "unknown",
+          "sources": [
+            {
+              "filePath": "https://raw.githubusercontent.com/typesense/typesense/v30/src/curation_index_manager.cpp",
+              "line": 154,
+              "column": 43
+            }
+          ]
         }
       ],
-      "bodyParams": [],
       "source": {
         "filePath": "https://raw.githubusercontent.com/typesense/typesense/v30/src/main/typesense_server.cpp",
         "line": 81,
@@ -2518,8 +2491,8 @@
           "sources": [
             {
               "filePath": "https://raw.githubusercontent.com/typesense/typesense/v30/src/core_api.cpp",
-              "line": 4117,
-              "column": 5
+              "line": 4111,
+              "column": 19
             }
           ]
         },
@@ -2599,9 +2572,9 @@
           "valueType": "string",
           "sources": [
             {
-              "filePath": "https://raw.githubusercontent.com/typesense/typesense/v30/src/curation_index_manager.cpp",
-              "line": 206,
-              "column": 48
+              "filePath": "https://raw.githubusercontent.com/typesense/typesense/v30/src/core_api.cpp",
+              "line": 4083,
+              "column": 28
             }
           ]
         },
@@ -3748,28 +3721,14 @@
           "valueType": "string",
           "sources": [
             {
-              "filePath": "https://raw.githubusercontent.com/typesense/typesense/v30/src/core_api.cpp",
-              "line": 2642,
-              "column": 5
+              "filePath": "https://raw.githubusercontent.com/typesense/typesense/v30/src/collection_manager.cpp",
+              "line": 2161,
+              "column": 34
             }
           ]
         }
       ],
-      "queryParams": [
-        {
-          "name": "value",
-          "canonicalPath": "value",
-          "location": "query",
-          "valueType": "string",
-          "sources": [
-            {
-              "filePath": "https://raw.githubusercontent.com/typesense/typesense/v30/src/core_api.cpp",
-              "line": 2643,
-              "column": 5
-            }
-          ]
-        }
-      ],
+      "queryParams": [],
       "bodyParams": [],
       "source": {
         "filePath": "https://raw.githubusercontent.com/typesense/typesense/v30/src/main/typesense_server.cpp",
@@ -3791,27 +3750,13 @@
           "sources": [
             {
               "filePath": "https://raw.githubusercontent.com/typesense/typesense/v30/src/core_api.cpp",
-              "line": 2583,
-              "column": 5
+              "line": 2571,
+              "column": 39
             }
           ]
         }
       ],
-      "queryParams": [
-        {
-          "name": "value",
-          "canonicalPath": "value",
-          "location": "query",
-          "valueType": "string",
-          "sources": [
-            {
-              "filePath": "https://raw.githubusercontent.com/typesense/typesense/v30/src/core_api.cpp",
-              "line": 2584,
-              "column": 5
-            }
-          ]
-        }
-      ],
+      "queryParams": [],
       "bodyParams": [],
       "source": {
         "filePath": "https://raw.githubusercontent.com/typesense/typesense/v30/src/main/typesense_server.cpp",
@@ -3832,9 +3777,9 @@
           "valueType": "string",
           "sources": [
             {
-              "filePath": "https://raw.githubusercontent.com/typesense/typesense/v30/src/core_api.cpp",
-              "line": 2617,
-              "column": 5
+              "filePath": "https://raw.githubusercontent.com/typesense/typesense/v30/src/collection_manager.cpp",
+              "line": 2145,
+              "column": 35
             }
           ]
         }
@@ -3917,8 +3862,8 @@
           "sources": [
             {
               "filePath": "https://raw.githubusercontent.com/typesense/typesense/v30/src/core_api.cpp",
-              "line": 3038,
-              "column": 5
+              "line": 3028,
+              "column": 29
             }
           ]
         }
@@ -4091,21 +4036,7 @@
         }
       ],
       "queryParams": [],
-      "bodyParams": [
-        {
-          "name": "id",
-          "canonicalPath": "id",
-          "location": "body",
-          "valueType": "string",
-          "sources": [
-            {
-              "filePath": "https://raw.githubusercontent.com/typesense/typesense/v30/src/core_api.cpp",
-              "line": 2703,
-              "column": 5
-            }
-          ]
-        }
-      ],
+      "bodyParams": [],
       "source": {
         "filePath": "https://raw.githubusercontent.com/typesense/typesense/v30/src/main/typesense_server.cpp",
         "line": 65,
@@ -4140,8 +4071,8 @@
           "sources": [
             {
               "filePath": "https://raw.githubusercontent.com/typesense/typesense/v30/src/core_api.cpp",
-              "line": 3822,
-              "column": 5
+              "line": 3814,
+              "column": 22
             }
           ]
         }
@@ -4202,12 +4133,13 @@
           ]
         }
       ],
-      "queryParams": [
+      "queryParams": [],
+      "bodyParams": [
         {
           "name": "items",
           "canonicalPath": "items",
-          "location": "query",
-          "valueType": "array | string",
+          "location": "body",
+          "valueType": "array",
           "sources": [
             {
               "filePath": "https://raw.githubusercontent.com/typesense/typesense/v30/src/core_api.cpp",
@@ -4217,7 +4149,6 @@
           ]
         }
       ],
-      "bodyParams": [],
       "source": {
         "filePath": "https://raw.githubusercontent.com/typesense/typesense/v30/src/main/typesense_server.cpp",
         "line": 71,
@@ -4293,8 +4224,8 @@
           "sources": [
             {
               "filePath": "https://raw.githubusercontent.com/typesense/typesense/v30/src/core_api.cpp",
-              "line": 3960,
-              "column": 5
+              "line": 3953,
+              "column": 19
             }
           ]
         },
@@ -4375,8 +4306,8 @@
           "sources": [
             {
               "filePath": "https://raw.githubusercontent.com/typesense/typesense/v30/src/core_api.cpp",
-              "line": 3935,
-              "column": 5
+              "line": 3918,
+              "column": 36
             }
           ]
         },

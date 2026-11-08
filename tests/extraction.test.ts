@@ -10,9 +10,9 @@ const expectBodyParams = async (statements: string, expected: readonly string[])
 describe("control flow", () => {
   test("analyzes if, else-if and else branches", async () => {
     await expectBodyParams(
-      `if (x) { auto a = body["a"]; a["in_if"] = ""; }
-       else if (y) { auto b = body["b"]; b["in_else_if"] = ""; }
-       else { auto c = body["c"]; c["in_else"] = ""; }`,
+      `if (x) { auto a = body["a"]; a["in_if"]; }
+       else if (y) { auto b = body["b"]; b["in_else_if"]; }
+       else { auto c = body["c"]; c["in_else"]; }`,
       ["a.in_if", "b.in_else_if", "c.in_else"],
     );
   });
@@ -30,22 +30,22 @@ describe("control flow", () => {
   test("analyzes switch cases with and without a block", async () => {
     await expectBodyParams(
       `switch (x) {
-         case 1: { auto y = body["case_block"]; y["inner"] = ""; } break;
-         default: auto z = body["case_bare"]; z["inner"] = "";
+         case 1: { auto y = body["case_block"]; y["inner"]; } break;
+         default: auto z = body["case_bare"]; z["inner"];
        }`,
       ["case_block.inner", "case_bare.inner"],
     );
   });
 
   test("analyzes do-while bodies", async () => {
-    await expectBodyParams(`do { auto d = body["do_body"]; d["inner"] = ""; } while (false);`, ["do_body.inner"]);
+    await expectBodyParams(`do { auto d = body["do_body"]; d["inner"]; } while (false);`, ["do_body.inner"]);
   });
 
   test("handles declarations in conditions and initializers", async () => {
     await expectBodyParams(
-      `if (auto v = body["cond_decl"]) { v["inner"] = ""; }
-       if (auto it = body["init_stmt"]; true) it["inner"] = "";
-       for (auto e = body["for_init"]; false; ) e["inner"] = "";`,
+      `if (auto v = body["cond_decl"]) { v["inner"]; }
+       if (auto it = body["init_stmt"]; true) it["inner"];
+       for (auto e = body["for_init"]; false; ) e["inner"];`,
       ["cond_decl.inner", "init_stmt.inner", "for_init.inner"],
     );
   });
@@ -109,7 +109,7 @@ describe("helper calls", () => {
     const { body } = await extractHandler(
       handlerWithBody(
         `unnamed_first("s", body);`,
-        `void unnamed_first(const std::string&, nlohmann::json& json_arg) { json_arg["from_helper"] = ""; }`,
+        `void unnamed_first(const std::string&, nlohmann::json& json_arg) { json_arg["from_helper"]; }`,
       ),
     );
     expect(body).toContain("from_helper");
@@ -119,7 +119,7 @@ describe("helper calls", () => {
     const { body } = await extractHandler(
       handlerWithBody(
         `defaulted(body, 1);`,
-        `void defaulted(nlohmann::json& json_arg, int level, bool flag = false) { json_arg["from_helper"] = ""; }`,
+        `void defaulted(nlohmann::json& json_arg, int level, bool flag = false) { json_arg["from_helper"]; }`,
       ),
     );
     expect(body).toContain("from_helper");
@@ -142,8 +142,8 @@ describe("helper calls", () => {
     const { body, diagnosticCodes } = await extractHandler(
       handlerWithBody(
         `first(body);`,
-        `void second(nlohmann::json& j) { j["too_deep"] = ""; }
-         void first(nlohmann::json& j) { j["reached"] = ""; second(j); }`,
+        `void second(nlohmann::json& j) { j["too_deep"]; }
+         void first(nlohmann::json& j) { j["reached"]; second(j); }`,
       ),
       { maxCallDepth: 1 },
     );
@@ -161,7 +161,7 @@ describe("helper calls", () => {
 
 describe("loops", () => {
   test("creates item aliases for body iterables", async () => {
-    const { body } = await extractHandler(handlerWithBody(`for (auto& item : body["items"]) { item["sku"] = ""; }`));
+    const { body } = await extractHandler(handlerWithBody(`for (auto& item : body["items"]) { item["sku"]; }`));
     expect(body).toContain("items[].sku");
   });
 
@@ -173,7 +173,7 @@ describe("loops", () => {
 
 describe("constants", () => {
   test("prefers the qualified constant over a colliding bare name", async () => {
-    const { body } = await extractHandler(handlerWithBody(`body[fields::type] = "";`), {
+    const { body } = await extractHandler(handlerWithBody(`body[fields::type];`), {
       constants: { type: "wrong_bare_value", "fields::type": "type" },
     });
     expect(body).toContain("type");
@@ -181,17 +181,124 @@ describe("constants", () => {
   });
 
   test("falls back to the bare name when only that is known", async () => {
-    const { body } = await extractHandler(handlerWithBody(`body[fields::locale] = "";`), {
+    const { body } = await extractHandler(handlerWithBody(`body[fields::locale];`), {
       constants: { locale: "locale" },
     });
     expect(body).toContain("locale");
   });
 
   test("resolves a plain constant identifier", async () => {
-    const { body } = await extractHandler(handlerWithBody(`body[SOME_KEY] = "";`), {
+    const { body } = await extractHandler(handlerWithBody(`body[SOME_KEY];`), {
       constants: { SOME_KEY: "resolved_key" },
     });
     expect(body).toContain("resolved_key");
+  });
+});
+
+describe("server-side writes", () => {
+  test("copying a path param into the body keeps the body alias", async () => {
+    // PUT /synonym_sets/:name reported items as a query parameter.
+    const { body, query, path } = await extractHandler(
+      handlerWithBody(`
+        std::string name = req->params["name"];
+        body["name"] = name;
+        body["items"];`),
+      { pathTemplate: "/sets/:name" },
+    );
+    expect(body).toEqual(["items"]);
+    expect(query).toEqual([]);
+    expect(path).toEqual(["name"]);
+  });
+
+  test("copying a param into a fresh JSON object still wraps it", async () => {
+    const { query } = await extractHandler(
+      handlerWithBody(`
+        nlohmann::json wrapper;
+        wrapper["kept"] = req->params["kept"];
+        wrapper["through_wrapper"];`),
+    );
+    expect(query).toEqual(["kept", "through_wrapper"]);
+  });
+
+  test("storing into the params map is not a client parameter", async () => {
+    const { query } = await extractHandler(
+      handlerWithBody(`
+        req->params["set_by_server"] = "true";
+        req->params["set_from_read"] = req->params["read_by_server"];`),
+    );
+    expect(query).toEqual(["read_by_server"]);
+  });
+
+  test("storing into the body is not a client parameter", async () => {
+    const { body } = await extractHandler(
+      handlerWithBody(`
+        body["set_by_server"] = "x";
+        body["set_nested"]["inner"] = 1;
+        body["copied"] = body["read_by_server"];`),
+    );
+    expect(body).toEqual(["read_by_server"]);
+  });
+
+  test("a body default keeps the field reported, through its read", async () => {
+    const { body } = await extractHandler(
+      handlerWithBody(`if (body.count("optional") == 0) { body["optional"] = 10; }`),
+    );
+    expect(body).toEqual(["optional"]);
+  });
+
+  test("a stored value's type applies to a field clients also send", async () => {
+    const { body, types } = await extractHandler(
+      handlerWithBody(`if (body.count("flag") == 0) { body["flag"] = false; }`),
+    );
+    expect(body).toEqual(["flag"]);
+    expect(types.get("flag")).toBe("boolean");
+  });
+
+  test("reads after an unconditional top-level write are not client parameters", async () => {
+    const { body } = await extractHandler(
+      handlerWithBody(`
+        body["name"] = compute();
+        validate(body["name"]);`),
+    );
+    expect(body).toEqual([]);
+  });
+
+  test("a conditional write does not hide later reads", async () => {
+    const { body } = await extractHandler(
+      handlerWithBody(`
+        if (missing) { body["name"] = compute(); }
+        validate(body["name"]);`),
+    );
+    expect(body).toEqual(["name"]);
+  });
+
+  test("a read before an unconditional write is still a client parameter", async () => {
+    const { body } = await extractHandler(
+      handlerWithBody(`
+        validate(body["name"]);
+        body["name"] = compute();`),
+    );
+    expect(body).toEqual(["name"]);
+  });
+
+  test("storing into a params map held by a helper is not a client parameter", async () => {
+    const { query } = await extractHandler(
+      handlerWithBody(
+        `apply_defaults(req->params);`,
+        `void apply_defaults(std::map<std::string, std::string>& params) {
+           params["set_by_server"] = "true";
+           params.count("read_by_server");
+         }`,
+      ),
+    );
+    expect(query).toEqual(["read_by_server"]);
+  });
+
+  test("a param that is both written and read is still reported", async () => {
+    const { query } = await extractHandler(
+      handlerWithBody(`req->params["both"] = "x"; std::string v = req->params["both"];`),
+    );
+    expect(query).toEqual(["both"]);
   });
 });
 
@@ -199,6 +306,18 @@ describe("parameter locations", () => {
   test("collects path parameters from the route template", async () => {
     const { path } = await extractHandler("void handler() {}", { pathTemplate: "/collections/:collection/docs/:id" });
     expect(path).toEqual(["collection", "id"]);
+  });
+
+  test("a helper reading the params map reports path params as path params", async () => {
+    const { path, query } = await extractHandler(
+      handlerWithBody(
+        `read_params(req->params);`,
+        `void read_params(std::map<std::string, std::string>& params) { params["collection"]; params["q"]; }`,
+      ),
+      { pathTemplate: "/collections/:collection/search" },
+    );
+    expect(path).toEqual(["collection"]);
+    expect(query).toEqual(["q"]);
   });
 
   test("does not report a path parameter as a query parameter", async () => {

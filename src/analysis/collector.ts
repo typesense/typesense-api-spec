@@ -1,11 +1,13 @@
 import type { ParameterLocation } from "../config-schema.js";
 import { mergeValueTypes } from "../types.js";
-import type { CollectedParameter, RouteRegistration } from "../types.js";
+import type { CollectedParameter, RouteRegistration, ValueType } from "../types.js";
 
 export class ParameterCollector {
   readonly #path = new Map<string, CollectedParameter>();
   readonly #query = new Map<string, CollectedParameter>();
   readonly #body = new Map<string, CollectedParameter>();
+  readonly #bodyTypeHints = new Map<string, ValueType>();
+  readonly #overwrittenBodyPaths = new Set<string>();
 
   constructor(route: RouteRegistration) {
     for (const parameter of collectPathParams(route)) {
@@ -35,6 +37,9 @@ export class ParameterCollector {
       return;
     }
     if (parameter.location === "body") {
+      if (this.#overwrittenBodyPaths.has(parameter.canonicalPath)) {
+        return;
+      }
       this.#body.set(
         parameter.canonicalPath,
         mergeCollectedParameter(
@@ -45,6 +50,18 @@ export class ParameterCollector {
     }
   }
 
+  /** Records the type of a value the server stores, for use if clients also send that field. */
+  hintBodyType(canonicalPath: string, valueType: ValueType): void {
+    this.#bodyTypeHints.set(canonicalPath, mergeValueTypes(this.#bodyTypeHints.get(canonicalPath), valueType) ?? valueType);
+  }
+
+  /** The server always replaces this field, so later reads see its value, not the client's. */
+  markBodyPathOverwritten(canonicalPath: string): void {
+    if (!this.#body.has(canonicalPath)) {
+      this.#overwrittenBodyPaths.add(canonicalPath);
+    }
+  }
+
   snapshot(location: ParameterLocation): readonly CollectedParameter[] {
     switch (location) {
       case "path":
@@ -52,7 +69,10 @@ export class ParameterCollector {
       case "query":
         return [...this.#query.values()];
       case "body":
-        return [...this.#body.values()];
+        return [...this.#body.values()].map((parameter) => ({
+          ...parameter,
+          valueType: mergeValueTypes(parameter.valueType, this.#bodyTypeHints.get(parameter.canonicalPath)),
+        }));
       default: {
         const _exhaustiveCheck: never = location;
         // eslint-disable-next-line

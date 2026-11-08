@@ -392,6 +392,13 @@ function walkExpression(
 
     if (currentNode.type === "assignment_expression") {
       collectAssignmentExpression(currentNode, state);
+      // Storing into the params map or body is the server's doing, not a client parameter.
+      const rightNode = childForField(currentNode, "right");
+      if (rightNode !== undefined && isRequestDataWrite(currentNode, state)) {
+        recordBodyWrite(currentNode, rightNode, state, depth);
+        walkExpression(rightNode, state, context, visited, depth);
+        return false;
+      }
       return;
     }
 
@@ -410,6 +417,33 @@ function walkExpression(
       collectSubscriptExpression(currentNode, state);
     }
   });
+}
+
+function isRequestDataWrite(assignment: SyntaxNode, state: AnalysisState): boolean {
+  const leftNode = childForField(assignment, "left");
+  const baseNode = leftNode?.type === "subscript_expression" ? childForField(leftNode, "argument") : undefined;
+  const target = baseNode === undefined ? undefined : resolveExpressionNode(baseNode, state.aliases, state.constants);
+  return target?.location === "params-root" || target?.location === "query-root" || target?.location === "body-root";
+}
+
+function recordBodyWrite(assignment: SyntaxNode, rightNode: SyntaxNode, state: AnalysisState, depth: number): void {
+  const leftNode = childForField(assignment, "left");
+  const target = leftNode === undefined ? undefined : resolveExpressionNode(leftNode, state.aliases, state.constants);
+  if (target?.location !== "body-root") {
+    return;
+  }
+
+  const typed = materializeTypedParameter(target.segments, resolveValueTypeNode(rightNode, state));
+  if (typed === undefined) {
+    return;
+  }
+  if (typed.valueType !== undefined) {
+    state.collector.hintBodyType(typed.canonicalPath, typed.valueType);
+  }
+  // Only a write at the top level of the handler is certain to run.
+  if (depth === 0 && state.parent === undefined) {
+    state.collector.markBodyPathOverwritten(typed.canonicalPath);
+  }
 }
 
 function collectAssignmentExpression(node: SyntaxNode, state: AnalysisState): void {
@@ -444,7 +478,7 @@ function collectAssignmentExpression(node: SyntaxNode, state: AnalysisState): vo
   }
 
   const target = leftNode === undefined ? undefined : resolveExpressionNode(leftNode, state.aliases, state.constants);
-  if (target !== undefined && target.location === "body-root") {
+  if (target !== undefined && target.location === "body-root" && leftNode?.type !== "subscript_expression") {
     addParameter(target, [], state, node, inferredType);
   }
 }
@@ -716,21 +750,9 @@ function addParameter(
     return;
   }
 
-  if (target.location === "query-root") {
-    const firstSegment = firstConcreteSegment(combinedSegments);
-    if (firstSegment !== undefined) {
-      state.collector.add({
-        location: "query",
-        canonicalPath: firstSegment,
-        valueType: valueType ?? "string",
-        source: nodeSourceLocation(state.definition, node),
-      });
-      state.debug(`add query ${firstSegment}`);
-    }
-    return;
-  }
-
-  if (target.location === "params-root") {
+  // req->params holds path and query parameters alike, also when a helper
+  // receives it as a plain map.
+  if (target.location === "params-root" || target.location === "query-root") {
     const firstSegment = firstConcreteSegment(combinedSegments);
     if (firstSegment !== undefined) {
       const location = state.pathParamNames.has(firstSegment) ? "path" : "query";
@@ -1041,6 +1063,11 @@ function inferWrappedAliasTarget(
 
   const baseNode = childForField(leftNode, "argument");
   const aliasName = baseNode === undefined ? undefined : extractIdentifierName(baseNode);
+  // `req_json["name"] = req->params["name"]` copies a value into a variable that
+  // already has a meaning; it does not turn req_json into the params map.
+  if (aliasName !== undefined && state.aliases.has(aliasName)) {
+    return undefined;
+  }
   const indexNode = extractSubscriptIndexNode(leftNode);
   const segment = indexNode === undefined ? undefined : resolveStringTokenNode(indexNode, state.constants);
   if (
