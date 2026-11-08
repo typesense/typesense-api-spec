@@ -1,4 +1,4 @@
-import { parseCpp, findFirstNamedNode, walkNamed, childForField, extractDeclaratorName } from "../cpp-ast.js";
+import { parseCppCached, findFirstNamedNode, walkNamed, childForField, extractDeclaratorName } from "../cpp-ast.js";
 import { normalizePathSegments } from "../text.js";
 import type { SyntaxNode } from "tree-sitter";
 import { isValueType } from "../types.js";
@@ -25,6 +25,7 @@ import {
   parseCallExpressionNode,
   unwrapExpressionNode,
 } from "./syntax.js";
+import type { ParsedCall } from "./syntax.js";
 
 const bodyMethods = new Set(["count", "find", "contains", "at", "value"]);
 
@@ -83,8 +84,9 @@ export function analyzeFunction(
   routeKey: string,
   debug: (message: string) => void,
 ): void {
-  const inheritedAliases = bootstrapAliases(definition.parameters, context.aliasTargets);
-  const visitKey = serializeVisitKey(definition.name, inheritedAliases, context.boundStrings);
+  // A route handler receives the request; a helper only has what its caller passed.
+  const inheritedAliases = depth === 0 ? bootstrapAliases(definition.parameters, context.aliasTargets) : new Map(context.aliasTargets);
+  const visitKey = serializeVisitKey(definition.qualifiedName, inheritedAliases, context.boundStrings);
   if (visited.has(visitKey)) {
     return;
   }
@@ -101,7 +103,7 @@ export function analyzeFunction(
     return;
   }
 
-  const rootNode = parseCpp(definition.fullText);
+  const rootNode = parseCppCached(definition.fullText);
   const functionNode = findFirstNamedNode(rootNode, "function_definition");
   const bodyNode = functionNode === undefined ? undefined : findFirstNamedNode(functionNode, "compound_statement");
   if (!bodyNode) {
@@ -550,7 +552,7 @@ function collectCallExpression(node: SyntaxNode, state: AnalysisState, context: 
     }
   }
 
-  const helperDefinition = findCallDefinition(callInfo, context.functions, state.definition.name);
+  const helperDefinition = findCallDefinition(callInfo, context.functions, state);
   if (helperDefinition !== undefined) {
     collectArgumentTypeHints(node, callInfo.arguments, helperDefinition, state);
   }
@@ -616,7 +618,7 @@ function collectHelperCallExpression(
     return;
   }
 
-  const helperDefinition = findCallDefinition(callInfo, context.functions, state.definition.name);
+  const helperDefinition = findCallDefinition(callInfo, context.functions, state);
   if (helperDefinition === undefined) {
     return;
   }
@@ -631,7 +633,7 @@ function collectHelperCallExpression(
       boundStrings.set(parameter.name, boundString);
     }
     const resolved = resolveExpressionNode(argument, state.aliases, state.constants);
-    if (resolved === undefined) return;
+    if (resolved === undefined || !canReceiveAlias(parameter.typeText, resolved)) return;
     nextAliases.set(parameter.name, resolved);
     state.debug(
       `helper arg ${helperDefinition.name}.${parameter.name} => ${resolved.location}:${normalizePathSegments(resolved.segments)}`,
@@ -733,6 +735,27 @@ function isConstDeclaration(declaration: SyntaxNode): boolean {
   );
 }
 
+/**
+ * Whether a parameter of this type can receive the tracked value. Calls resolve
+ * by name and arity, so this also rejects unrelated functions that collide, such
+ * as CollectionManager::get_preset(name, preset) and the get_preset(req, res) handler.
+ */
+function canReceiveAlias(typeText: string, target: AliasTarget): boolean {
+  if (typeText.includes("http_res")) {
+    return false;
+  }
+  if (typeText.includes("http_req")) {
+    return target.location === "request-root";
+  }
+  if (target.location === "request-root") {
+    return false;
+  }
+  if (/\bmap\s*</.test(typeText)) {
+    return (target.location === "params-root" || target.location === "query-root") && target.segments.length === 0;
+  }
+  return /json|iteration_proxy|\bauto\b/.test(typeText) || /^(?:const\s+)?[A-Z]$/.test(typeText.trim());
+}
+
 function isStringType(typeText: string): boolean {
   return typeText.includes("string") || typeText.includes("char");
 }
@@ -758,8 +781,9 @@ function addParameter(
       const location = state.pathParamNames.has(firstSegment) ? "path" : "query";
       state.collector.add({
         location,
+        // A URL path segment is a string, whatever the server converts it to.
+        valueType: location === "path" ? "string" : valueType,
         canonicalPath: firstSegment,
-        valueType: valueType ?? "string",
         source: nodeSourceLocation(state.definition, node),
       });
       state.debug(`add ${location} ${firstSegment}`);
@@ -786,29 +810,44 @@ function addParameter(
 }
 
 function findCallDefinition(
-  callInfo: ReturnType<typeof parseCallExpressionNode>,
+  callInfo: ParsedCall,
   functions: ReadonlyMap<string, FunctionDefinition>,
-  currentFunctionName: string,
+  state: AnalysisState,
 ): FunctionDefinition | undefined {
-  if (callInfo === undefined) {
+  // A method on a value we already track (json, params map) is a library call,
+  // even if the codebase has an unrelated function with the same name.
+  if (
+    callInfo.baseNode !== undefined &&
+    resolveExpressionNode(callInfo.baseNode, state.aliases, state.constants) !== undefined
+  ) {
     return undefined;
   }
 
-  const calleeKey = callInfo.methodName === undefined ? callInfo.calleeName : normalizeMethodName(callInfo.methodName);
-  const helper = functions.get(calleeKey);
-  const normalizedCalleeName = extractTerminalName(calleeKey);
-  const normalizedCurrentName = extractTerminalName(currentFunctionName);
-  const arityKey =
-    normalizedCalleeName === undefined ? undefined : `${normalizedCalleeName}#${callInfo.arguments.length}`;
-  const resolvedHelper =
-    (arityKey === undefined ? undefined : functions.get(arityKey)) ??
-    helper ??
-    (normalizedCalleeName === undefined ? undefined : functions.get(normalizedCalleeName));
-  if (resolvedHelper === undefined || resolvedHelper.name === normalizedCurrentName) {
+  const arity = callInfo.arguments.length;
+  const calleeName = (callInfo.methodName ?? callInfo.calleeName).replace(/<.*>/s, "").replace(/\s+/g, "");
+  const resolved =
+    calleeName.includes("::") ?
+      functions.get(`${calleeName.replace(/^::/, "")}#${arity}`)
+    : lookupInCurrentClass(calleeName, arity, callInfo, functions, state) ?? functions.get(`${calleeName}#${arity}`);
+
+  return resolved?.qualifiedName === state.definition.qualifiedName ? undefined : resolved;
+}
+
+/** An unqualified call inside `Foo::bar` means `Foo::baz` when that exists. */
+function lookupInCurrentClass(
+  calleeName: string,
+  arity: number,
+  callInfo: ParsedCall,
+  functions: ReadonlyMap<string, FunctionDefinition>,
+  state: AnalysisState,
+): FunctionDefinition | undefined {
+  if (callInfo.methodName !== undefined) {
     return undefined;
   }
-
-  return resolvedHelper;
+  const scopeEnd = state.definition.qualifiedName.lastIndexOf("::");
+  return scopeEnd < 0 ?
+      undefined
+    : functions.get(`${state.definition.qualifiedName.slice(0, scopeEnd)}::${calleeName}#${arity}`);
 }
 
 function firstConcreteSegment(segments: readonly string[]): string | undefined {

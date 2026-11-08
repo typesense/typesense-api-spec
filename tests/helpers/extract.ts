@@ -33,7 +33,7 @@ export async function extractHandler(cpp: string, options: ExtractOptions = {}):
       },
       functions,
       new Map(Object.entries(options.constants ?? {})),
-      options.maxCallDepth ?? 4,
+      options.maxCallDepth ?? 8,
       { enabled: false, routeFilter: undefined },
     );
     const names = (parameters: readonly CollectedParameter[]): readonly string[] =>

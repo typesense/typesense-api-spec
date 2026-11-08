@@ -52,12 +52,30 @@ describe("listSourceFiles", () => {
         { path: "e.cpp", type: "blob" },
       ],
     });
-    expect(await listSourceFiles("v30", "server", [".cpp", ".h"])).toEqual(["server/a.cpp", "server/b.h"]);
+    expect(await listSourceFiles("filter-branch", "server", [".cpp", ".h"])).toEqual(["server/a.cpp", "server/b.h"]);
+  });
+
+  test("asks GitHub for a branch's tree only once", async () => {
+    let calls = 0;
+    globalThis.fetch = (() => {
+      calls += 1;
+      return Promise.resolve(Response.json({ truncated: false, tree: [{ path: "a.cpp", type: "blob" }] }));
+    }) as unknown as typeof fetch;
+    await listSourceFiles("once-branch", "", [".cpp"]);
+    await listSourceFiles("once-branch", "", [".h"]);
+    expect(calls).toBe(1);
+  });
+
+  test("retries a failed listing on the next call", async () => {
+    stubTree({ message: "Not Found" }, 404);
+    await rejectionMessage(listSourceFiles("retry-branch", "", [".cpp"]));
+    stubTree({ truncated: false, tree: [{ path: "a.cpp", type: "blob" }] });
+    expect(await listSourceFiles("retry-branch", "", [".cpp"])).toEqual(["a.cpp"]);
   });
 
   test("refuses a truncated tree rather than returning partial results", async () => {
     stubTree({ truncated: true, tree: [] });
-    expect(await rejectionMessage(listSourceFiles("v30", "", [".cpp"]))).toContain("truncated");
+    expect(await rejectionMessage(listSourceFiles("truncated-branch", "", [".cpp"]))).toContain("truncated");
   });
 
   test("names the repo and branch when the listing fails", async () => {

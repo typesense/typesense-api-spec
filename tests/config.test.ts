@@ -36,7 +36,7 @@ describe("loadConfig", () => {
     const config = await loadConfig(await writeConfig({}), noCliOptions);
     expect(config.sourceBranch).toBe("v30");
     expect(config.routeFile).toBe("src/main/typesense_server.cpp");
-    expect(config.maxCallDepth).toBe(4);
+    expect(config.maxCallDepth).toBe(8);
     expect(config.outputPath).toBe(path.join(dir, "output/typesense_api_spec.json"));
     expect(config.diagnosticsOutputPath).toBe(path.join(dir, "output/typesense_api_diagnostics.json"));
   });

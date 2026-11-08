@@ -31,7 +31,7 @@ export const extractorConfigSchema = z
       .optional()
       .default("./output/typesense_api_diagnostics.json"),
     base_url: z.string().min(1).optional(),
-    max_call_depth: z.number().finite().default(4),
+    max_call_depth: z.number().finite().default(8),
     fail_on_diagnostics: z.boolean().default(false),
     fail_on_unresolved: z.boolean().default(false),
     include_helpers: z.array(z.string().min(1)).default([]),

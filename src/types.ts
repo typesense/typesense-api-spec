@@ -171,6 +171,8 @@ export interface FunctionParameter {
 
 export interface FunctionDefinition {
   readonly name: string;
+  /** The name as written in the definition, e.g. `Foo::Bar::baz`. */
+  readonly qualifiedName: string;
   readonly filePath: string;
   readonly declaration: string;
   readonly body: string;

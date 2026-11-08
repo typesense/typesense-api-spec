@@ -138,6 +138,148 @@ describe("helper calls", () => {
     expect(query).toContain("from_req_helper");
   });
 
+  test("follows a qualified call to the right class when method names collide", async () => {
+    const { query } = await extractHandler(
+      handlerWithBody(
+        `Second::init(req->params);`,
+        `void First::init(std::map<std::string, std::string>& params) { params["wrong_class"]; }
+         void Second::init(std::map<std::string, std::string>& params) { params["right_class"]; }`,
+      ),
+    );
+    expect(query).toEqual(["right_class"]);
+  });
+
+  test("a qualified call does not fall back to another class's method", async () => {
+    const { query } = await extractHandler(
+      handlerWithBody(
+        `std::find(req->params);`,
+        `void Other::find(std::map<std::string, std::string>& params) { params["wrong"]; }`,
+      ),
+    );
+    expect(query).toEqual([]);
+  });
+
+  test("a call between same-named methods of different classes is followed", async () => {
+    const { body } = await extractHandler(
+      handlerWithBody(
+        `Base::validate(body);`,
+        `void Derived::validate(nlohmann::json& j) { j["from_derived"]; }
+         void Base::validate(nlohmann::json& j) { j["from_base"]; Derived::validate(j); }`,
+      ),
+    );
+    expect(body).toEqual(["from_base", "from_derived"]);
+  });
+
+  test("an unqualified call inside a class prefers that class's method", async () => {
+    const { body } = await extractHandler(
+      handlerWithBody(
+        `Mine::start(body);`,
+        `void Other::parse_it(nlohmann::json& j) { j["wrong"]; }
+         void Mine::parse_it(nlohmann::json& j) { j["right"]; }
+         void Mine::start(nlohmann::json& j) { parse_it(j); }`,
+      ),
+    );
+    expect(body).toEqual(["right"]);
+  });
+
+  test("a call with the wrong number of arguments is not bound to that helper", async () => {
+    const { body } = await extractHandler(
+      handlerWithBody(
+        `two_args(body);`,
+        `void two_args(int unrelated, nlohmann::json& j) { j["wrong"]; }`,
+      ),
+    );
+    expect(body).toEqual([]);
+  });
+
+  test("does not bind a value to a colliding function that takes other types", async () => {
+    // collectionManager.get_preset(name, preset) resolved to the get_preset(req, res) handler.
+    const { query } = await extractHandler(
+      handlerWithBody(
+        `collectionManager.get_preset(req->params["preset"], preset);`,
+        `bool get_preset(const std::shared_ptr<http_req>& req, const std::shared_ptr<http_res>& res) {
+           std::string wrong = req->params["wrong"];
+           return true;
+         }`,
+      ),
+    );
+    expect(query).toEqual(["preset"]);
+  });
+
+  test("a helper's map parameter is the params map only if the caller passed it", async () => {
+    const { query } = await extractHandler(
+      handlerWithBody(
+        `std::map<std::string, std::string> local; read_map(local, req->params); read_other(body, local);`,
+        `void read_map(std::map<std::string, std::string>& other, std::map<std::string, std::string>& params) {
+           other["wrong"];
+           params["right"];
+         }
+         void read_other(nlohmann::json& j, std::map<std::string, std::string>& unrelated) { unrelated["wrong"]; }`,
+      ),
+    );
+    expect(query).toEqual(["right"]);
+  });
+
+  test("a helper's parameter named req is not the request unless it was passed", async () => {
+    const { query } = await extractHandler(
+      handlerWithBody(`read_it(body, thing);`, `void read_it(nlohmann::json& j, Thing& req) { req->params["wrong"]; }`),
+    );
+    expect(query).toEqual([]);
+  });
+
+  test("path parameters stay strings when the server converts them", async () => {
+    const { types } = await extractHandler(
+      handlerWithBody(`uint32_t id = std::stoul(req->params["id"]); remove_doc(req->params["id"]);`, `void remove_doc(uint64_t seq_id) {}`),
+      { pathTemplate: "/docs/:id" },
+    );
+    expect(types.get("id")).toBe("string");
+  });
+
+  test("does not follow a request value into a string or number parameter", async () => {
+    const { query, body, types } = await extractHandler(
+      handlerWithBody(
+        `parse_text(req->params["text"]); parse_count(body["count"]); parse_list(body["list"]);`,
+        `void parse_text(const std::string& raw) { raw["wrong_from_string"]; }
+         void parse_count(uint32_t value) { value["wrong_from_number"]; }
+         void parse_list(const std::vector<std::string>& values) { values["wrong_from_vector"]; }`,
+      ),
+    );
+    expect(query).toEqual(["text"]);
+    expect(body).toEqual(["count", "list"]);
+    expect(types.get("count")).toBe("uint");
+    expect(types.get("list")).toBe("string[]");
+  });
+
+  test("follows a JSON value into a helper that takes JSON", async () => {
+    const { body } = await extractHandler(
+      handlerWithBody(
+        `read_nested(body["nested"]);`,
+        `void read_nested(const nlohmann::json& section) { section["inner"]; }`,
+      ),
+    );
+    expect(body).toContain("nested.inner");
+  });
+
+  test("library methods on tracked values are not followed as helpers", async () => {
+    const { body } = await extractHandler(
+      handlerWithBody(
+        `body.update(body);`,
+        `void update(nlohmann::json& j) { j["wrong"]; }`,
+      ),
+    );
+    expect(body).toEqual([]);
+  });
+
+  test("follows a method called on an untracked object", async () => {
+    const { body } = await extractHandler(
+      handlerWithBody(
+        `Manager::get_instance().add_model(body, id);`,
+        `Option<bool> Manager::add_model(nlohmann::json& model, const std::string& id) { model["from_manager"]; return true; }`,
+      ),
+    );
+    expect(body).toContain("from_manager");
+  });
+
   test("stops at the call depth limit and reports it", async () => {
     const { body, diagnosticCodes } = await extractHandler(
       handlerWithBody(

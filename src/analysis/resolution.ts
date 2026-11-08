@@ -282,16 +282,6 @@ export function bootstrapAliases(
       aliases.set(parameter.name, { location: "request-root", segments: [] }),
     );
 
-  parameters
-    .filter(
-      (parameter) =>
-        parameter.name.length > 0 &&
-        parameter.typeText.includes("std::map<std::string, std::string>"),
-    )
-    .forEach((parameter) =>
-      aliases.set(parameter.name, { location: "query-root", segments: [] }),
-    );
-
   return aliases;
 }
 
@@ -319,15 +309,6 @@ function resolveRequestRoot(
   return undefined;
 }
 
-// `req` is the conventional handler parameter name; other names are bound to
-// request-root by bootstrapAliases from their http_req parameter type.
 function isRequestIdentifier(node: SyntaxNode, aliases: ReadonlyMap<string, AliasTarget>): boolean {
-  if (node.type !== "identifier") {
-    return false;
-  }
-  const alias = aliases.get(node.text);
-  if (alias !== undefined) {
-    return alias.location === "request-root";
-  }
-  return node.text === "req";
+  return node.type === "identifier" && aliases.get(node.text)?.location === "request-root";
 }

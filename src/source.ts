@@ -52,11 +52,20 @@ export function resolveRawGithubUrl(
   return `${GITHUB_RAW_BASE_URL}/${sourceBranch}/${normalizedSourcePath}`;
 }
 
-export async function listSourceFiles(
-  sourceBranch: string,
-  rootDir: string,
-  extensions: readonly string[],
-): Promise<readonly string[]> {
+const treeCache = new Map<string, Promise<readonly string[]>>();
+
+/** Lists blob paths once per branch, so one extraction makes one API call. */
+function listBranchFiles(sourceBranch: string): Promise<readonly string[]> {
+  let cached = treeCache.get(sourceBranch);
+  if (cached === undefined) {
+    cached = fetchBranchFiles(sourceBranch);
+    treeCache.set(sourceBranch, cached);
+    cached.catch(() => treeCache.delete(sourceBranch));
+  }
+  return cached;
+}
+
+async function fetchBranchFiles(sourceBranch: string): Promise<readonly string[]> {
   const response = await octokit.rest.git
     .getTree({
       owner: GITHUB_OWNER,
@@ -77,14 +86,22 @@ export async function listSourceFiles(
     throw new Error(`GitHub tree response for ${sourceBranch} was truncated.`);
   }
 
+  return response.data.tree
+    .filter((entry) => entry.type === "blob")
+    .map((entry) => entry.path)
+    .filter((filePath): filePath is string => filePath !== undefined);
+}
+
+export async function listSourceFiles(
+  sourceBranch: string,
+  rootDir: string,
+  extensions: readonly string[],
+): Promise<readonly string[]> {
   const normalizedRootDir = normalizeRepoPath(rootDir);
   const rootPrefix =
     normalizedRootDir.length === 0 ? "" : `${normalizedRootDir}/`;
 
-  return response.data.tree
-    .filter((entry) => entry.type === "blob")
-    .map((entry) => entry.path)
-    .filter((filePath): filePath is string => filePath !== undefined)
+  return (await listBranchFiles(sourceBranch))
     .filter(
       (filePath) => rootPrefix.length === 0 || filePath.startsWith(rootPrefix),
     )

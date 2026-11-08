@@ -9,6 +9,18 @@ export function parseCpp(sourceText: string): SyntaxNode {
   return parser.parse(sourceText).rootNode;
 }
 
+const parsedFunctions = new Map<string, SyntaxNode>();
+
+/** A function is analyzed once per route and alias combination; parse its text once. */
+export function parseCppCached(sourceText: string): SyntaxNode {
+  let rootNode = parsedFunctions.get(sourceText);
+  if (rootNode === undefined) {
+    rootNode = parseCpp(sourceText);
+    parsedFunctions.set(sourceText, rootNode);
+  }
+  return rootNode;
+}
+
 export function findFirstNamedNode(rootNode: SyntaxNode, type: string): SyntaxNode | undefined {
   if (rootNode.type === type) {
     return rootNode;

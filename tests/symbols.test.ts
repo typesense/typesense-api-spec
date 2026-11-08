@@ -50,6 +50,32 @@ describe("indexFunctions", () => {
     expect(functions.get("do_work")?.parameters).toHaveLength(1);
   });
 
+  test("registers qualified names with every shorter suffix", async () => {
+    const functions = await index("void Outer::Inner::do_work(int a) {}");
+    for (const key of ["Outer::Inner::do_work#1", "Inner::do_work#1", "do_work#1"]) {
+      expect(functions.get(key)?.qualifiedName).toBe("Outer::Inner::do_work");
+    }
+  });
+
+  test("keeps same-named methods of different classes apart", async () => {
+    const functions = await index("void A::init(int a) {}\nvoid B::init(int b) {}");
+    expect(functions.get("A::init#1")?.parameters[0]?.name).toBe("a");
+    expect(functions.get("B::init#1")?.parameters[0]?.name).toBe("b");
+    expect(functions.get("init#1")?.parameters[0]?.name).toBe("a");
+  });
+
+  test("indexes every source file except src/main, with priority files winning short names", async () => {
+    const functions = await index("void shared() { from_core_api(); }", {
+      "src/a_manager.cpp": "void shared() { from_manager(); }\nvoid only_in_manager() {}",
+      "src/main/server.cpp": "void only_in_main() {}",
+      "test/a_test.cpp": "void only_in_test() {}",
+    });
+    expect(functions.get("shared")?.body).toContain("from_core_api");
+    expect(functions.has("only_in_manager")).toBe(true);
+    expect(functions.has("only_in_main")).toBe(false);
+    expect(functions.has("only_in_test")).toBe(false);
+  });
+
   test("keeps the first definition when an arity is defined twice", async () => {
     const functions = await index("void f(int first) {}\nvoid f(int second) {}");
     expect(functions.get("f#1")?.parameters[0]?.name).toBe("first");

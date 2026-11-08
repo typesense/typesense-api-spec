@@ -2,28 +2,37 @@ import type { SyntaxNode } from "tree-sitter";
 import { childForField, extractDeclaratorName, parseCpp } from "./cpp-ast.js";
 import { readTextFile } from "./fs.js";
 import { normalizeNewlines } from "./text.js";
-import { resolveRawGithubUrl, resolveSourcePath } from "./source.js";
+import { listSourceFiles, resolveRawGithubUrl, resolveSourcePath } from "./source.js";
 import type { FunctionDefinition, FunctionParameter } from "./types.js";
+
+// When two definitions share a short name, the first one indexed wins, so the
+// files that handle requests come first. Qualified lookups are not affected.
+const PRIORITY_SOURCE_FILES: readonly string[] = [
+  "src/core_api.cpp",
+  "src/core_api_utils.cpp",
+  "src/auth_manager.cpp",
+  "src/collection.cpp",
+  "src/collection_manager.cpp",
+  "src/curation_index_manager.cpp",
+  "src/field.cpp",
+  "src/synonym_index_manager.cpp",
+  "src/tsconfig.cpp",
+];
 
 export async function indexFunctions(
   rootDir: string,
   includeHelpers: readonly string[],
   sourceBranch: string,
 ): Promise<ReadonlyMap<string, FunctionDefinition>> {
-  const sourceFiles = [
-    "src/core_api.cpp",
-    "src/core_api_utils.cpp",
-    "src/auth_manager.cpp",
-    "src/collection.cpp",
-    "src/collection_manager.cpp",
-    "src/curation_index_manager.cpp",
-    "src/field.cpp",
-    "src/synonym_index_manager.cpp",
-    "src/tsconfig.cpp",
-    ...includeHelpers,
-  ]
-    .map((filePath) => resolveSourcePath(rootDir, filePath))
-    .map((filePath) => resolveRawGithubUrl(sourceBranch, filePath));
+  const available = await listSourceFiles(sourceBranch, rootDir, [".cpp"]);
+  const sourceDir = resolveSourcePath(rootDir, "src");
+  const priority = PRIORITY_SOURCE_FILES.map((filePath) => resolveSourcePath(rootDir, filePath));
+  const orderedFiles = [
+    ...priority.filter((filePath) => available.includes(filePath)),
+    ...available.filter((filePath) => isIndexableSource(filePath, sourceDir) && !priority.includes(filePath)),
+    ...includeHelpers.map((filePath) => resolveSourcePath(rootDir, filePath)),
+  ];
+  const sourceFiles = [...new Set(orderedFiles)].map((filePath) => resolveRawGithubUrl(sourceBranch, filePath));
 
   const allDefinitions = (
     await Promise.all(
@@ -35,21 +44,30 @@ export async function indexFunctions(
   ).flat();
 
   const functions = new Map<string, FunctionDefinition>();
+  const register = (key: string, definition: FunctionDefinition): void => {
+    if (!functions.has(key)) {
+      functions.set(key, definition);
+    }
+  };
   allDefinitions.forEach((definition) => {
     const maxArity = definition.parameters.length;
     const minArity = definition.parameters.filter((parameter) => !parameter.hasDefault).length;
-    for (let arity = minArity; arity <= maxArity; arity += 1) {
-      const overloadKey = serializeOverloadKey(definition.name, arity);
-      if (!functions.has(overloadKey)) {
-        functions.set(overloadKey, definition);
+    // `A::B::f` can also be called as `B::f` or `f`.
+    const nameParts = definition.qualifiedName.split("::");
+    nameParts.forEach((_part, index) => {
+      const name = nameParts.slice(index).join("::");
+      register(name, definition);
+      for (let arity = minArity; arity <= maxArity; arity += 1) {
+        register(serializeOverloadKey(name, arity), definition);
       }
-    }
-    if (!functions.has(definition.name)) {
-      functions.set(definition.name, definition);
-    }
+    });
   });
 
   return functions;
+}
+
+function isIndexableSource(filePath: string, sourceDir: string): boolean {
+  return filePath.startsWith(`${sourceDir}/`) && !filePath.startsWith(`${sourceDir}/main/`);
 }
 
 function serializeOverloadKey(name: string, arity: number): string {
@@ -95,6 +113,7 @@ function materializeFunctionDefinition(
 
   return {
     name: functionName,
+    qualifiedName: qualifiedFunctionName(nameNode, functionName),
     filePath,
     declaration: sourceText.slice(functionNode.startIndex, bodyNode.startIndex).trim(),
     body: sourceText.slice(bodyNode.startIndex + 1, bodyNode.endIndex - 1),
@@ -106,6 +125,14 @@ function materializeFunctionDefinition(
     },
     parameters: parseParametersFromDeclarator(declaratorNode),
   };
+}
+
+function qualifiedFunctionName(nameNode: SyntaxNode | undefined, functionName: string): string {
+  if (nameNode?.type !== "qualified_identifier") {
+    return functionName;
+  }
+  // Drop template arguments and whitespace: `Foo<T> :: bar` is `Foo::bar`.
+  return nameNode.text.replace(/<[^<>]*>/g, "").replace(/\s+/g, "").replace(/^::/, "");
 }
 
 function parseParametersFromDeclarator(declaratorNode: SyntaxNode): readonly FunctionParameter[] {
