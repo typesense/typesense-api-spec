@@ -41,6 +41,8 @@ export function isValueType(value: string): value is ValueType {
   return value.split(" | ").every((part) => KNOWN_VALUE_TYPES.has(part));
 }
 
+const NUMERIC_TYPES_WIDEST_FIRST: readonly string[] = ["number", "integer", "uint"];
+
 export function mergeValueTypes(left: ValueType | undefined, right: ValueType | undefined): ValueType | undefined {
   if (left === undefined) {
     return right;
@@ -56,6 +58,9 @@ export function mergeValueTypes(left: ValueType | undefined, right: ValueType | 
   }
 
   const variants = new Set([...left.split(" | "), ...right.split(" | ")]);
+  // uint fits in integer and integer fits in number, so a union of them says no more than the widest.
+  const widestNumeric = NUMERIC_TYPES_WIDEST_FIRST.find((type) => variants.has(type));
+  NUMERIC_TYPES_WIDEST_FIRST.filter((type) => type !== widestNumeric).forEach((type) => variants.delete(type));
   const merged = [...variants].sort((a, b) => a.localeCompare(b)).join(" | ");
   if (isValueType(merged)) {
     return merged;
@@ -193,6 +198,8 @@ export interface AliasTarget {
     | "param-entry"
     /** The key of such a pair: comparing it or looking it up names a parameter. */
     | "param-key"
+    /** The iterator from `params.find("x")`; segments name that parameter. */
+    | "param-lookup"
     /** A key from iterating a JSON object's items; segments locate that object. */
     | "body-key";
   readonly segments: readonly string[];

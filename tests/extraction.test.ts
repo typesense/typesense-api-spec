@@ -506,6 +506,44 @@ describe("JSON objects used as maps", () => {
     expect(body).toEqual(["sometimes"]);
   });
 
+  test("converting or validating a query value declares its type", async () => {
+    const { types } = await extractHandler(`
+      bool handler(const std::shared_ptr<http_req>& req, const std::shared_ptr<http_res>& res) {
+        const size_t size = std::stoi(req->params["size"]);
+        const auto& limit = req->params["limit"];
+        if (!StringUtils::is_uint32_t(limit)) { return false; }
+        req->params["plain"];
+        return true;
+      }`);
+    expect(types.get("size")).toBe("integer");
+    expect(types.get("limit")).toBe("uint");
+    expect(types.get("plain")).toBeUndefined();
+  });
+
+  test("the value behind a params.find() iterator types that parameter", async () => {
+    const { query, types } = await extractHandler(`
+      bool handler(const std::shared_ptr<http_req>& req, const std::shared_ptr<http_res>& res) {
+        const auto ttl_it = req->params.find("ttl");
+        if (ttl_it != req->params.end() && StringUtils::is_int32_t(ttl_it->second)) { use(); }
+        const auto cache_it = req->params.find("cache");
+        bool cache = cache_it != req->params.end() && (cache_it->second == "1" || cache_it->second == "true");
+        return true;
+      }`);
+    expect(query).toEqual(["cache", "ttl"]);
+    expect(types.get("ttl")).toBe("integer");
+    expect(types.get("cache")).toBe("boolean");
+  });
+
+  test("a numeric union collapses to its widest type", async () => {
+    const { types } = await extractHandler(`
+      bool handler(const std::shared_ptr<http_req>& req, const std::shared_ptr<http_res>& res) {
+        if (!StringUtils::is_uint32_t(req->params["n"])) { return false; }
+        std::stoi(req->params["n"]);
+        return true;
+      }`);
+    expect(types.get("n")).toBe("integer");
+  });
+
   test("a key skip list covers every key it names", async () => {
     const { body } = await extractHandler(
       handlerWithBody(`

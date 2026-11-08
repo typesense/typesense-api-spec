@@ -40,6 +40,23 @@ const typeMethods = {
   is_number: "number",
 } as const satisfies Record<string, TypePrimitives>;
 
+/** Query values are strings on the wire, so converting or validating one declares its real type. */
+const queryValueReaders = {
+  stoi: "integer",
+  stol: "integer",
+  stoll: "integer",
+  stoul: "uint",
+  stoull: "uint",
+  stof: "number",
+  stod: "number",
+  is_int32_t: "integer",
+  is_int64_t: "integer",
+  is_uint32_t: "uint",
+  is_uint64_t: "uint",
+  is_float: "number",
+  is_bool: "boolean",
+} as const satisfies Record<string, TypePrimitives>;
+
 const typeTemplates = {
   "std::string": "string",
   string: "string",
@@ -320,6 +337,12 @@ function handleDeclaration(
       state.keyTables.set(aliasName, keyTable);
     }
 
+    const lookup = resolveParamLookup(valueNode, state);
+    if (lookup !== undefined) {
+      state.aliases.set(aliasName, lookup);
+      return;
+    }
+
     const literalValue = resolveStringTokenNode(valueNode, state.constants);
     if (literalValue !== undefined && (isConstantIdentifier(aliasName) || isConstDeclaration(statement))) {
       state.constants.set(aliasName, literalValue);
@@ -408,6 +431,21 @@ function structuredBindingNames(statement: SyntaxNode): readonly string[] | unde
     ?.descendantsOfType("structured_binding_declarator")[0]
     ?.namedChildren.filter((child) => child.type === "identifier")
     .map((child) => child.text);
+}
+
+/** `req->params.find("x")`: its iterator's `->second` is the value of x. */
+function resolveParamLookup(valueNode: SyntaxNode, state: AnalysisState): AliasTarget | undefined {
+  const normalized = unwrapExpressionNode(valueNode);
+  const callInfo = normalized.type === "call_expression" ? parseCallExpressionNode(normalized) : undefined;
+  const keyNode = callInfo?.arguments[0];
+  if (callInfo?.methodName !== "find" || callInfo.baseNode === undefined || keyNode === undefined) {
+    return undefined;
+  }
+
+  const base = resolveExpressionNode(callInfo.baseNode, state.aliases, state.constants);
+  const key = resolveStringTokenNode(keyNode, state.constants);
+  const isParamsMap = (base?.location === "params-root" || base?.location === "query-root") && base.segments.length === 0;
+  return isParamsMap && key !== undefined ? { location: "param-lookup", segments: [key] } : undefined;
 }
 
 const KEY_TABLE_TYPE = /^(?:[\w:]*::)?(?:unordered_map|map|sparse_hash_map)\s*<\s*std::string\s*,\s*(.+)>$/;
@@ -607,6 +645,21 @@ function collectAssignmentExpression(node: SyntaxNode, state: AnalysisState): vo
   }
 }
 
+/** `std::stoi(req->params["x"])` and `StringUtils::is_uint32_t(req->params["x"])` type x. */
+function collectQueryValueRead(callInfo: ParsedCall, state: AnalysisState, node: SyntaxNode): void {
+  const functionName = callInfo.calleeName.split("::").at(-1) ?? "";
+  const valueType = Object.hasOwn(queryValueReaders, functionName) ? queryValueReaders[functionName as keyof typeof queryValueReaders] : undefined;
+  const firstArgument = callInfo.arguments[0];
+  if (valueType === undefined || firstArgument === undefined) {
+    return;
+  }
+
+  const target = resolveExpressionNode(firstArgument, state.aliases, state.constants);
+  if (target?.location === "params-root" || target?.location === "query-root") {
+    addParameter(target, [], state, node, valueType);
+  }
+}
+
 /** `table.find(key)` where key comes from iterating the params map names every key in the table. */
 function collectKeyTableLookup(callInfo: ParsedCall, state: AnalysisState): void {
   const table = callInfo.baseNode?.type === "identifier" ? state.keyTables.get(callInfo.baseNode.text) : undefined;
@@ -651,6 +704,7 @@ function collectCallExpression(node: SyntaxNode, state: AnalysisState, context: 
   }
 
   collectKeyTableLookup(callInfo, state);
+  collectQueryValueRead(callInfo, state, node);
 
   const normalizedMethodName = callInfo.methodName === undefined ? undefined : normalizeMethodName(callInfo.methodName);
 
@@ -778,6 +832,10 @@ function comparedValueType(
   const isParam = comparedTo?.location === "params-root" || comparedTo?.location === "query-root";
   if (isParam && (valueNode.text === '"true"' || valueNode.text === '"false"')) {
     return "boolean";
+  }
+  // `"1"` is only ever a spelling of true or of a number, never a string option.
+  if (isParam && valueNode.text === '"1"') {
+    return undefined;
   }
   return resolveValueTypeNode(valueNode, state);
 }
@@ -1018,6 +1076,7 @@ function addParameter(
     target.location === "request-root" ||
     target.location === "param-entry" ||
     target.location === "param-key" ||
+    target.location === "param-lookup" ||
     target.location === "body-key"
   ) {
     return;

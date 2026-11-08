@@ -22,6 +22,9 @@ export function resolveExpressionNode(
   const entryKey = resolveEntryKey(normalizedNode, aliases);
   if (entryKey !== undefined) return entryKey;
 
+  const lookupValue = resolveLookupValue(normalizedNode, aliases);
+  if (lookupValue !== undefined) return lookupValue;
+
   const directAlias = getDirectAlias(normalizedNode, aliases);
   if (directAlias !== undefined) return directAlias;
 
@@ -46,6 +49,16 @@ function resolveEntryKey(node: SyntaxNode, aliases: ReadonlyMap<string, AliasTar
     return undefined;
   }
   return aliases.get(fieldParts.baseNode.text)?.location === "param-entry" ? { location: "param-key", segments: [] } : undefined;
+}
+
+/** `it->second`, where `it = params.find("x")`, is the value of parameter x. */
+function resolveLookupValue(node: SyntaxNode, aliases: ReadonlyMap<string, AliasTarget>): AliasTarget | undefined {
+  const fieldParts = parseFieldExpression(node);
+  if (fieldParts?.fieldName !== "second" || fieldParts.baseNode.type !== "identifier") {
+    return undefined;
+  }
+  const iterator = aliases.get(fieldParts.baseNode.text);
+  return iterator?.location === "param-lookup" ? { location: "params-root", segments: iterator.segments } : undefined;
 }
 
 function getDirectAlias(
