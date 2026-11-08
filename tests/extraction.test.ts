@@ -301,6 +301,31 @@ describe("helper calls", () => {
   });
 });
 
+describe("parse errors", () => {
+  const brokenHandler = `
+    bool handler(const std::shared_ptr<http_req>& req, const std::shared_ptr<http_res>& res) {
+      nlohmann::json body = nlohmann::json::parse(req->body);
+      auto f = [&]() {
+        if (x) { y();
+      };
+      body["before_error"];
+      read_more(body);
+    }
+    void read_more(nlohmann::json& j) { j["from_later_helper"]; }
+    void never_called(nlohmann::json& body) { body["not_called"]; }`;
+
+  test("follows a helper defined after a parse error", async () => {
+    const { body } = await extractHandler(brokenHandler);
+    expect(body).toContain("from_later_helper");
+  });
+
+  test("does not analyze later functions as part of the broken one", async () => {
+    const { body } = await extractHandler(brokenHandler);
+    expect(body).toContain("before_error");
+    expect(body).not.toContain("not_called");
+  });
+});
+
 describe("loops", () => {
   test("creates item aliases for body iterables", async () => {
     const { body } = await extractHandler(handlerWithBody(`for (auto& item : body["items"]) { item["sku"]; }`));

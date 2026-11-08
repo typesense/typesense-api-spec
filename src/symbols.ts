@@ -83,10 +83,10 @@ function extractFunctionDefinitions(filePath: string, sourceText: string): reado
 }
 
 function collectFunctionNodes(node: SyntaxNode): readonly SyntaxNode[] {
-  if (node.type === "function_definition") {
-    return [node];
-  }
-  return node.namedChildren.flatMap(collectFunctionNodes);
+  // C++ functions don't nest, but after a parse error tree-sitter can stretch a
+  // function to the end of the file, making the ones after it look nested.
+  const nested = node.namedChildren.flatMap(collectFunctionNodes);
+  return node.type === "function_definition" ? [node, ...nested] : nested;
 }
 
 function materializeFunctionDefinition(

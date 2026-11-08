@@ -76,6 +76,21 @@ describe("indexFunctions", () => {
     expect(functions.has("only_in_test")).toBe(false);
   });
 
+  test("finds functions that a parse error made look nested", async () => {
+    // collection.cpp lost about 8,400 lines of functions this way, including
+    // collection_search_args_t::init, which reads every search parameter.
+    const functions = await index(`
+      void broken() {
+        auto f = [&]() {
+          if (x) { y();
+        };
+        z();
+      }
+      void Args::after_the_error(nlohmann::json& j) { j["x"]; }`);
+    expect(functions.has("broken")).toBe(true);
+    expect(functions.has("Args::after_the_error#1")).toBe(true);
+  });
+
   test("keeps the first definition when an arity is defined twice", async () => {
     const functions = await index("void f(int first) {}\nvoid f(int second) {}");
     expect(functions.get("f#1")?.parameters[0]?.name).toBe("first");

@@ -175,6 +175,11 @@ function analyzeStatement(
   visited: Set<string>,
   depth: number,
 ): void {
+  // Only appears inside another function after a parse error; see collectFunctionNodes.
+  if (statement.type === "function_definition") {
+    return;
+  }
+
   if (statement.type === "declaration") {
     handleDeclaration(statement, state, context, visited, depth);
     return;
@@ -402,6 +407,10 @@ function walkExpression(
   depth: number,
 ): void {
   walkNamed(node, (currentNode) => {
+    if (currentNode.type === "function_definition") {
+      return false;
+    }
+
     if (currentNode.type === "lambda_expression") {
       analyzeLambda(currentNode, state, context, visited, depth, new Map(), new Map());
       return false;
