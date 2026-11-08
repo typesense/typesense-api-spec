@@ -18,6 +18,9 @@ export function resolveExpressionNode(
   const requestRoot = resolveRequestRoot(normalizedNode, aliases);
   if (requestRoot !== undefined) return requestRoot;
 
+  const entryKey = resolveEntryKey(normalizedNode, aliases);
+  if (entryKey !== undefined) return entryKey;
+
   const directAlias = getDirectAlias(normalizedNode, aliases);
   if (directAlias !== undefined) return directAlias;
 
@@ -34,6 +37,14 @@ export function resolveExpressionNode(
   }
 
   return undefined;
+}
+
+function resolveEntryKey(node: SyntaxNode, aliases: ReadonlyMap<string, AliasTarget>): AliasTarget | undefined {
+  const fieldParts = parseFieldExpression(node);
+  if (fieldParts?.fieldName !== "first" || fieldParts.baseNode.type !== "identifier") {
+    return undefined;
+  }
+  return aliases.get(fieldParts.baseNode.text)?.location === "param-entry" ? { location: "param-key", segments: [] } : undefined;
 }
 
 function getDirectAlias(
@@ -188,6 +199,9 @@ export function resolveLoopItemTarget(
   const resolved = resolveExpressionNode(expressionNode, aliases, constants);
   // Iterating req->params or a query map yields key/value pairs, not
   // addressable fields; only JSON body arrays/objects produce item aliases.
+  if (resolved?.location === "params-root" || resolved?.location === "query-root") {
+    return resolved.segments.length === 0 ? { location: "param-entry", segments: [] } : undefined;
+  }
   if (resolved === undefined || resolved.location !== "body-root") {
     return undefined;
   }

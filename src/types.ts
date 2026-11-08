@@ -188,7 +188,11 @@ export interface AliasTarget {
     | "query-root"
     | "body-root"
     /** The http_req object itself; `->params` / `->body` resolve from it. */
-    | "request-root";
+    | "request-root"
+    /** A key/value pair from iterating the params map. */
+    | "param-entry"
+    /** The key of such a pair: comparing it or looking it up names a parameter. */
+    | "param-key";
   readonly segments: readonly string[];
 }
 

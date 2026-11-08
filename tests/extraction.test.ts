@@ -338,6 +338,121 @@ describe("loops", () => {
   });
 });
 
+describe("parameters read through a loop over the params map", () => {
+  const overParams = (statements: string): string =>
+    handlerWithBody(`for (const auto& kv : req->params) { const std::string& key = kv.first; const std::string& val = kv.second; ${statements} }`);
+
+  test("comparing the key names a parameter", async () => {
+    const { query } = await extractHandler(overParams(`if (key == PREFIX) {} else if ("literal_key" == key) {}`), {
+      constants: { PREFIX: "prefix" },
+    });
+    expect(query).toEqual(["literal_key", "prefix"]);
+  });
+
+  test("comparing the key with kv.first directly names a parameter", async () => {
+    const { query } = await extractHandler(handlerWithBody(`for (auto& kv : req->params) { if (kv.first == "direct") {} }`));
+    expect(query).toEqual(["direct"]);
+  });
+
+  test("looking the key up in a table names every key, typed from the table", async () => {
+    const { query, types } = await extractHandler(
+      handlerWithBody(`
+        std::unordered_map<std::string, size_t*> ints = {{PER_PAGE, &per_page}, {"page", &page}};
+        std::unordered_map<std::string, bool*> bools = {{"exhaustive", &exhaustive}};
+        std::unordered_map<std::string, std::string*> strs = {{"filter_by", &filter}};
+        std::unordered_map<std::string, std::vector<std::string>*> lists = {{"query_by", &fields}};
+        std::unordered_map<std::string, std::vector<uint32_t>*> int_lists = {{"num_typos", &typos}};
+        std::unordered_map<std::string, float*> floats = {{"lambda", &lambda}};
+        for (const auto& kv : req->params) {
+          const std::string& key = kv.first;
+          auto a = ints.find(key);
+          auto b = bools.find(key);
+          auto c = strs.find(key);
+          auto d = lists.find(key);
+          auto e = int_lists.find(key);
+          auto f = floats.find(key);
+        }`),
+      { constants: { PER_PAGE: "per_page" } },
+    );
+    expect(query).toEqual(["exhaustive", "filter_by", "lambda", "num_typos", "page", "per_page", "query_by"]);
+    expect(types.get("per_page")).toBe("uint");
+    expect(types.get("exhaustive")).toBe("boolean");
+    expect(types.get("filter_by")).toBe("string");
+    expect(types.get("query_by")).toBe("string[]");
+    expect(types.get("num_typos")).toBe("uint[]");
+    expect(types.get("lambda")).toBe("number");
+  });
+
+  test('comparing a param with "true" declares a boolean', async () => {
+    const { types } = await extractHandler(handlerWithBody(`if (req->params["flag"] == "true") {}`));
+    expect(types.get("flag")).toBe("boolean");
+  });
+
+  test("a plain read keeps the table's type", async () => {
+    const { types } = await extractHandler(
+      handlerWithBody(`
+        std::string raw = req->params["per_page"];
+        std::unordered_map<std::string, size_t*> ints = {{"per_page", &per_page}};
+        for (const auto& kv : req->params) { ints.find(kv.first); }`),
+    );
+    expect(types.get("per_page")).toBe("uint");
+  });
+
+  test("works through a helper that receives the params map", async () => {
+    const { query } = await extractHandler(
+      handlerWithBody(
+        `Args::init(req->params, 1);`,
+        `Option<bool> Args::init(std::map<std::string, std::string>& req_params, const uint32_t& n) {
+           std::unordered_map<std::string, bool*> bools = {{FLAG, &flag}};
+           for (const auto& kv : req_params) { bools.find(kv.first); }
+           return true;
+         }`,
+      ),
+      { constants: { "Args::FLAG": "flag" } },
+    );
+    expect(query).toEqual(["flag"]);
+  });
+
+  test("structured bindings work like kv.first", async () => {
+    const { query } = await extractHandler(
+      handlerWithBody(`for (const auto& [key, value] : req->params) { if (key == "structured") {} value["wrong"]; }`),
+    );
+    expect(query).toEqual(["structured"]);
+  });
+
+  test("a table looked up with an unrelated key adds nothing", async () => {
+    const { query } = await extractHandler(
+      handlerWithBody(`
+        std::unordered_map<std::string, bool*> bools = {{"flag", &flag}};
+        bools.find(other_key);
+        std::string name = "x";
+        if (name == "not_a_param") {}`),
+    );
+    expect(query).toEqual([]);
+  });
+
+  test("a table of another type is not treated as known keys", async () => {
+    const { query } = await extractHandler(
+      handlerWithBody(`
+        std::unordered_map<int, bool*> by_number = {{1, &flag}};
+        for (const auto& kv : req->params) { by_number.find(kv.first); }`),
+    );
+    expect(query).toEqual([]);
+  });
+
+  test("a variable with the table's name in an inner scope hides it", async () => {
+    const { query } = await extractHandler(
+      handlerWithBody(`
+        std::unordered_map<std::string, bool*> table = {{"flag", &flag}};
+        for (const auto& kv : req->params) {
+          auto table = other();
+          table.find(kv.first);
+        }`),
+    );
+    expect(query).toEqual([]);
+  });
+});
+
 describe("constants", () => {
   test("prefers the qualified constant over a colliding bare name", async () => {
     const { body } = await extractHandler(handlerWithBody(`body[fields::type];`), {

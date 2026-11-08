@@ -53,11 +53,17 @@ const typeTemplates = {
   float: "number",
   double: "number",
   "std::vector<std::string>": "string[]",
+  "std::vector<uint32_t>": "uint[]",
 } as const satisfies Record<string, TypePrimitives>;
 
 type TypeTemplateName = keyof typeof typeTemplates;
 type TypeMethodName = keyof typeof typeMethods;
 type InferredValueType = (typeof typeMethods)[TypeMethodName] | (typeof typeTemplates)[TypeTemplateName];
+
+interface KeyTable {
+  readonly keys: readonly string[];
+  readonly valueType: TypePrimitives | undefined;
+}
 
 interface AnalysisState {
   readonly aliases: Map<string, AliasTarget>;
@@ -69,6 +75,8 @@ interface AnalysisState {
   readonly declared: Set<string>;
   /** Lambdas assigned to local variables, followed when they are called. */
   readonly lambdas: Map<string, SyntaxNode>;
+  /** Local tables of known keys, such as `{{QUERY_BY, &search_fields}, ...}`. */
+  readonly keyTables: Map<string, KeyTable>;
   readonly definition: FunctionDefinition; readonly collector: ParameterCollector;
   readonly pathParamNames: ReadonlySet<string>;
   readonly routeKey: string;
@@ -131,6 +139,7 @@ export function analyzeFunction(
     parent: undefined,
     declared: new Set<string>(),
     lambdas: new Map<string, SyntaxNode>(),
+    keyTables: new Map<string, KeyTable>(),
     definition,
     collector,
     pathParamNames: context.pathParamNames,
@@ -276,6 +285,7 @@ function handleDeclaration(
       state.aliases.delete(declaredName);
       state.constants.delete(declaredName);
       state.valueTypes.delete(declaredName);
+      state.keyTables.delete(declaredName);
     }
   });
 
@@ -302,6 +312,11 @@ function handleDeclaration(
     if (valueNode.type === "lambda_expression") {
       state.lambdas.set(aliasName, valueNode);
       return;
+    }
+
+    const keyTable = parseKeyTable(childForField(statement, "type"), valueNode, state);
+    if (keyTable !== undefined) {
+      state.keyTables.set(aliasName, keyTable);
     }
 
     const literalValue = resolveStringTokenNode(valueNode, state.constants);
@@ -350,22 +365,63 @@ function handleForRangeLoop(
     return;
   }
 
-  const aliasName = extractLoopAliasName(statement);
-  if (aliasName === undefined) {
-    analyzeStatement(bodyNode, cloneState(state), context, visited, depth);
+  const scopedState = cloneState(state);
+  const bindingNames = structuredBindingNames(statement);
+  const aliasName = bindingNames === undefined ? extractLoopAliasName(statement) : undefined;
+  if (aliasName === undefined && bindingNames === undefined) {
+    analyzeStatement(bodyNode, scopedState, context, visited, depth);
     return;
   }
 
-  const scopedState = cloneState(state);
-  scopedState.declared.add(aliasName);
-  scopedState.constants.delete(aliasName);
+  for (const name of bindingNames ?? [aliasName ?? ""]) {
+    scopedState.declared.add(name);
+    scopedState.aliases.delete(name);
+    scopedState.constants.delete(name);
+  }
   const resolved = resolveLoopItemTarget(iterableNode, scopedState.aliases, scopedState.constants);
-  if (resolved !== undefined) {
+  if (resolved !== undefined && aliasName !== undefined) {
     scopedState.aliases.set(aliasName, resolved);
     state.debug(`loop ${aliasName} => ${resolved.location}:${normalizePathSegments(resolved.segments)}`);
   }
+  // `for (auto& [key, value] : params)` binds the pair's parts directly.
+  if (resolved?.location === "param-entry" && bindingNames?.[0] !== undefined) {
+    scopedState.aliases.set(bindingNames[0], { location: "param-key", segments: [] });
+  }
 
   analyzeStatement(bodyNode, scopedState, context, visited, depth);
+}
+
+function structuredBindingNames(statement: SyntaxNode): readonly string[] | undefined {
+  return childForField(statement, "declarator")
+    ?.descendantsOfType("structured_binding_declarator")[0]
+    ?.namedChildren.filter((child) => child.type === "identifier")
+    .map((child) => child.text);
+}
+
+const KEY_TABLE_TYPE = /^(?:[\w:]*::)?(?:unordered_map|map|sparse_hash_map)\s*<\s*std::string\s*,\s*(.+)>$/;
+const KEY_SET_TYPE = /^(?:[\w:]*::)?(?:unordered_set|set)\s*<\s*std::string\s*>$/;
+
+/** Reads `std::unordered_map<std::string, T*> x = {{KEY, &value}, ...}` or a set of keys. */
+function parseKeyTable(
+  typeNode: SyntaxNode | undefined,
+  valueNode: SyntaxNode,
+  state: AnalysisState,
+): KeyTable | undefined {
+  if (typeNode === undefined || valueNode.type !== "initializer_list") {
+    return undefined;
+  }
+
+  const mapMatch = KEY_TABLE_TYPE.exec(typeNode.text.trim());
+  if (mapMatch === null && !KEY_SET_TYPE.test(typeNode.text.trim())) {
+    return undefined;
+  }
+
+  const keys = valueNode.namedChildren.flatMap((entry) => {
+    const keyNode = entry.type === "initializer_list" ? entry.namedChildren[0] : entry;
+    const key = keyNode === undefined ? undefined : resolveStringTokenNode(keyNode, state.constants);
+    return key === undefined ? [] : [key];
+  });
+  return { keys, valueType: mapMatch?.[1] === undefined ? undefined : inferTypeFromParameter(mapMatch[1]) };
 }
 
 function handleForLoop(
@@ -509,11 +565,35 @@ function collectAssignmentExpression(node: SyntaxNode, state: AnalysisState): vo
   }
 }
 
+/** `table.find(key)` where key comes from iterating the params map names every key in the table. */
+function collectKeyTableLookup(callInfo: ParsedCall, state: AnalysisState, node: SyntaxNode): void {
+  const table = callInfo.baseNode?.type === "identifier" ? state.keyTables.get(callInfo.baseNode.text) : undefined;
+  const firstArgument = callInfo.arguments[0];
+  if (table === undefined || firstArgument === undefined || !["find", "count", "contains", "at"].includes(callInfo.methodName ?? "")) {
+    return;
+  }
+
+  const keyOwner = resolveKeyOwner(firstArgument, state);
+  if (keyOwner !== undefined) {
+    state.debug(`table lookup ${callInfo.calleeName} => ${table.keys.length} keys`);
+    table.keys.forEach((key) => addParameter(keyOwner, [key], state, node, table.valueType));
+  }
+}
+
+/** The map whose keys this expression iterates over, if it is one. */
+function resolveKeyOwner(node: SyntaxNode, state: AnalysisState): AliasTarget | undefined {
+  return resolveExpressionNode(node, state.aliases, state.constants)?.location === "param-key" ?
+      { location: "params-root", segments: [] }
+    : undefined;
+}
+
 function collectCallExpression(node: SyntaxNode, state: AnalysisState, context: ExtractionContext): void {
   const callInfo = parseCallExpressionNode(node);
   if (callInfo === undefined) {
     return;
   }
+
+  collectKeyTableLookup(callInfo, state, node);
 
   const normalizedMethodName = callInfo.methodName === undefined ? undefined : normalizeMethodName(callInfo.methodName);
 
@@ -611,16 +691,41 @@ function collectBinaryExpression(node: SyntaxNode, state: AnalysisState): void {
     return;
   }
 
+  collectKeyComparison(leftNode, rightNode, state, node);
+  collectKeyComparison(rightNode, leftNode, state, node);
+
   const leftTarget = resolveExpressionNode(leftNode, state.aliases, state.constants);
   const rightTarget = resolveExpressionNode(rightNode, state.aliases, state.constants);
-  const leftType = resolveValueTypeNode(rightNode, state);
-  const rightType = resolveValueTypeNode(leftNode, state);
+  const leftType = comparedValueType(rightNode, leftTarget, state);
+  const rightType = comparedValueType(leftNode, rightTarget, state);
 
   if (leftTarget !== undefined && leftType !== undefined) {
     addParameter(leftTarget, [], state, node, leftType);
   }
   if (rightTarget !== undefined && rightType !== undefined) {
     addParameter(rightTarget, [], state, node, rightType);
+  }
+}
+
+/** Query values are all strings on the wire, so `params["x"] == "true"` declares a boolean. */
+function comparedValueType(
+  valueNode: SyntaxNode,
+  comparedTo: AliasTarget | undefined,
+  state: AnalysisState,
+): TypePrimitives | undefined {
+  const isParam = comparedTo?.location === "params-root" || comparedTo?.location === "query-root";
+  if (isParam && (valueNode.text === '"true"' || valueNode.text === '"false"')) {
+    return "boolean";
+  }
+  return resolveValueTypeNode(valueNode, state);
+}
+
+/** `key == PREFIX`, where key comes from iterating a map, names that key. */
+function collectKeyComparison(keyNode: SyntaxNode, valueNode: SyntaxNode, state: AnalysisState, node: SyntaxNode): void {
+  const keyOwner = resolveKeyOwner(keyNode, state);
+  const key = keyOwner === undefined ? undefined : resolveStringTokenNode(valueNode, state.constants);
+  if (keyOwner !== undefined && key !== undefined) {
+    addParameter(keyOwner, [key], state, node);
   }
 }
 
@@ -793,7 +898,7 @@ function addParameter(
 ): void {
   const combinedSegments = [...target.segments, ...segments];
 
-  if (target.location === "request-root") {
+  if (target.location === "request-root" || target.location === "param-entry" || target.location === "param-key") {
     return;
   }
 
@@ -924,6 +1029,7 @@ function cloneState(state: AnalysisState): AnalysisState {
     parent: state,
     declared: new Set<string>(),
     lambdas: new Map(state.lambdas),
+    keyTables: new Map(state.keyTables),
     definition: state.definition,
     collector: state.collector,
     pathParamNames: state.pathParamNames,
