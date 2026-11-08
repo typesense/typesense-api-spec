@@ -11,7 +11,7 @@ on:
       - "src/**"
       - "config.json"
       - "package.json"
-      - "package-lock.json"
+      - "bun.lock"
       - "tsconfig.json"
       - ".github/workflows/extract-api.yml"
 
@@ -33,17 +33,13 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
+      - name: Set up Bun
+        uses: oven-sh/setup-bun@v2
         with:
-          node-version: 22
-          cache: npm
+          bun-version-file: package.json
 
       - name: Install dependencies
-        run: npm ci
-
-      - name: Build CLI
-        run: npm run build
+        run: bun install --frozen-lockfile
 
       - name: Save previous extracted spec
         run: |
@@ -58,7 +54,7 @@ jobs:
         continue-on-error: true
         env:
           GITHUB_TOKEN: ${{ github.token }}
-        run: node dist/cli.js extract --config ./config.json --fail-on-diagnostics
+        run: bun src/cli.ts extract --config ./config.json --fail-on-diagnostics
 
       - name: Upload extractor artifacts for debugging
         if: steps.extract.outcome != 'success'
@@ -86,7 +82,7 @@ jobs:
       - name: Build semantic API diff
         if: steps.changes.outputs.changed == 'true'
         run: |
-          node dist/cli.js semantic-diff \
+          bun src/cli.ts semantic-diff \
             --previous "$RUNNER_TEMP/previous-typesense-api-spec.json" \
             --next output/typesense_api_spec.json \
             --json-output "$RUNNER_TEMP/typesense-api-diff.json" \

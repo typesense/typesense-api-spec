@@ -14,13 +14,14 @@
     "typesense-api-extractor": "./dist/cli.js"
   },
   "scripts": {
-    "build": "tsc -p tsconfig.json",
+    "build": "tsc -p tsconfig.build.json",
     "spec:lint": "redocly lint openapi.yml",
     "spec:bundle": "redocly bundle openapi.yml --output bundled-openapi.yml",
-    "extract": "tsx src/cli.ts extract",
-    "semantic-diff": "tsx src/cli.ts semantic-diff",
+    "extract": "bun src/cli.ts extract",
+    "semantic-diff": "bun src/cli.ts semantic-diff",
     "check": "tsc -p tsconfig.json --noEmit",
-    "lint": "eslint ."
+    "lint": "eslint .",
+    "test": "bun test"
   },
   "dependencies": {
     "cosmiconfig": "^9.0.0",
@@ -37,10 +38,11 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.39.1",
+    "@types/bun": "1.4.2",
     "@types/node": "^22.0.0",
     "eslint": "^9.39.1",
-    "tsx": "^4.19.0",
     "typescript": "^5.5.0",
     "typescript-eslint": "^8.46.2"
-  }
+  },
+  "packageManager": "bun@1.4.2"
 }

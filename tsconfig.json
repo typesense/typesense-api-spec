@@ -11,8 +11,9 @@
     "skipLibCheck": true,
     "declaration": true,
     "outDir": "dist",
-    "rootDir": "src",
-    "resolveJsonModule": true
+    "noEmit": true,
+    "resolveJsonModule": true,
+    "types": ["bun"]
   },
-  "include": ["src"]
+  "include": ["src", "tests"]
 }

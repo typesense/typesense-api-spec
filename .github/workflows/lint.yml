@@ -5,25 +5,25 @@ on: [push, pull_request]
 jobs:
   lint:
     runs-on: ubuntu-latest
-    
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-      
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
+
+      - name: Set up Bun
+        uses: oven-sh/setup-bun@v2
         with:
-          cache: 'npm'
-      
-      - name: Install Redocly CLI
-        run: npm install 
-      
+          bun-version-file: package.json
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
       - name: Lint OpenAPI specification
-        run: npm run spec:lint
-      
+        run: bun run spec:lint
+
       - name: Bundle OpenAPI specification
-        run: npm run spec:bundle
-      
+        run: bun run spec:bundle
+
       - name: Upload bundled specification
         uses: actions/upload-artifact@v4
         with:
