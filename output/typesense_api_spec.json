@@ -4444,19 +4444,6 @@
           ]
         },
         {
-          "name": "raw_query",
-          "canonicalPath": "raw_query",
-          "location": "query",
-          "valueType": "string",
-          "sources": [
-            {
-              "filePath": "https://raw.githubusercontent.com/typesense/typesense/v30/src/collection.cpp",
-              "line": 9009,
-              "column": 36
-            }
-          ]
-        },
-        {
           "name": "remote_embedding_num_tries",
           "canonicalPath": "remote_embedding_num_tries",
           "location": "query",
@@ -7584,19 +7571,6 @@
           ]
         },
         {
-          "name": "raw_query",
-          "canonicalPath": "raw_query",
-          "location": "query",
-          "valueType": "string",
-          "sources": [
-            {
-              "filePath": "https://raw.githubusercontent.com/typesense/typesense/v30/src/collection.cpp",
-              "line": 9009,
-              "column": 36
-            }
-          ]
-        },
-        {
           "name": "remote_embedding_num_tries",
           "canonicalPath": "remote_embedding_num_tries",
           "location": "query",
@@ -8830,19 +8804,6 @@
               "filePath": "https://raw.githubusercontent.com/typesense/typesense/v30/src/collection.cpp",
               "line": 9345,
               "column": 8
-            }
-          ]
-        },
-        {
-          "name": "raw_query",
-          "canonicalPath": "searches[].raw_query",
-          "location": "body",
-          "valueType": "unknown",
-          "sources": [
-            {
-              "filePath": "https://raw.githubusercontent.com/typesense/typesense/v30/src/collection.cpp",
-              "line": 9009,
-              "column": 36
             }
           ]
         },
