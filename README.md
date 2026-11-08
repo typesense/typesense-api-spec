@@ -18,3 +18,33 @@ Now visit [http://localhost:8080](http://localhost:8080) in your browser to view
 
 Once you've made edits, click on File -> Save as YAML. Then copy that file into this repo and rename the file to use a `.yml` extension.
 
+
+## API extractor
+
+`src/` extracts routes and their path, query and body parameters from the Typesense C++ source on GitHub (see `config.json`) and writes them to `output/`. The `Extract Typesense API` workflow runs this nightly and opens an issue when the API shape changes, so `openapi.yml` can be updated.
+
+The project uses [Bun](https://bun.sh):
+
+```bash
+bun install --frozen-lockfile
+bun test
+bun run check
+bun run lint
+
+# Extract. A token is optional, but avoids the anonymous GitHub API rate limit.
+GITHUB_TOKEN=$(gh auth token) bun src/cli.ts extract --config ./config.json
+
+# Compare two extracted specs.
+bun src/cli.ts semantic-diff --previous old.json --next new.json --markdown-output diff.md
+```
+
+To also run the integration tests, which extract from real source without using the network, clone Typesense into the gitignored `tmp/` folder. They skip when the clones are absent.
+
+```bash
+git clone https://github.com/typesense/typesense tmp/typesense
+git clone -b v30 https://github.com/typesense/typesense tmp/typesense-v30
+```
+
+A path segment of `*` in the output means any key of a JSON object, as in `joins.*.allowed_fields`.
+
+The extractor reads what the server's code reads, so `openapi.yml` remains the source of truth for fields it cannot see, such as the search parameters inside an opaque preset `value`.

@@ -8,7 +8,7 @@
   "fail_on_unresolved": false,
   "blacklist": {
     "paths": ["/proxy", "/proxy_sse", "/operations/reset_peers", "/limits"],
-    "params": ["_ArraySize_"]
+    "params": ["_ArraySize_", "_original_nl_query"]
   },
   "overrides": []
 }
