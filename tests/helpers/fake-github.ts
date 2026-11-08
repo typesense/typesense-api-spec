@@ -1,11 +1,16 @@
 const RAW_PREFIX = "https://raw.githubusercontent.com/typesense/typesense/";
+const COMMIT_PATTERN = /^https:\/\/api\.github\.com\/repos\/typesense\/typesense\/commits\/([^?]+)/;
 const TREE_PATTERN = /^https:\/\/api\.github\.com\/repos\/typesense\/typesense\/git\/trees\/([^?]+)/;
+
+export const FAKE_COMMIT = "c0ffee0000000000000000000000000000000000";
 
 export interface FakeRepo {
   /** Repo-relative paths returned by the tree API. */
   listFiles(branch: string): readonly string[] | Promise<readonly string[]>;
   /** File contents, or undefined to answer 404. */
   readFile(branch: string, path: string): string | undefined | Promise<string | undefined>;
+  /** The commit a branch points at. Defaults to FAKE_COMMIT. */
+  commit?(branch: string): string | Promise<string>;
 }
 
 /**
@@ -19,6 +24,12 @@ export function stubGithub(repo: FakeRepo): () => void {
   const original = globalThis.fetch;
   const stub = async (input: RequestInfo | URL): Promise<Response> => {
     const url = input instanceof Request ? input.url : String(input);
+
+    const commitMatch = COMMIT_PATTERN.exec(url);
+    if (commitMatch?.[1] !== undefined) {
+      const sha = (await repo.commit?.(decodeURIComponent(commitMatch[1]))) ?? FAKE_COMMIT;
+      return Response.json({ sha });
+    }
 
     const treeMatch = TREE_PATTERN.exec(url);
     if (treeMatch?.[1] !== undefined) {

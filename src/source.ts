@@ -4,6 +4,7 @@ const GITHUB_OWNER = "typesense" as const;
 const GITHUB_REPO = "typesense" as const;
 const GITHUB_RAW_BASE_URL =
   `https://raw.githubusercontent.com/${GITHUB_OWNER}/${GITHUB_REPO}` as const;
+const GITHUB_WEB_URL = `https://github.com/${GITHUB_OWNER}/${GITHUB_REPO}` as const;
 const GITHUB_API_VERSION = "2022-11-28" as const;
 const MAX_RATE_LIMIT_WAIT_SECONDS = 60;
 
@@ -52,6 +53,46 @@ export function resolveRawGithubUrl(
   return `${GITHUB_RAW_BASE_URL}/${sourceBranch}/${normalizedSourcePath}`;
 }
 
+/** The commit the source branch points at, so reports can link to exact source. */
+export async function resolveSourceCommit(sourceBranch: string): Promise<string> {
+  const response = await octokit.rest.repos
+    .getCommit({
+      owner: GITHUB_OWNER,
+      repo: GITHUB_REPO,
+      ref: sourceBranch,
+      per_page: 1,
+      headers: {
+        "X-GitHub-Api-Version": GITHUB_API_VERSION,
+      },
+    })
+    .catch((error: unknown) => {
+      const message = error instanceof Error ? error.message : String(error);
+      throw new Error(`Could not resolve ${GITHUB_OWNER}/${GITHUB_REPO}@${sourceBranch}: ${message}.${rateLimitHint()}`);
+    });
+  return response.data.sha;
+}
+
+/** A link to a raw source file's line, pinned to a commit when one is known. */
+export function githubBlobUrl(rawUrl: string, line: number, commit: string | undefined): string | undefined {
+  if (!rawUrl.startsWith(`${GITHUB_RAW_BASE_URL}/`)) {
+    return undefined;
+  }
+  const [ref, ...filePath] = rawUrl.slice(GITHUB_RAW_BASE_URL.length + 1).split("/");
+  return `${GITHUB_WEB_URL}/blob/${commit ?? ref ?? ""}/${filePath.join("/")}#L${String(line)}`;
+}
+
+export function githubCommitRangeUrl(previousCommit: string, nextCommit: string): string {
+  return `${GITHUB_WEB_URL}/compare/${previousCommit}...${nextCommit}`;
+}
+
+export function githubCommitUrl(commit: string): string {
+  return `${GITHUB_WEB_URL}/commit/${commit}`;
+}
+
+function rateLimitHint(): string {
+  return process.env.GITHUB_TOKEN === undefined ? " Set GITHUB_TOKEN to avoid the anonymous rate limit." : "";
+}
+
 const treeCache = new Map<string, Promise<readonly string[]>>();
 
 /** Lists blob paths once per branch, so one extraction makes one API call. */
@@ -78,8 +119,7 @@ async function fetchBranchFiles(sourceBranch: string): Promise<readonly string[]
     })
     .catch((error: unknown) => {
       const message = error instanceof Error ? error.message : String(error);
-      const hint = process.env.GITHUB_TOKEN === undefined ? " Set GITHUB_TOKEN to avoid the anonymous rate limit." : "";
-      throw new Error(`Could not list ${GITHUB_OWNER}/${GITHUB_REPO}@${sourceBranch}: ${message}.${hint}`);
+      throw new Error(`Could not list ${GITHUB_OWNER}/${GITHUB_REPO}@${sourceBranch}: ${message}.${rateLimitHint()}`);
     });
 
   if (response.data.truncated === true) {

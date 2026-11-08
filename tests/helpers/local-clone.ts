@@ -18,6 +18,7 @@ export function hasClone(name: string): boolean {
 export function cloneRepo(name: string): FakeRepo {
   const root = clonePath(name);
   return {
+    commit: async () => (await Bun.$`git -C ${root} rev-parse HEAD`.text()).trim(),
     listFiles: async () => {
       const listing = await Bun.$`git -C ${root} ls-tree -r HEAD`.text();
       return listing

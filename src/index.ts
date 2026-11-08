@@ -6,7 +6,7 @@ import { discoverRoutes } from "./routes.js";
 import { extractRouteData } from "./analysis.js";
 import { buildSpec } from "./spec.js";
 import { indexFunctions } from "./symbols.js";
-import { resolveRawGithubUrl, resolveSourcePath } from "./source.js";
+import { resolveRawGithubUrl, resolveSourceCommit, resolveSourcePath } from "./source.js";
 import type { ApiSpec, CliOptions } from "./types.js";
 
 export async function runExtraction(cliOptions: CliOptions): Promise<ApiSpec> {
@@ -19,7 +19,8 @@ export async function runExtraction(cliOptions: CliOptions): Promise<ApiSpec> {
   const routesStep = progress.startStep("discovering routes");
   const constantsStep = progress.startStep("loading constants");
   const symbolsStep = progress.startStep("indexing functions");
-  const [routes, constants, functions] = await Promise.all([
+  const [sourceCommit, routes, constants, functions] = await Promise.all([
+    resolveSourceCommit(config.sourceBranch),
     discoverRoutes(
       resolveRawGithubUrl(config.sourceBranch, resolveSourcePath(config.rootDir, config.routeFile)),
     ).then((result) => {
@@ -44,7 +45,7 @@ export async function runExtraction(cliOptions: CliOptions): Promise<ApiSpec> {
 
   const specStep = progress.startStep("building output");
   const diagnostics = routeExtractions.flatMap((extraction) => extraction.diagnostics);
-  const spec = buildSpec(config, routeExtractions, diagnostics);
+  const spec = buildSpec(config, routeExtractions, diagnostics, sourceCommit);
   const outputText = `${JSON.stringify(spec, null, 2)}\n`;
   await writeTextFile(config.outputPath, outputText);
   if (config.diagnosticsOutputPath !== undefined) {

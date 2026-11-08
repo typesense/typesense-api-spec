@@ -74,9 +74,12 @@ describe.skipIf(!hasClone("typesense-v30"))("v30 clone", () => {
     async () => {
       const { spec, text } = await extractFromClone("typesense-v30", "v30");
       expect(spec.diagnostics).toEqual([]);
-      // If this fails after the nightly workflow updated output/, the clone is
-      // probably stale: git -C tmp/typesense-v30 fetch && git -C tmp/typesense-v30 reset --hard origin/v30
+      // Once a bot pull request moves output/ to a newer Typesense commit, there is
+      // nothing to compare the clone with. To compare, check out that commit in the clone.
       const committed = await readFile(path.join(repoRoot, "output/typesense_api_spec.json"), "utf8");
+      if ((JSON.parse(committed) as ApiSpec).sourceCommit !== spec.sourceCommit) {
+        return;
+      }
       expect(text === committed).toBe(true);
     },
     TIMEOUT_MS,

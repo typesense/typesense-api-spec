@@ -112,6 +112,12 @@ describe("buildSpec", () => {
     expect(spec.routes.map((route) => route.pathTemplate)).toEqual(["/limits_other"]);
   });
 
+  test("records the source branch and commit", () => {
+    const spec = buildSpec({ ...baseConfig, sourceBranch: "v31" }, [], [], "abc123");
+    expect(spec.sourceBranch).toBe("v31");
+    expect(spec.sourceCommit).toBe("abc123");
+  });
+
   test("override skip removes a route, optionally for one method only", () => {
     const spec = buildSpec(
       { ...baseConfig, overrides: [{ path: "/a", method: "POST", skip: true }] },

@@ -1,6 +1,8 @@
 {
   "rootDir": "",
   "routeFile": "src/main/typesense_server.cpp",
+  "sourceBranch": "v30",
+  "sourceCommit": "d45d46baf3996d1de8bf96a87f375cfb43691560",
   "routes": [
     {
       "method": "GET",

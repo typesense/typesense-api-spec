@@ -105,6 +105,9 @@ export interface ApiRouteSpec {
 export interface ApiSpec {
   readonly rootDir: string;
   readonly routeFile: string;
+  /** Absent from output written before these fields existed. */
+  readonly sourceBranch?: string;
+  readonly sourceCommit?: string;
   readonly routes: readonly ApiRouteSpec[];
   readonly diagnostics: readonly ApiDiagnostic[];
 }
