@@ -17,7 +17,11 @@ on:
 
 permissions:
   contents: write
-  issues: write
+  pull-requests: write
+
+env:
+  BOT_BRANCH: bot/extracted-api-update
+  GH_TOKEN: ${{ github.token }}
 
 concurrency:
   group: extract-api
@@ -70,81 +74,94 @@ jobs:
         if: steps.extract.outcome != 'success'
         run: exit 1
 
-      - name: Check for extracted output changes
-        id: changes
-        run: |
-          if git diff --quiet -- output/typesense_api_spec.json output/typesense_api_diagnostics.json; then
-            echo "changed=false" >> "$GITHUB_OUTPUT"
-          else
-            echo "changed=true" >> "$GITHUB_OUTPUT"
-          fi
-
       - name: Build semantic API diff
-        if: steps.changes.outputs.changed == 'true'
+        id: semantic_diff
         run: |
           bun src/cli.ts semantic-diff \
             --previous "$RUNNER_TEMP/previous-typesense-api-spec.json" \
             --next output/typesense_api_spec.json \
             --json-output "$RUNNER_TEMP/typesense-api-diff.json" \
             --markdown-output "$RUNNER_TEMP/typesense-api-diff.md"
-
-      - name: Read semantic API diff result
-        if: steps.changes.outputs.changed == 'true'
-        id: semantic_diff
-        run: |
           jq -r '"changed=\(.changed)"' "$RUNNER_TEMP/typesense-api-diff.json" >> "$GITHUB_OUTPUT"
 
-      - name: Commit extracted artifacts
-        if: steps.changes.outputs.changed == 'true'
-        id: commit_artifacts
+      # Compare the API shape, not the files: source line numbers move on most upstream commits.
+      - name: Find the open pull request
+        id: pull_request
+        run: |
+          number=$(gh pr list --repo "$GITHUB_REPOSITORY" --head "$BOT_BRANCH" --base "$GITHUB_REF_NAME" --state open --json number --jq '.[0].number // ""')
+          echo "number=$number" >> "$GITHUB_OUTPUT"
+
+      - name: Close the pull request when the API shape no longer differs
+        if: steps.semantic_diff.outputs.changed != 'true' && steps.pull_request.outputs.number != ''
+        run: |
+          gh pr close "${{ steps.pull_request.outputs.number }}" --repo "$GITHUB_REPOSITORY" --delete-branch \
+            --comment "The extracted API shape matches \`$GITHUB_REF_NAME\` again, so this is no longer needed."
+
+      - name: Upload the API diff report
+        if: steps.semantic_diff.outputs.changed == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: typesense-api-diff
+          path: ${{ runner.temp }}/typesense-api-diff.md
+
+      - name: Commit extracted artifacts to the bot branch
+        if: steps.semantic_diff.outputs.changed == 'true'
+        id: bot_branch
+        env:
+          PULL_REQUEST: ${{ steps.pull_request.outputs.number }}
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add output/typesense_api_spec.json output/typesense_api_diagnostics.json
+          outputs="output/typesense_api_spec.json output/typesense_api_diagnostics.json"
+
+          if [ -z "$PULL_REQUEST" ]; then
+            # Nothing to preserve: a leftover branch belongs to a closed pull request.
+            git switch -C "$BOT_BRANCH"
+            git add $outputs
+            git commit -m "chore: update extracted Typesense API artifacts"
+            git push --force origin "$BOT_BRANCH"
+            exit 0
+          fi
+
+          # Build on the open branch, so openapi.yml edits made there survive.
+          git fetch origin "$BOT_BRANCH"
+          git show FETCH_HEAD:output/typesense_api_spec.json > "$RUNNER_TEMP/branch-typesense-api-spec.json"
+          bun src/cli.ts semantic-diff \
+            --previous "$RUNNER_TEMP/branch-typesense-api-spec.json" \
+            --next output/typesense_api_spec.json \
+            --json-output "$RUNNER_TEMP/branch-api-diff.json"
+          if [ "$(jq -r .changed "$RUNNER_TEMP/branch-api-diff.json")" != "true" ]; then
+            echo "The open pull request already has this API shape."
+            echo "up_to_date=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          cp $outputs "$RUNNER_TEMP/"
+          git checkout -- output
+          git switch -C "$BOT_BRANCH" FETCH_HEAD
+          cp "$RUNNER_TEMP/typesense_api_spec.json" "$RUNNER_TEMP/typesense_api_diagnostics.json" output/
+          git add $outputs
           git commit -m "chore: update extracted Typesense API artifacts"
-          git push
-          echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+          git push origin "$BOT_BRANCH"
 
-      - name: Open OpenAPI update issue
-        if: steps.changes.outputs.changed == 'true' && steps.semantic_diff.outputs.changed == 'true'
-        uses: actions/github-script@v7
-        with:
-          script: |
-            const fs = require("node:fs");
-            const owner = context.repo.owner;
-            const repo = context.repo.repo;
-            const commitSha = "${{ steps.commit_artifacts.outputs.sha }}";
-            const shortSha = commitSha.slice(0, 12);
-            const commitUrl = `https://github.com/${owner}/${repo}/commit/${commitSha}`;
-            const marker = "<!-- typesense-api-sync-issue -->";
-            const title = `Update openapi.yml for extracted Typesense API changes [${shortSha}]`;
-            const bodyPath = `${process.env.RUNNER_TEMP}/typesense-api-diff.md`;
-            const diffBody = fs.readFileSync(bodyPath, "utf8");
-            const details = [`Commit: ${commitUrl}`, "", diffBody].join("\n");
+      - name: Open or update the pull request
+        if: steps.semantic_diff.outputs.changed == 'true' && steps.bot_branch.outputs.up_to_date != 'true'
+        env:
+          PULL_REQUEST: ${{ steps.pull_request.outputs.number }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          # GitHub rejects pull request bodies over 65,536 characters.
+          body="$RUNNER_TEMP/pull-request-body.md"
+          if [ "$(wc -c < "$RUNNER_TEMP/typesense-api-diff.md")" -gt 60000 ]; then
+            head -c 60000 "$RUNNER_TEMP/typesense-api-diff.md" > "$body"
+            printf '\n\n**Report truncated.** The full report is in the artifacts of [this run](%s).\n' "$RUN_URL" >> "$body"
+          else
+            cp "$RUNNER_TEMP/typesense-api-diff.md" "$body"
+          fi
 
-            const openIssues = await github.paginate(github.rest.issues.listForRepo, {
-              owner,
-              repo,
-              state: "open",
-              per_page: 100,
-            });
-            const existing = openIssues.find(
-              (issue) => !issue.pull_request && (issue.body ?? "").includes(marker),
-            );
-            if (existing !== undefined) {
-              await github.rest.issues.createComment({
-                owner,
-                repo,
-                issue_number: existing.number,
-                body: details,
-              });
-              core.info(`Added API changes to open issue #${existing.number}`);
-              return;
-            }
-
-            await github.rest.issues.create({
-              owner,
-              repo,
-              title,
-              body: [marker, details].join("\n"),
-            });
+          if [ -n "$PULL_REQUEST" ]; then
+            gh pr edit "$PULL_REQUEST" --repo "$GITHUB_REPOSITORY" --body-file "$body"
+          else
+            gh pr create --repo "$GITHUB_REPOSITORY" --base "$GITHUB_REF_NAME" --head "$BOT_BRANCH" \
+              --title "Update openapi.yml for extracted Typesense API changes" --body-file "$body"
+          fi
