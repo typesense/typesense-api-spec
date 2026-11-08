@@ -1,4 +1,5 @@
 import { childForField, extractStringLiteral } from "../cpp-ast.js";
+import { MAP_KEY_SEGMENT } from "../text.js";
 import type { AliasTarget, FunctionParameter } from "../types.js";
 import type { SyntaxNode } from "tree-sitter";
 import {
@@ -206,9 +207,12 @@ export function resolveLoopItemTarget(
     return undefined;
   }
 
+  // `.items()` iterates an object's keys; plain iteration walks an array.
+  const iterable = unwrapExpressionNode(expressionNode);
+  const isItemsCall = iterable.type === "call_expression" && parseCallExpressionNode(iterable)?.methodName === "items";
   return {
     location: resolved.location,
-    segments: [...resolved.segments, "[]"],
+    segments: [...resolved.segments, isItemsCall ? MAP_KEY_SEGMENT : "[]"],
   };
 }
 

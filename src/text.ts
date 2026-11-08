@@ -77,6 +77,9 @@ function braceDelta(lines: readonly string[]): number {
   }, 0);
 }
 
+/** Path segment for any key of a JSON object, as in `joins.*.allowed_fields`. */
+export const MAP_KEY_SEGMENT = "*";
+
 export function normalizePathSegments(segments: readonly string[]): string {
   return segments
     .map((segment, index) => {
@@ -90,7 +93,7 @@ export function extractPathName(canonicalPath: string): string {
   return canonicalPath
     .split(".")
     .map((part) => part.replaceAll("[]", ""))
-    .filter((part) => part.length > 0)
+    .filter((part) => part.length > 0 && part !== MAP_KEY_SEGMENT)
     .at(-1) ?? "";
 }
 

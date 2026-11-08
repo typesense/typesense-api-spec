@@ -47,5 +47,6 @@ describe("path helpers", () => {
   test("extractPathName returns the last named segment", () => {
     expect(extractPathName("fields[].embed.from")).toBe("from");
     expect(extractPathName("fields[]")).toBe("fields");
+    expect(extractPathName("joins.*")).toBe("joins");
   });
 });

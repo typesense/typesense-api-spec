@@ -1,5 +1,5 @@
 import { parseCppCached, findFirstNamedNode, walkNamed, childForField, extractDeclaratorName } from "../cpp-ast.js";
-import { normalizePathSegments } from "../text.js";
+import { MAP_KEY_SEGMENT, normalizePathSegments } from "../text.js";
 import type { SyntaxNode } from "tree-sitter";
 import { isValueType } from "../types.js";
 import type {
@@ -365,6 +365,8 @@ function handleForRangeLoop(
     return;
   }
 
+  walkExpression(iterableNode, state, context, visited, depth);
+
   const scopedState = cloneState(state);
   const bindingNames = structuredBindingNames(statement);
   const aliasName = bindingNames === undefined ? extractLoopAliasName(statement) : undefined;
@@ -386,6 +388,15 @@ function handleForRangeLoop(
   // `for (auto& [key, value] : params)` binds the pair's parts directly.
   if (resolved?.location === "param-entry" && bindingNames?.[0] !== undefined) {
     scopedState.aliases.set(bindingNames[0], { location: "param-key", segments: [] });
+  }
+  if (resolved?.location === "body-root" && resolved.segments.at(-1) === MAP_KEY_SEGMENT && bindingNames !== undefined) {
+    const [keyName, valueName] = bindingNames;
+    if (keyName !== undefined) {
+      scopedState.aliases.set(keyName, { location: "body-key", segments: resolved.segments.slice(0, -1) });
+    }
+    if (valueName !== undefined) {
+      scopedState.aliases.set(valueName, resolved);
+    }
   }
 
   analyzeStatement(bodyNode, scopedState, context, visited, depth);
@@ -528,12 +539,42 @@ function recordBodyWrite(assignment: SyntaxNode, rightNode: SyntaxNode, state: A
   }
 }
 
+/**
+ * `target[item.key()] = ...` copies a JSON object's fields. Copied into the params
+ * map, they become search parameters; copied into a new object, it holds them too.
+ */
+function collectKeyedCopy(leftNode: SyntaxNode | undefined, state: AnalysisState): void {
+  if (leftNode?.type !== "subscript_expression") {
+    return;
+  }
+  const baseNode = childForField(leftNode, "argument");
+  const indexNode = extractSubscriptIndexNode(leftNode);
+  const keyOwner = indexNode === undefined ? undefined : resolveKeyOwner(indexNode, state);
+  if (baseNode === undefined || keyOwner?.location !== "body-root") {
+    return;
+  }
+
+  const baseTarget = resolveExpressionNode(baseNode, state.aliases, state.constants);
+  if (baseTarget?.location === "params-root" || baseTarget?.location === "query-root") {
+    state.collector.mirrorQueryParamsTo(normalizePathSegments(keyOwner.segments));
+    return;
+  }
+
+  const copyName = extractIdentifierName(baseNode);
+  if (baseTarget === undefined && copyName !== undefined) {
+    assignInScope(state, copyName, (scope) => scope.aliases.set(copyName, keyOwner));
+    state.debug(`copy ${copyName} => body:${normalizePathSegments(keyOwner.segments)}`);
+  }
+}
+
 function collectAssignmentExpression(node: SyntaxNode, state: AnalysisState): void {
   const leftNode = childForField(node, "left");
   const rightNode = childForField(node, "right");
   if (rightNode === undefined) {
     return;
   }
+
+  collectKeyedCopy(leftNode, state);
 
   const inferredType = resolveValueTypeNode(rightNode, state);
   const aliasName = leftNode === undefined ? undefined : extractIdentifierName(leftNode);
@@ -582,8 +623,23 @@ function collectKeyTableLookup(callInfo: ParsedCall, state: AnalysisState, node:
 
 /** The map whose keys this expression iterates over, if it is one. */
 function resolveKeyOwner(node: SyntaxNode, state: AnalysisState): AliasTarget | undefined {
-  return resolveExpressionNode(node, state.aliases, state.constants)?.location === "param-key" ?
-      { location: "params-root", segments: [] }
+  const resolved = resolveExpressionNode(node, state.aliases, state.constants);
+  if (resolved?.location === "param-key") {
+    return { location: "params-root", segments: [] };
+  }
+  if (resolved?.location === "body-key") {
+    return { location: "body-root", segments: resolved.segments };
+  }
+
+  // `item.key()`, where item comes from iterating a JSON object's items.
+  const normalized = unwrapExpressionNode(node);
+  const callInfo = normalized.type === "call_expression" ? parseCallExpressionNode(normalized) : undefined;
+  if (callInfo?.methodName !== "key" || callInfo.baseNode === undefined) {
+    return undefined;
+  }
+  const item = resolveExpressionNode(callInfo.baseNode, state.aliases, state.constants);
+  return item?.location === "body-root" && item.segments.at(-1) === MAP_KEY_SEGMENT ?
+      { location: "body-root", segments: item.segments.slice(0, -1) }
     : undefined;
 }
 
@@ -724,9 +780,31 @@ function comparedValueType(
 function collectKeyComparison(keyNode: SyntaxNode, valueNode: SyntaxNode, state: AnalysisState, node: SyntaxNode): void {
   const keyOwner = resolveKeyOwner(keyNode, state);
   const key = keyOwner === undefined ? undefined : resolveStringTokenNode(valueNode, state.constants);
-  if (keyOwner !== undefined && key !== undefined) {
-    addParameter(keyOwner, [key], state, node);
+  if (keyOwner === undefined || key === undefined) {
+    return;
   }
+
+  if (keyOwner.location === "body-root" && isRejectingKeyCheck(node)) {
+    state.collector.markBodyPathRejected(normalizePathSegments([...keyOwner.segments, key]));
+    return;
+  }
+  addParameter(keyOwner, [key], state, node);
+}
+
+/** `if (item.key() == "x") { continue; }`: the server ignores or refuses that field. */
+function isRejectingKeyCheck(comparison: SyntaxNode): boolean {
+  if (childForField(comparison, "operator")?.text !== "==") {
+    return false;
+  }
+  const condition = comparison.parent;
+  const ifStatement = condition?.type === "condition_clause" ? condition.parent : undefined;
+  if (ifStatement?.type !== "if_statement" || childForField(ifStatement, "alternative") !== undefined) {
+    return false;
+  }
+
+  const consequence = childForField(ifStatement, "consequence");
+  const lastStatement = consequence?.type === "compound_statement" ? consequence.namedChildren.filter((child) => child.type !== "comment").at(-1) : consequence;
+  return lastStatement?.type === "continue_statement" || lastStatement?.type === "return_statement";
 }
 
 function collectHelperCallExpression(
@@ -898,7 +976,12 @@ function addParameter(
 ): void {
   const combinedSegments = [...target.segments, ...segments];
 
-  if (target.location === "request-root" || target.location === "param-entry" || target.location === "param-key") {
+  if (
+    target.location === "request-root" ||
+    target.location === "param-entry" ||
+    target.location === "param-key" ||
+    target.location === "body-key"
+  ) {
     return;
   }
 
@@ -1064,7 +1147,7 @@ function materializeTypedParameter(
   }
 
   const canonicalPath = normalizePathSegments(segments);
-  if (canonicalPath.length === 0) {
+  if (canonicalPath.length === 0 || canonicalPath === MAP_KEY_SEGMENT) {
     return undefined;
   }
 

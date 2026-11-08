@@ -371,7 +371,193 @@ describe("preprocessor conditionals", () => {
   });
 });
 
+describe("JSON objects used as maps", () => {
+  test(".items() is a map, not an array", async () => {
+    // v31 reported POST /keys joins as joins[] and joins[][].
+    const { body, types } = await extractHandler(
+      handlerWithBody(`
+        const auto& joins = body["joins"];
+        if (!joins.is_object()) { return false; }
+        for (const auto& join_item : joins.items()) {
+          if (!join_item.value().is_object()) { return false; }
+          for (const auto& policy_item : join_item.value().items()) {
+            if (policy_item.key() != "allowed_fields" && policy_item.key() != "denied_fields") { return false; }
+            if (!policy_item.value().is_array()) { return false; }
+            for (const auto& field_name : policy_item.value()) {
+              if (!field_name.is_string()) { return false; }
+            }
+          }
+        }`),
+    );
+    expect(body).toEqual(["joins", "joins.*", "joins.*.allowed_fields", "joins.*.denied_fields"]);
+    expect(types.get("joins")).toBe("object");
+    expect(types.get("joins.*")).toBe("object");
+    expect(types.get("joins.*.allowed_fields")).toBe("string[]");
+  });
+
+  test(".items() on a field known to be an array means array items", async () => {
+    // Collection::validate_alter_payload iterates schema_changes["fields"].items().
+    const { body, types } = await extractHandler(
+      handlerWithBody(`
+        if (!body["fields"].is_array()) { return false; }
+        for (const auto& kv : body["fields"].items()) {
+          kv.value()["name"];
+          kv.value().is_object();
+        }`),
+    );
+    expect(body).toEqual(["fields", "fields[].name"]);
+    expect(types.get("fields")).toBe("object[]");
+  });
+
+  test("the array check can come after the .items() loop", async () => {
+    const { body } = await extractHandler(
+      handlerWithBody(`
+        for (const auto& kv : body["fields"].items()) { kv.value()["name"]; }
+        if (!body["fields"].is_array()) { return false; }`),
+    );
+    expect(body).toEqual(["fields", "fields[].name"]);
+  });
+
+  test("a map's fields appear under * when none are named", async () => {
+    const { body, types } = await extractHandler(
+      handlerWithBody(`for (auto& entry : body["metadata"].items()) { entry.value().is_string(); }`),
+    );
+    expect(body).toEqual(["metadata", "metadata.*"]);
+    expect(types.get("metadata.*")).toBe("string");
+  });
+
+  test("iterating the top-level body's items adds no parameter for the keys", async () => {
+    const { body } = await extractHandler(handlerWithBody(`for (auto& entry : body.items()) { entry.value(); }`));
+    expect(body).toEqual([]);
+  });
+
+  test("a set of allowed keys checked against item.key() names the body's fields", async () => {
+    // PATCH /collections checks the body against allowed_keys.
+    const { body } = await extractHandler(
+      handlerWithBody(`
+        std::set<std::string> allowed_keys = {"metadata", "fields"};
+        for (auto it : body.items()) {
+          if (allowed_keys.count(it.key()) == 0) { return false; }
+        }`),
+    );
+    expect(body).toEqual(["fields", "metadata"]);
+  });
+
+  test("comparing item.key() names a field", async () => {
+    const { body } = await extractHandler(
+      handlerWithBody(`for (auto& it : body.items()) { if (it.key() == "known") { use(it.value()); } }`),
+    );
+    expect(body).toEqual(["known"]);
+  });
+
+  test("a key the server refuses or ignores is not a field", async () => {
+    const { body } = await extractHandler(
+      handlerWithBody(`
+        for (auto& it : body.items()) {
+          if (it.key() == "ignored") { continue; }
+          if (it.key() == "refused") { return false; }
+          if (flag && it.key() == "sometimes") { return false; }
+        }`),
+    );
+    expect(body).toEqual(["sometimes"]);
+  });
+
+  test("copying a body's items into another object keeps tracking its fields", async () => {
+    // update_model merges the request into a copy of the stored model, then validates it.
+    const { body } = await extractHandler(
+      handlerWithBody(
+        `update_model(body);`,
+        `void validate(const nlohmann::json& m) { m["validated"]; }
+         void update_model(nlohmann::json model) {
+           nlohmann::json model_copy = existing();
+           for (auto& [key, value] : model.items()) {
+             model_copy[key] = value;
+           }
+           validate(model_copy);
+         }`,
+      ),
+    );
+    expect(body).toContain("validated");
+  });
+
+  test("copying item.key() into another object keeps tracking its fields", async () => {
+    const { body } = await extractHandler(
+      handlerWithBody(`
+        nlohmann::json merged = existing();
+        for (auto& it : body.items()) { merged[it.key()] = it.value(); }
+        merged["through_copy"];`),
+    );
+    expect(body).toContain("through_copy");
+  });
+
+  test("a copy into an unrelated target does not change that target", async () => {
+    const { body, query } = await extractHandler(
+      handlerWithBody(`
+        for (auto& [key, value] : other.items()) { merged[key] = value; }
+        merged["wrong"];`),
+    );
+    expect([...body, ...query]).toEqual([]);
+  });
+});
+
+describe("JSON fields copied into the params map", () => {
+  const multiSearch = `
+    bool add_item(std::map<std::string, std::string>& req_params, const nlohmann::detail::iteration_proxy_value<nlohmann::json::iterator>& item) {
+      req_params[item.key()] = item.value().get<std::string>();
+      return true;
+    }
+    void add_params(std::map<std::string, std::string>& req_params, nlohmann::json& search_params) {
+      for (auto const& search_item : search_params.items()) {
+        if (search_item.key() == "cache_ttl") { continue; }
+        add_item(req_params, search_item);
+      }
+    }
+    void do_search(std::map<std::string, std::string>& req_params) {
+      std::unordered_map<std::string, size_t*> ints = {{"per_page", &per_page}};
+      for (const auto& kv : req_params) { ints.find(kv.first); }
+      req_params["q"];
+      req_params["cache_ttl"];
+    }`;
+
+  const handler = (order: string) => `${multiSearch}
+    bool handler(const std::shared_ptr<http_req>& req, const std::shared_ptr<http_res>& res) {
+      nlohmann::json body = nlohmann::json::parse(req->body);
+      auto limit = req->params["limit_multi_searches"];
+      auto& searches = body["searches"];
+      for (size_t i = 0; i < searches.size(); i++) {
+        auto& search_params = searches[i];
+        ${order}
+      }
+      return true;
+    }`;
+
+  test("each item in searches[] accepts the search parameters", async () => {
+    const { body, query, types } = await extractHandler(handler("add_params(req->params, search_params); do_search(req->params);"));
+    expect(body).toContain("searches[].q");
+    expect(body).toContain("searches[].per_page");
+    expect(types.get("searches[].per_page")).toBe("uint");
+    expect(query).toContain("per_page");
+  });
+
+  test("params read before the copy are not mirrored", async () => {
+    const { body, query } = await extractHandler(handler("add_params(req->params, search_params); do_search(req->params);"));
+    expect(query).toContain("limit_multi_searches");
+    expect(body).not.toContain("searches[].limit_multi_searches");
+  });
+
+  test("a field the server ignores is not mirrored", async () => {
+    const { body, query } = await extractHandler(handler("add_params(req->params, search_params); do_search(req->params);"));
+    expect(query).toContain("cache_ttl");
+    expect(body).not.toContain("searches[].cache_ttl");
+  });
+});
+
 describe("loops", () => {
+  test("records the iterable itself", async () => {
+    const { body } = await extractHandler(handlerWithBody(`for (auto& item : body["list"]) { use(item); }`));
+    expect(body).toContain("list");
+  });
+
   test("creates item aliases for body iterables", async () => {
     const { body } = await extractHandler(handlerWithBody(`for (auto& item : body["items"]) { item["sku"]; }`));
     expect(body).toContain("items[].sku");

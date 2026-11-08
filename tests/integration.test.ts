@@ -102,6 +102,21 @@ describe.skipIf(!hasClone("typesense-v30"))("v30 clone", () => {
         "fields[].embed.model_config.query_prefix",
       ]);
       expect(paths(collection)).not.toContain("fields[]");
+
+      const search = findRoute(spec, "GET", "/collections/:collection/documents/search").queryParams;
+      expectToIncludeAll(paths(search), ["q", "query_by", "filter_by", "sort_by", "facet_by", "per_page", "page"]);
+      expect(paths(search)).not.toContain("collection");
+      expect(paths(search)).not.toContain("name");
+      expect(search.find((parameter) => parameter.canonicalPath === "per_page")?.valueType).toBe("uint");
+      expect(search.find((parameter) => parameter.canonicalPath === "query_by")?.valueType).toBe("string[]");
+
+      expectToIncludeAll(multiSearch, ["searches[].q", "searches[].query_by"]);
+      expectToIncludeAll(paths(findRoute(spec, "POST", "/conversations/models").bodyParams), ["model_name", "system_prompt"]);
+      expectToIncludeAll(paths(findRoute(spec, "PUT", "/conversations/models/:id").bodyParams), ["model_name", "system_prompt"]);
+      expectToIncludeAll(paths(findRoute(spec, "POST", "/analytics/events").bodyParams), ["name", "data", "data.user_id"]);
+      expectToIncludeAll(paths(findRoute(spec, "PUT", "/synonym_sets/:name").bodyParams), ["items", "items[].synonyms"]);
+      expectToIncludeAll(paths(findRoute(spec, "PATCH", "/collections/:collection").bodyParams), ["metadata", "fields", "fields[].name"]);
+      expect(paths(findRoute(spec, "PUT", "/synonym_sets/:name").queryParams)).toEqual([]);
     },
     TIMEOUT_MS,
   );
@@ -115,6 +130,14 @@ describe.skipIf(!hasClone("typesense"))("v31 clone", () => {
       expect(spec.diagnostics).toEqual([]);
       expect(spec.routes.length).toBeGreaterThanOrEqual(96);
       expect(findRoute(spec, "PATCH", "/keys/:id").handler.length).toBeGreaterThan(0);
+
+      const keys = paths(findRoute(spec, "POST", "/keys").bodyParams);
+      expectToIncludeAll(keys, ["joins", "joins.*.allowed_fields", "joins.*.denied_fields"]);
+      expect(keys).not.toContain("joins[]");
+
+      const search = paths(findRoute(spec, "GET", "/collections/:collection/documents/search").queryParams);
+      expectToIncludeAll(search, ["q", "query_by", "filter_by", "include_fields", "per_page"]);
+      expect(search).not.toContain("name");
     },
     TIMEOUT_MS,
   );

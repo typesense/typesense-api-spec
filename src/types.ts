@@ -192,7 +192,9 @@ export interface AliasTarget {
     /** A key/value pair from iterating the params map. */
     | "param-entry"
     /** The key of such a pair: comparing it or looking it up names a parameter. */
-    | "param-key";
+    | "param-key"
+    /** A key from iterating a JSON object's items; segments locate that object. */
+    | "body-key";
   readonly segments: readonly string[];
 }
 
