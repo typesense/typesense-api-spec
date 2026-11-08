@@ -128,7 +128,7 @@ describe.skipIf(!hasClone("typesense"))("v31 clone", () => {
     async () => {
       const { spec } = await extractFromClone("typesense", "v31");
       expect(spec.diagnostics).toEqual([]);
-      expect(spec.routes.length).toBeGreaterThanOrEqual(96);
+      expect(spec.routes.length).toBeGreaterThanOrEqual(90);
       expect(findRoute(spec, "PATCH", "/keys/:id").handler.length).toBeGreaterThan(0);
 
       const keys = paths(findRoute(spec, "POST", "/keys").bodyParams);

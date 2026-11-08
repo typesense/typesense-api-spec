@@ -127,7 +127,7 @@ function buildUrlTemplate(baseUrl: string | undefined, pathTemplate: string): st
 }
 
 function isPathBlacklisted(pathTemplate: string, blacklistedPaths: readonly string[]): boolean {
-  return blacklistedPaths.includes(pathTemplate);
+  return blacklistedPaths.some((path) => pathTemplate === path || pathTemplate.startsWith(`${path}/`));
 }
 
 function isParamBlacklisted(name: string, blacklistedNames: readonly string[]): boolean {
