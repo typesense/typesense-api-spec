@@ -48,7 +48,9 @@ function resolveEntryKey(node: SyntaxNode, aliases: ReadonlyMap<string, AliasTar
   if (fieldParts?.fieldName !== "first" || fieldParts.baseNode.type !== "identifier") {
     return undefined;
   }
-  return aliases.get(fieldParts.baseNode.text)?.location === "param-entry" ? { location: "param-key", segments: [] } : undefined;
+  return aliases.get(fieldParts.baseNode.text)?.location === "param-entry" ?
+      { location: "param-key", segments: [] }
+    : undefined;
 }
 
 /** `it->second`, where `it = params.find("x")`, is the value of parameter x. */
@@ -61,10 +63,7 @@ function resolveLookupValue(node: SyntaxNode, aliases: ReadonlyMap<string, Alias
   return iterator?.location === "param-lookup" ? { location: "params-root", segments: iterator.segments } : undefined;
 }
 
-function getDirectAlias(
-  node: SyntaxNode,
-  aliases: ReadonlyMap<string, AliasTarget>,
-): AliasTarget | undefined {
+function getDirectAlias(node: SyntaxNode, aliases: ReadonlyMap<string, AliasTarget>): AliasTarget | undefined {
   if (node.type !== "identifier") {
     return undefined;
   }
@@ -94,8 +93,7 @@ function resolveFreeCallExpression(
   constants: ReadonlyMap<string, string>,
 ): AliasTarget | undefined {
   const calleeName = extractTerminalName(callInfo.calleeName);
-  const isJsonParseCall =
-    callInfo.calleeName === "nlohmann::json::parse" || calleeName === "parse";
+  const isJsonParseCall = callInfo.calleeName === "nlohmann::json::parse" || calleeName === "parse";
   if (!isJsonParseCall) {
     return undefined;
   }
@@ -122,11 +120,7 @@ function resolveMethodCallExpression(
     return undefined;
   }
 
-  const baseTarget = resolveExpressionNode(
-    callInfo.baseNode,
-    aliases,
-    constants,
-  );
+  const baseTarget = resolveExpressionNode(callInfo.baseNode, aliases, constants);
   if (baseTarget === undefined) {
     return undefined;
   }
@@ -144,19 +138,11 @@ function resolveMethodCallExpression(
     if (callInfo.arguments.length === 0) {
       return baseTarget;
     }
-    return resolveIndexedMethodTarget(
-      baseTarget,
-      callInfo.arguments[0],
-      constants,
-    );
+    return resolveIndexedMethodTarget(baseTarget, callInfo.arguments[0], constants);
   }
 
   if (callInfo.methodName === "find" || callInfo.methodName === "at") {
-    return resolveIndexedMethodTarget(
-      baseTarget,
-      callInfo.arguments[0],
-      constants,
-    );
+    return resolveIndexedMethodTarget(baseTarget, callInfo.arguments[0], constants);
   }
 
   return undefined;
@@ -234,10 +220,7 @@ export function resolveLoopItemTarget(
   };
 }
 
-export function resolveStringTokenNode(
-  node: SyntaxNode,
-  constants: ReadonlyMap<string, string>,
-): string | undefined {
+export function resolveStringTokenNode(node: SyntaxNode, constants: ReadonlyMap<string, string>): string | undefined {
   // Check qualified names before unwrapping: unwrapExpressionNode reduces
   // `fields::type` to its terminal identifier `type`.
   const qualifiedNode = unwrapParentheses(node);
@@ -314,17 +297,12 @@ export function bootstrapAliases(
 
   parameters
     .filter((parameter) => parameter.name.length > 0 && parameter.typeText.includes("http_req"))
-    .forEach((parameter) =>
-      aliases.set(parameter.name, { location: "request-root", segments: [] }),
-    );
+    .forEach((parameter) => aliases.set(parameter.name, { location: "request-root", segments: [] }));
 
   return aliases;
 }
 
-function resolveRequestRoot(
-  node: SyntaxNode,
-  aliases: ReadonlyMap<string, AliasTarget>,
-): AliasTarget | undefined {
+function resolveRequestRoot(node: SyntaxNode, aliases: ReadonlyMap<string, AliasTarget>): AliasTarget | undefined {
   const fieldParts = parseFieldExpression(node);
   if (fieldParts === undefined) {
     return undefined;

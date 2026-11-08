@@ -15,15 +15,7 @@ export const HttpMethodMap = {
 export type HttpMethod = (typeof HttpMethodMap)[keyof typeof HttpMethodMap];
 export type CppHttpMethod = keyof typeof HttpMethodMap;
 
-const PRIMITIVE_BASES = [
-  "string",
-  "boolean",
-  "object",
-  "number",
-  "array",
-  "uint",
-  "integer",
-] as const;
+const PRIMITIVE_BASES = ["string", "boolean", "object", "number", "array", "uint", "integer"] as const;
 
 type PrimitiveBase = (typeof PRIMITIVE_BASES)[number];
 

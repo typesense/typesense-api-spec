@@ -25,10 +25,7 @@ export class ParameterCollector {
     if (parameter.location === "path") {
       this.#path.set(
         parameter.canonicalPath,
-        mergeCollectedParameter(
-          this.#path.get(parameter.canonicalPath),
-          parameter,
-        ),
+        mergeCollectedParameter(this.#path.get(parameter.canonicalPath), parameter),
       );
       return;
     }
@@ -36,10 +33,7 @@ export class ParameterCollector {
       this.#mirrorToBody(parameter);
       this.#query.set(
         parameter.canonicalPath,
-        mergeCollectedParameter(
-          this.#query.get(parameter.canonicalPath),
-          parameter,
-        ),
+        mergeCollectedParameter(this.#query.get(parameter.canonicalPath), parameter),
       );
       return;
     }
@@ -50,17 +44,17 @@ export class ParameterCollector {
       this.#mirroredBodyPaths.delete(parameter.canonicalPath);
       this.#body.set(
         parameter.canonicalPath,
-        mergeCollectedParameter(
-          this.#body.get(parameter.canonicalPath),
-          parameter,
-        ),
+        mergeCollectedParameter(this.#body.get(parameter.canonicalPath), parameter),
       );
     }
   }
 
   /** Records the type of a value the server stores, for use if clients also send that field. */
   hintBodyType(canonicalPath: string, valueType: ValueType): void {
-    this.#bodyTypeHints.set(canonicalPath, mergeValueTypes(this.#bodyTypeHints.get(canonicalPath), valueType) ?? valueType);
+    this.#bodyTypeHints.set(
+      canonicalPath,
+      mergeValueTypes(this.#bodyTypeHints.get(canonicalPath), valueType) ?? valueType,
+    );
   }
 
   /** The server always replaces this field, so later reads see its value, not the client's. */
@@ -115,14 +109,22 @@ export class ParameterCollector {
       })),
     );
     const wildcards = new Map(
-      parameters.filter((parameter) => parameter.canonicalPath.endsWith(WILDCARD_SUFFIX)).map((parameter) => [parentPrefix(parameter.canonicalPath), parameter]),
+      parameters
+        .filter((parameter) => parameter.canonicalPath.endsWith(WILDCARD_SUFFIX))
+        .map((parameter) => [parentPrefix(parameter.canonicalPath), parameter]),
     );
     const namedParents = new Set(
-      parameters.filter((parameter) => !parameter.canonicalPath.endsWith(WILDCARD_SUFFIX)).map((parameter) => parentPrefix(parameter.canonicalPath)),
+      parameters
+        .filter((parameter) => !parameter.canonicalPath.endsWith(WILDCARD_SUFFIX))
+        .map((parameter) => parentPrefix(parameter.canonicalPath)),
     );
 
     return parameters
-      .filter((parameter) => !parameter.canonicalPath.endsWith(WILDCARD_SUFFIX) || !namedParents.has(parentPrefix(parameter.canonicalPath)))
+      .filter(
+        (parameter) =>
+          !parameter.canonicalPath.endsWith(WILDCARD_SUFFIX) ||
+          !namedParents.has(parentPrefix(parameter.canonicalPath)),
+      )
       .map((parameter) => {
         const wildcardType = wildcards.get(parentPrefix(parameter.canonicalPath))?.valueType;
         return parameter.valueType === undefined && wildcardType !== undefined && !wildcardType.includes(" | ") ?
@@ -217,20 +219,16 @@ function mergeCollectedParameter(
   };
 }
 
-function collectPathParams(
-  route: RouteRegistration,
-): readonly CollectedParameter[] {
+function collectPathParams(route: RouteRegistration): readonly CollectedParameter[] {
   return route.pathTemplate
     .split("/")
     .filter((part) => part.startsWith(":"))
     .map((part) => part.slice(1))
     .filter((name) => name.length > 0)
-    .map(
-      (name): CollectedParameter => ({
-        location: "path",
-        canonicalPath: name,
-        valueType: "string",
-        source: route.source,
-      }),
-    );
+    .map((name): CollectedParameter => ({
+      location: "path",
+      canonicalPath: name,
+      valueType: "string",
+      source: route.source,
+    }));
 }

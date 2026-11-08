@@ -1,5 +1,5 @@
 export function normalizeNewlines(input: string): string {
-  return input.replace(/\r\n/g, '\n');
+  return input.replace(/\r\n/g, "\n");
 }
 
 const CONDITIONAL_DIRECTIVE = /^\s*#\s*(ifdef|ifndef|if|elif|else|endif)\b/;
@@ -58,7 +58,10 @@ function resolveIfUnbalanced(lines: string[], frame: ConditionalFrame): void {
   }
 
   // With the macro undefined, #ifndef keeps its first branch and the others keep #else.
-  const keptBranch = frame.kind === "ifndef" ? 0 : frame.hasElse ? branchCount - 1 : -1;
+  const keptBranch =
+    frame.kind === "ifndef" ? 0
+    : frame.hasElse ? branchCount - 1
+    : -1;
   const keptFrom = keptBranch < 0 ? -1 : (frame.directives[keptBranch] ?? -1);
   const keptTo = keptBranch < 0 ? -1 : (frame.directives[keptBranch + 1] ?? -1);
   const first = frame.directives[0] ?? 0;
@@ -83,18 +86,20 @@ export const MAP_KEY_SEGMENT = "*";
 export function normalizePathSegments(segments: readonly string[]): string {
   return segments
     .map((segment, index) => {
-      if (segment === '[]') return segment;
+      if (segment === "[]") return segment;
       return index > 0 ? `.${segment}` : segment;
     })
-    .join('');
+    .join("");
 }
 
 export function extractPathName(canonicalPath: string): string {
-  return canonicalPath
-    .split(".")
-    .map((part) => part.replaceAll("[]", ""))
-    .filter((part) => part.length > 0 && part !== MAP_KEY_SEGMENT)
-    .at(-1) ?? "";
+  return (
+    canonicalPath
+      .split(".")
+      .map((part) => part.replaceAll("[]", ""))
+      .filter((part) => part.length > 0 && part !== MAP_KEY_SEGMENT)
+      .at(-1) ?? ""
+  );
 }
 
 export function sortedReadonly<T>(values: readonly T[], compare: (left: T, right: T) => number): readonly T[] {

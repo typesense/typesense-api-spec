@@ -21,12 +21,12 @@ export async function runExtraction(cliOptions: CliOptions): Promise<ApiSpec> {
   const symbolsStep = progress.startStep("indexing functions");
   const [sourceCommit, routes, constants, functions] = await Promise.all([
     resolveSourceCommit(config.sourceBranch),
-    discoverRoutes(
-      resolveRawGithubUrl(config.sourceBranch, resolveSourcePath(config.rootDir, config.routeFile)),
-    ).then((result) => {
-      routesStep.done(`${result.length} routes`);
-      return result;
-    }),
+    discoverRoutes(resolveRawGithubUrl(config.sourceBranch, resolveSourcePath(config.rootDir, config.routeFile))).then(
+      (result) => {
+        routesStep.done(`${result.length} routes`);
+        return result;
+      },
+    ),
     loadStringConstants(config.rootDir, config.sourceBranch).then((result) => {
       constantsStep.done(`${result.size} constants`);
       return result;
@@ -57,10 +57,7 @@ export async function runExtraction(cliOptions: CliOptions): Promise<ApiSpec> {
     throw new Error("Extraction produced diagnostics.");
   }
 
-  if (
-    config.failOnUnresolved &&
-    diagnostics.some((diagnostic) => diagnostic.level === "error")
-  ) {
+  if (config.failOnUnresolved && diagnostics.some((diagnostic) => diagnostic.level === "error")) {
     throw new Error("Extraction produced unresolved handler errors.");
   }
 

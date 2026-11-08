@@ -50,10 +50,7 @@ async function fetchRemoteText(url: string): Promise<string> {
   }
 }
 
-export async function writeTextFile(
-  filePath: string,
-  contents: string,
-): Promise<void> {
+export async function writeTextFile(filePath: string, contents: string): Promise<void> {
   await mkdir(path.dirname(filePath), { recursive: true });
   await writeFile(filePath, contents, "utf8");
 }

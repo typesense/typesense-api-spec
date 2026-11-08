@@ -21,6 +21,8 @@
     "semantic-diff": "bun src/cli.ts semantic-diff",
     "check": "tsc -p tsconfig.json --noEmit",
     "lint": "eslint .",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
     "test": "bun test"
   },
   "dependencies": {
@@ -41,6 +43,7 @@
     "@types/bun": "1.4.2",
     "@types/node": "^22.0.0",
     "eslint": "^9.39.1",
+    "prettier": "3.9.10",
     "typescript": "^5.5.0",
     "typescript-eslint": "^8.46.2"
   },

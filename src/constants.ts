@@ -4,10 +4,7 @@ import { CountingSemaphore } from "./concurrency.js";
 import { readTextFile } from "./fs.js";
 import { listSourceFiles, resolveRawGithubUrl, resolveSourcePath } from "./source.js";
 
-export async function loadStringConstants(
-  rootDir: string,
-  sourceBranch: string,
-): Promise<ReadonlyMap<string, string>> {
+export async function loadStringConstants(rootDir: string, sourceBranch: string): Promise<ReadonlyMap<string, string>> {
   // Test and tool sources could otherwise claim a bare name first.
   const productionDirs = ["include", "src"].map((dir) => `${resolveSourcePath(rootDir, dir)}/`);
   const candidateFiles = (await listSourceFiles(sourceBranch, rootDir, [".h", ".hpp", ".cpp"])).filter((filePath) =>
@@ -91,10 +88,7 @@ function parseConstantNode(node: SyntaxNode): ConstantEntry | undefined {
   return undefined;
 }
 
-function toEntry(
-  declaratorNode: SyntaxNode | undefined,
-  valueNode: SyntaxNode | undefined,
-): ConstantEntry | undefined {
+function toEntry(declaratorNode: SyntaxNode | undefined, valueNode: SyntaxNode | undefined): ConstantEntry | undefined {
   if (valueNode?.type !== "string_literal") {
     return undefined;
   }

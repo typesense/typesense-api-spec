@@ -56,21 +56,11 @@ export function extractRouteData(
   const visited = new Set<string>();
   analyzeFunction(definition, context, collector, visited, 0, routeKey, debug);
   pathParams = collector.snapshot("path");
-  debug(
-    `path params => ${
-      pathParams.map((item) => item.canonicalPath).join(", ") || "(none)"
-    }`,
-  );
+  debug(`path params => ${pathParams.map((item) => item.canonicalPath).join(", ") || "(none)"}`);
   const queryParams = collector.snapshot("query");
   const bodyParams = collector.snapshot("body");
-  debug(
-    `query params => ${
-      queryParams.map((item) => item.canonicalPath).join(", ") || "(none)"
-    }`,
-  );
-  debug(
-    `body params => ${bodyParams.map((item) => item.canonicalPath).join(", ") || "(none)"}`,
-  );
+  debug(`query params => ${queryParams.map((item) => item.canonicalPath).join(", ") || "(none)"}`);
+  debug(`body params => ${bodyParams.map((item) => item.canonicalPath).join(", ") || "(none)"}`);
 
   return {
     route,

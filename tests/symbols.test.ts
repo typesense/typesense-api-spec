@@ -5,7 +5,11 @@ import { inMemoryRepo, nextBranch, stubGithub } from "./helpers/fake-github.js";
 let restore = (): void => undefined;
 afterEach(() => restore());
 
-const index = async (cpp: string, extraFiles: Readonly<Record<string, string>> = {}, helpers: readonly string[] = []) => {
+const index = async (
+  cpp: string,
+  extraFiles: Readonly<Record<string, string>> = {},
+  helpers: readonly string[] = [],
+) => {
   restore = stubGithub(inMemoryRepo({ "src/core_api.cpp": cpp, ...extraFiles }));
   return indexFunctions("", helpers, nextBranch());
 };

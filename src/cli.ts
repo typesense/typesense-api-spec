@@ -3,11 +3,7 @@
 import { parseArgs } from "node:util";
 import { runExtraction } from "./index.js";
 import { runSemanticDiff } from "./semantic-diff.js";
-import type {
-  CommandLineOptions,
-  SemanticDiffCliOptions,
-  CliOptions,
-} from "./types.js";
+import type { CommandLineOptions, SemanticDiffCliOptions, CliOptions } from "./types.js";
 
 async function main(): Promise<void> {
   const options = parseCli(process.argv.slice(2));
@@ -18,9 +14,7 @@ async function main(): Promise<void> {
         `${JSON.stringify({ event: "result", routes: spec.routes.length, diagnostics: spec.diagnostics.length })}\n`,
       );
     } else {
-      process.stdout.write(
-        `Extracted ${spec.routes.length} routes with ${spec.diagnostics.length} diagnostics.\n`,
-      );
+      process.stdout.write(`Extracted ${spec.routes.length} routes with ${spec.diagnostics.length} diagnostics.\n`);
     }
     return;
   }
@@ -73,9 +67,7 @@ function parseExtractCli(argv: readonly string[]): CliOptions {
   if (values["max-call-depth"] !== undefined) {
     maxCallDepth = Number.parseInt(values["max-call-depth"], 10);
     if (!Number.isFinite(maxCallDepth)) {
-      throw new Error(
-        `Invalid value for --max-call-depth: ${values["max-call-depth"]}`,
-      );
+      throw new Error(`Invalid value for --max-call-depth: ${values["max-call-depth"]}`);
     }
   }
 

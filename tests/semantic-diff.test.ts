@@ -58,7 +58,12 @@ const diff = async (previous: readonly RouteInput[], next: readonly RouteInput[]
 describe("runSemanticDiff", () => {
   test("reports no change for identical specs", async () => {
     const routes = [{ path: "/a", query: { q: "string" } }];
-    expect(await diff(routes, routes)).toEqual({ changed: false, addedRoutes: [], removedRoutes: [], changedRoutes: [] });
+    expect(await diff(routes, routes)).toEqual({
+      changed: false,
+      addedRoutes: [],
+      removedRoutes: [],
+      changedRoutes: [],
+    });
   });
 
   test("ignores route order and fields outside the API shape", async () => {
@@ -152,7 +157,9 @@ describe("runSemanticDiff", () => {
     expect(markdown).toContain(`| \`GET /gone\` | [\`src/server.cpp:3\`](${BLOB}/aaaaaaa1111/src/server.cpp#L3) |`);
     expect(markdown).toContain(`[\`src/fresh.cpp:7\`](${BLOB}/bbbbbbb2222/src/fresh.cpp#L7)`);
     expect(markdown).toContain(`[\`src/old.cpp:7\`](${BLOB}/aaaaaaa1111/src/old.cpp#L7)`);
-    expect(markdown).toContain("**1** route changed · **1** route added · **1** route removed · **1** parameter added · **1** parameter removed");
+    expect(markdown).toContain(
+      "**1** route changed · **1** route added · **1** route removed · **1** parameter added · **1** parameter removed",
+    );
   });
 
   test("escapes union types so they stay in one table cell", async () => {

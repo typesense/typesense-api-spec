@@ -74,10 +74,7 @@ function diffSpecs(previous: ApiSpec, next: ApiSpec): DiffSummary {
     .sort((left, right) => left.routeKey.localeCompare(right.routeKey));
 
   return {
-    changed:
-      addedRoutes.length > 0 ||
-      removedRoutes.length > 0 ||
-      changedRoutes.length > 0,
+    changed: addedRoutes.length > 0 || removedRoutes.length > 0 || changedRoutes.length > 0,
     addedRoutes,
     removedRoutes,
     changedRoutes,
@@ -93,9 +90,15 @@ function indexRoutes(routes: readonly ApiRouteSpec[]): ReadonlyMap<string, Compa
         {
           routeKey,
           params: new Map([
-            ...route.pathParams.map((parameter) => [buildParameterKey("path", parameter), parameter.valueType] as const),
-            ...route.queryParams.map((parameter) => [buildParameterKey("query", parameter), parameter.valueType] as const),
-            ...route.bodyParams.map((parameter) => [buildParameterKey("body", parameter), parameter.valueType] as const),
+            ...route.pathParams.map(
+              (parameter) => [buildParameterKey("path", parameter), parameter.valueType] as const,
+            ),
+            ...route.queryParams.map(
+              (parameter) => [buildParameterKey("query", parameter), parameter.valueType] as const,
+            ),
+            ...route.bodyParams.map(
+              (parameter) => [buildParameterKey("body", parameter), parameter.valueType] as const,
+            ),
           ]),
         },
       ] as const;
@@ -103,10 +106,7 @@ function indexRoutes(routes: readonly ApiRouteSpec[]): ReadonlyMap<string, Compa
   );
 }
 
-function diffRoute(
-  previous: ComparableRoute | undefined,
-  next: ComparableRoute | undefined,
-): RouteChange | undefined {
+function diffRoute(previous: ComparableRoute | undefined, next: ComparableRoute | undefined): RouteChange | undefined {
   if (previous === undefined || next === undefined) {
     return undefined;
   }
@@ -130,11 +130,7 @@ function diffRoute(
     .filter((change): change is ParamTypeChange => change !== undefined)
     .sort((left, right) => left.parameterKey.localeCompare(right.parameterKey));
 
-  if (
-    addedParams.length === 0 &&
-    removedParams.length === 0 &&
-    changedParamTypes.length === 0
-  ) {
+  if (addedParams.length === 0 && removedParams.length === 0 && changedParamTypes.length === 0) {
     return undefined;
   }
 
@@ -146,13 +142,8 @@ function diffRoute(
   };
 }
 
-function sortedKeysDifference<T>(
-  left: ReadonlyMap<string, T>,
-  right: ReadonlyMap<string, T>,
-): readonly string[] {
-  return [...left.keys()]
-    .filter((key) => !right.has(key))
-    .sort((a, b) => a.localeCompare(b));
+function sortedKeysDifference<T>(left: ReadonlyMap<string, T>, right: ReadonlyMap<string, T>): readonly string[] {
+  return [...left.keys()].filter((key) => !right.has(key)).sort((a, b) => a.localeCompare(b));
 }
 
 function buildRouteKey(method: HttpMethod, pathTemplate: string): string {
@@ -202,7 +193,9 @@ function renderMarkdown(summary: DiffSummary, previous: ApiSpec, next: ApiSpec):
         "| Change | In | Parameter | Type | Source |",
         "| --- | --- | --- | --- | --- |",
         ...route.addedParams.map((key) => renderParameterRow("🟢 Added", key, undefined, route.routeKey, nextDetails)),
-        ...route.removedParams.map((key) => renderParameterRow("🔴 Removed", key, undefined, route.routeKey, previousDetails)),
+        ...route.removedParams.map((key) =>
+          renderParameterRow("🔴 Removed", key, undefined, route.routeKey, previousDetails),
+        ),
         ...route.changedParamTypes.map((change) =>
           renderParameterRow("🟡 Type changed", change.parameterKey, change, route.routeKey, nextDetails),
         ),

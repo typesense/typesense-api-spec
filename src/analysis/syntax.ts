@@ -8,22 +8,15 @@ export interface ParsedCall {
   readonly arguments: readonly SyntaxNode[];
 }
 
-export function parseCallExpressionNode(
-  node: SyntaxNode,
-): ParsedCall | undefined {
+export function parseCallExpressionNode(node: SyntaxNode): ParsedCall | undefined {
   const functionNode = childForField(node, "function");
-  const argumentListNode = node.namedChildren.find(
-    (child) => child.type === "argument_list",
-  );
+  const argumentListNode = node.namedChildren.find((child) => child.type === "argument_list");
   if (functionNode === undefined || argumentListNode === undefined) {
     return undefined;
   }
 
   const argumentsList = [...argumentListNode.namedChildren];
-  const fieldParts =
-    functionNode.type === "field_expression"
-      ? parseFieldExpression(functionNode)
-      : undefined;
+  const fieldParts = functionNode.type === "field_expression" ? parseFieldExpression(functionNode) : undefined;
   if (fieldParts !== undefined) {
     return {
       calleeName: functionNode.text,
@@ -55,11 +48,7 @@ export function parseFieldExpression(node: SyntaxNode):
   const baseNode = childForField(node, "argument");
   const fieldNode = childForField(node, "field");
   const operatorNode = childForField(node, "operator");
-  if (
-    baseNode === undefined ||
-    fieldNode === undefined ||
-    operatorNode === undefined
-  ) {
+  if (baseNode === undefined || fieldNode === undefined || operatorNode === undefined) {
     return undefined;
   }
 
@@ -77,12 +66,8 @@ export function extractLoopAliasName(statement: SyntaxNode): string | undefined 
     .find((name): name is string => name !== undefined);
 }
 
-export function extractSubscriptIndexNode(
-  node: SyntaxNode,
-): SyntaxNode | undefined {
-  const argListNode = node.namedChildren.find(
-    (child) => child.type === "subscript_argument_list",
-  );
+export function extractSubscriptIndexNode(node: SyntaxNode): SyntaxNode | undefined {
+  const argListNode = node.namedChildren.find((child) => child.type === "subscript_argument_list");
   return argListNode?.namedChildren[0];
 }
 
@@ -102,8 +87,7 @@ export function unwrapExpressionNode(node: SyntaxNode): SyntaxNode {
       current.type === "qualified_identifier") &&
     current.namedChildren.length > 0
   ) {
-    current =
-      current.namedChildren[current.namedChildren.length - 1] ?? current;
+    current = current.namedChildren[current.namedChildren.length - 1] ?? current;
   }
   return current;
 }

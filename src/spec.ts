@@ -25,19 +25,17 @@ export function buildSpec(
     .map((extraction) => applyOverride(extraction, config.overrides))
     .filter((overridden): overridden is RouteExtraction => overridden !== undefined)
     .filter((overridden) => !isPathBlacklisted(overridden.route.pathTemplate, config.blacklist.paths))
-    .map(
-      (overridden): ApiRouteSpec => ({
-        method: overridden.route.method,
-        pathTemplate: overridden.route.pathTemplate,
-        urlTemplate: buildUrlTemplate(config.baseUrl, overridden.route.pathTemplate),
-        handler: overridden.route.handler,
-        pathParams: materializeParameters(overridden.pathParams, "path", config.blacklist.params),
-        queryParams: materializeParameters(overridden.queryParams, "query", config.blacklist.params),
-        bodyParams: materializeParameters(overridden.bodyParams, "body", config.blacklist.params),
-        source: overridden.route.source,
-        diagnostics: filterDiagnostics(overridden.diagnostics, overridden.route.method, overridden.route.pathTemplate),
-      }),
-    );
+    .map((overridden): ApiRouteSpec => ({
+      method: overridden.route.method,
+      pathTemplate: overridden.route.pathTemplate,
+      urlTemplate: buildUrlTemplate(config.baseUrl, overridden.route.pathTemplate),
+      handler: overridden.route.handler,
+      pathParams: materializeParameters(overridden.pathParams, "path", config.blacklist.params),
+      queryParams: materializeParameters(overridden.queryParams, "query", config.blacklist.params),
+      bodyParams: materializeParameters(overridden.bodyParams, "body", config.blacklist.params),
+      source: overridden.route.source,
+      diagnostics: filterDiagnostics(overridden.diagnostics, overridden.route.method, overridden.route.pathTemplate),
+    }));
 
   return {
     rootDir: config.rootDir,
@@ -178,14 +176,12 @@ function applyOverrideParams(
 
   const additions = (override.addParams ?? [])
     .filter((addition) => addition.location === location)
-    .map(
-      (addition): CollectedParameter => ({
-        location,
-        canonicalPath: addition.canonicalPath ?? normalizePathSegments([addition.name]),
-        valueType: undefined,
-        source: { filePath: "config", line: 1, column: 1 },
-      }),
-    );
+    .map((addition): CollectedParameter => ({
+      location,
+      canonicalPath: addition.canonicalPath ?? normalizePathSegments([addition.name]),
+      valueType: undefined,
+      source: { filePath: "config", line: 1, column: 1 },
+    }));
 
   return [...filtered, ...additions];
 }

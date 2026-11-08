@@ -60,7 +60,11 @@ describe("buildSpec", () => {
       [extraction("/b"), extraction("/a", {}, "POST"), extraction("/a", {}, "GET")],
       [],
     );
-    expect(spec.routes.map((route) => `${route.method} ${route.pathTemplate}`)).toEqual(["GET /a", "POST /a", "GET /b"]);
+    expect(spec.routes.map((route) => `${route.method} ${route.pathTemplate}`)).toEqual([
+      "GET /a",
+      "POST /a",
+      "GET /b",
+    ]);
   });
 
   test("gives untyped params a default type for their location", () => {
@@ -87,7 +91,11 @@ describe("buildSpec", () => {
   test("drops malformed canonical paths", () => {
     const [route] = buildSpec(
       baseConfig,
-      [extraction("/a", { body: [param("body", ""), param("body", "a."), param("body", "a..b"), param("body", "ok")] })],
+      [
+        extraction("/a", {
+          body: [param("body", ""), param("body", "a."), param("body", "a..b"), param("body", "ok")],
+        }),
+      ],
       [],
     ).routes;
     expect(names(route?.bodyParams)).toEqual(["ok"]);
@@ -96,7 +104,10 @@ describe("buildSpec", () => {
   test("applies path and param blacklists", () => {
     const spec = buildSpec(
       { ...baseConfig, blacklist: { paths: ["/hidden"], params: ["secret"] } },
-      [extraction("/hidden"), extraction("/a", { body: [param("body", "secret"), param("body", "nested.secret"), param("body", "ok")] })],
+      [
+        extraction("/hidden"),
+        extraction("/a", { body: [param("body", "secret"), param("body", "nested.secret"), param("body", "ok")] }),
+      ],
       [],
     );
     expect(spec.routes.map((route) => route.pathTemplate)).toEqual(["/a"]);

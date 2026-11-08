@@ -69,7 +69,9 @@ describe("loadConfig", () => {
 
   test("rejects unknown keys and names the file", async () => {
     const configPath = await writeConfig({ not_a_real_option: true });
-    expect(await rejectionMessage(loadConfig(configPath, noCliOptions))).toContain(`Could not parse config file ${configPath}`);
+    expect(await rejectionMessage(loadConfig(configPath, noCliOptions))).toContain(
+      `Could not parse config file ${configPath}`,
+    );
   });
 
   test("names the field that has the wrong type", async () => {

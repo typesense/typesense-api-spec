@@ -89,12 +89,21 @@ describe.skipIf(!hasClone("typesense-v30"))("v30 clone", () => {
     "cites where a parameter is read or named, not where it is masked or looked up",
     async () => {
       const { spec } = await extractFromClone("typesense-v30", "v30");
-      const citation = (method: string, routePath: string, location: "queryParams" | "bodyParams", name: string): string => {
-        const parameter = findRoute(spec, method, routePath)[location].find((candidate) => candidate.canonicalPath === name);
+      const citation = (
+        method: string,
+        routePath: string,
+        location: "queryParams" | "bodyParams",
+        name: string,
+      ): string => {
+        const parameter = findRoute(spec, method, routePath)[location].find(
+          (candidate) => candidate.canonicalPath === name,
+        );
         return parameter?.sources[0]?.filePath ?? "";
       };
 
-      expect(citation("POST", "/nl_search_models", "bodyParams", "api_key")).toEndWith("/natural_language_search_model.cpp");
+      expect(citation("POST", "/nl_search_models", "bodyParams", "api_key")).toEndWith(
+        "/natural_language_search_model.cpp",
+      );
       expect(citation("POST", "/conversations/models", "bodyParams", "api_key")).toEndWith("/conversation_model.cpp");
 
       const route = findRoute(spec, "GET", "/collections/:collection/documents/search");
@@ -113,7 +122,10 @@ describe.skipIf(!hasClone("typesense-v30"))("v30 clone", () => {
       const multiSearch = paths(findRoute(spec, "POST", "/multi_search").bodyParams);
       expectToIncludeAll(multiSearch, ["searches", "union", "remove_duplicates"]);
 
-      for (const documentRoute of ["/collections/:collection/documents/:id", "/collections/:collection/documents/export"]) {
+      for (const documentRoute of [
+        "/collections/:collection/documents/:id",
+        "/collections/:collection/documents/export",
+      ]) {
         const query = paths(findRoute(spec, "GET", documentRoute).queryParams);
         expectToIncludeAll(query, ["include_fields", "exclude_fields"]);
       }
@@ -134,11 +146,30 @@ describe.skipIf(!hasClone("typesense-v30"))("v30 clone", () => {
       expect(search.find((parameter) => parameter.canonicalPath === "query_by")?.valueType).toBe("string[]");
 
       expectToIncludeAll(multiSearch, ["searches[].q", "searches[].query_by"]);
-      expectToIncludeAll(paths(findRoute(spec, "POST", "/conversations/models").bodyParams), ["model_name", "system_prompt"]);
-      expectToIncludeAll(paths(findRoute(spec, "PUT", "/conversations/models/:id").bodyParams), ["model_name", "system_prompt"]);
-      expectToIncludeAll(paths(findRoute(spec, "POST", "/analytics/events").bodyParams), ["name", "data", "data.user_id", "data.doc_id", "data.q"]);
-      expectToIncludeAll(paths(findRoute(spec, "PUT", "/synonym_sets/:name").bodyParams), ["items", "items[].synonyms"]);
-      expectToIncludeAll(paths(findRoute(spec, "PATCH", "/collections/:collection").bodyParams), ["metadata", "fields", "fields[].name"]);
+      expectToIncludeAll(paths(findRoute(spec, "POST", "/conversations/models").bodyParams), [
+        "model_name",
+        "system_prompt",
+      ]);
+      expectToIncludeAll(paths(findRoute(spec, "PUT", "/conversations/models/:id").bodyParams), [
+        "model_name",
+        "system_prompt",
+      ]);
+      expectToIncludeAll(paths(findRoute(spec, "POST", "/analytics/events").bodyParams), [
+        "name",
+        "data",
+        "data.user_id",
+        "data.doc_id",
+        "data.q",
+      ]);
+      expectToIncludeAll(paths(findRoute(spec, "PUT", "/synonym_sets/:name").bodyParams), [
+        "items",
+        "items[].synonyms",
+      ]);
+      expectToIncludeAll(paths(findRoute(spec, "PATCH", "/collections/:collection").bodyParams), [
+        "metadata",
+        "fields",
+        "fields[].name",
+      ]);
       expect(paths(findRoute(spec, "PUT", "/synonym_sets/:name").queryParams)).toEqual([]);
     },
     TIMEOUT_MS,

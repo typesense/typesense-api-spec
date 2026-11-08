@@ -69,17 +69,21 @@ describe("variable scope", () => {
   });
 
   test("a re-declaration in a branch shadows the outer alias", async () => {
-    const { body } = await extractHandler(handlerWithBody(`
+    const { body } = await extractHandler(
+      handlerWithBody(`
       if (z) { nlohmann::json body; body["shadowed"]; }
-      body["visible"];`));
+      body["visible"];`),
+    );
     expect(body).toContain("visible");
     expect(body).not.toContain("shadowed");
   });
 
   test("assigning to a shadowing variable leaves the outer alias alone", async () => {
-    const { body } = await extractHandler(handlerWithBody(`
+    const { body } = await extractHandler(
+      handlerWithBody(`
       if (z) { nlohmann::json body; body = other; }
-      body["still_body"];`));
+      body["still_body"];`),
+    );
     expect(body).toContain("still_body");
   });
 });
@@ -219,10 +223,7 @@ describe("helper calls", () => {
 
   test("a call with the wrong number of arguments is not bound to that helper", async () => {
     const { body } = await extractHandler(
-      handlerWithBody(
-        `two_args(body);`,
-        `void two_args(int unrelated, nlohmann::json& j) { j["wrong"]; }`,
-      ),
+      handlerWithBody(`two_args(body);`, `void two_args(int unrelated, nlohmann::json& j) { j["wrong"]; }`),
     );
     expect(body).toEqual([]);
   });
@@ -264,7 +265,10 @@ describe("helper calls", () => {
 
   test("path parameters stay strings when the server converts them", async () => {
     const { types } = await extractHandler(
-      handlerWithBody(`uint32_t id = std::stoul(req->params["id"]); remove_doc(req->params["id"]);`, `void remove_doc(uint64_t seq_id) {}`),
+      handlerWithBody(
+        `uint32_t id = std::stoul(req->params["id"]); remove_doc(req->params["id"]);`,
+        `void remove_doc(uint64_t seq_id) {}`,
+      ),
       { pathTemplate: "/docs/:id" },
     );
     expect(types.get("id")).toBe("string");
@@ -297,10 +301,7 @@ describe("helper calls", () => {
 
   test("library methods on tracked values are not followed as helpers", async () => {
     const { body } = await extractHandler(
-      handlerWithBody(
-        `body.update(body);`,
-        `void update(nlohmann::json& j) { j["wrong"]; }`,
-      ),
+      handlerWithBody(`body.update(body);`, `void update(nlohmann::json& j) { j["wrong"]; }`),
     );
     expect(body).toEqual([]);
   });
@@ -649,7 +650,9 @@ describe("JSON fields copied into the params map", () => {
     }`;
 
   test("each item in searches[] accepts the search parameters", async () => {
-    const { body, query, types } = await extractHandler(handler("add_params(req->params, search_params); do_search(req->params);"));
+    const { body, query, types } = await extractHandler(
+      handler("add_params(req->params, search_params); do_search(req->params);"),
+    );
     expect(body).toContain("searches[].q");
     expect(body).toContain("searches[].per_page");
     expect(types.get("searches[].per_page")).toBe("uint");
@@ -657,13 +660,17 @@ describe("JSON fields copied into the params map", () => {
   });
 
   test("params read before the copy are not mirrored", async () => {
-    const { body, query } = await extractHandler(handler("add_params(req->params, search_params); do_search(req->params);"));
+    const { body, query } = await extractHandler(
+      handler("add_params(req->params, search_params); do_search(req->params);"),
+    );
     expect(query).toContain("limit_multi_searches");
     expect(body).not.toContain("searches[].limit_multi_searches");
   });
 
   test("a field the server ignores is not mirrored", async () => {
-    const { body, query } = await extractHandler(handler("add_params(req->params, search_params); do_search(req->params);"));
+    const { body, query } = await extractHandler(
+      handler("add_params(req->params, search_params); do_search(req->params);"),
+    );
     expect(query).toContain("cache_ttl");
     expect(body).not.toContain("searches[].cache_ttl");
   });
@@ -688,7 +695,9 @@ describe("loops", () => {
 
 describe("parameters read through a loop over the params map", () => {
   const overParams = (statements: string): string =>
-    handlerWithBody(`for (const auto& kv : req->params) { const std::string& key = kv.first; const std::string& val = kv.second; ${statements} }`);
+    handlerWithBody(
+      `for (const auto& kv : req->params) { const std::string& key = kv.first; const std::string& val = kv.second; ${statements} }`,
+    );
 
   test("comparing the key names a parameter", async () => {
     const { query } = await extractHandler(overParams(`if (key == PREFIX) {} else if ("literal_key" == key) {}`), {
@@ -698,7 +707,9 @@ describe("parameters read through a loop over the params map", () => {
   });
 
   test("comparing the key with kv.first directly names a parameter", async () => {
-    const { query } = await extractHandler(handlerWithBody(`for (auto& kv : req->params) { if (kv.first == "direct") {} }`));
+    const { query } = await extractHandler(
+      handlerWithBody(`for (auto& kv : req->params) { if (kv.first == "direct") {} }`),
+    );
     expect(query).toEqual(["direct"]);
   });
 
@@ -1062,7 +1073,10 @@ describe("local names and constants", () => {
 
   test("a caller's local variable does not hide a constant inside a helper", async () => {
     const { body } = await extractHandler(
-      handlerWithBody(`std::string SOME_KEY = compute(); read_key(body);`, `void read_key(nlohmann::json& j) { j[SOME_KEY]; }`),
+      handlerWithBody(
+        `std::string SOME_KEY = compute(); read_key(body);`,
+        `void read_key(nlohmann::json& j) { j[SOME_KEY]; }`,
+      ),
       { constants: { SOME_KEY: "from_global" } },
     );
     expect(body).toContain("from_global");

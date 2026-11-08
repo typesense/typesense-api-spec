@@ -2,8 +2,7 @@ import { Octokit } from "octokit";
 
 const GITHUB_OWNER = "typesense" as const;
 const GITHUB_REPO = "typesense" as const;
-const GITHUB_RAW_BASE_URL =
-  `https://raw.githubusercontent.com/${GITHUB_OWNER}/${GITHUB_REPO}` as const;
+const GITHUB_RAW_BASE_URL = `https://raw.githubusercontent.com/${GITHUB_OWNER}/${GITHUB_REPO}` as const;
 const GITHUB_WEB_URL = `https://github.com/${GITHUB_OWNER}/${GITHUB_REPO}` as const;
 const GITHUB_API_VERSION = "2022-11-28" as const;
 const MAX_RATE_LIMIT_WAIT_SECONDS = 60;
@@ -28,10 +27,7 @@ export function resolveSourcePath(rootDir: string, filePath: string): string {
     throw new Error("Source file path cannot be empty.");
   }
 
-  if (
-    normalizedFilePath.startsWith("http://") ||
-    normalizedFilePath.startsWith("https://")
-  ) {
+  if (normalizedFilePath.startsWith("http://") || normalizedFilePath.startsWith("https://")) {
     return normalizedFilePath;
   }
 
@@ -42,10 +38,7 @@ export function resolveSourcePath(rootDir: string, filePath: string): string {
   return normalizeRepoPath(`${normalizedRootDir}/${normalizedFilePath}`);
 }
 
-export function resolveRawGithubUrl(
-  sourceBranch: string,
-  sourcePath: string,
-): string {
+export function resolveRawGithubUrl(sourceBranch: string, sourcePath: string): string {
   const normalizedSourcePath = normalizeRepoPath(sourcePath);
   if (normalizedSourcePath.length === 0) {
     throw new Error("Source path cannot be empty.");
@@ -67,7 +60,9 @@ export async function resolveSourceCommit(sourceBranch: string): Promise<string>
     })
     .catch((error: unknown) => {
       const message = error instanceof Error ? error.message : String(error);
-      throw new Error(`Could not resolve ${GITHUB_OWNER}/${GITHUB_REPO}@${sourceBranch}: ${message}.${rateLimitHint()}`);
+      throw new Error(
+        `Could not resolve ${GITHUB_OWNER}/${GITHUB_REPO}@${sourceBranch}: ${message}.${rateLimitHint()}`,
+      );
     });
   return response.data.sha;
 }
@@ -138,16 +133,11 @@ export async function listSourceFiles(
   extensions: readonly string[],
 ): Promise<readonly string[]> {
   const normalizedRootDir = normalizeRepoPath(rootDir);
-  const rootPrefix =
-    normalizedRootDir.length === 0 ? "" : `${normalizedRootDir}/`;
+  const rootPrefix = normalizedRootDir.length === 0 ? "" : `${normalizedRootDir}/`;
 
   return (await listBranchFiles(sourceBranch))
-    .filter(
-      (filePath) => rootPrefix.length === 0 || filePath.startsWith(rootPrefix),
-    )
-    .filter((filePath) =>
-      extensions.some((extension) => filePath.endsWith(extension)),
-    );
+    .filter((filePath) => rootPrefix.length === 0 || filePath.startsWith(rootPrefix))
+    .filter((filePath) => extensions.some((extension) => filePath.endsWith(extension)));
 }
 
 function normalizeRepoPath(value: string): string {

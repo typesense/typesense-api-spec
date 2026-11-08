@@ -25,11 +25,7 @@ export const extractorConfigSchema = z
     route_file: z.string().min(1).default("src/main/typesense_server.cpp"),
     source_branch: z.string().min(1).default("v30"),
     output_path: z.string().min(1).default("./output/typesense_api_spec.json"),
-    diagnostics_output_path: z
-      .string()
-      .min(1)
-      .optional()
-      .default("./output/typesense_api_diagnostics.json"),
+    diagnostics_output_path: z.string().min(1).optional().default("./output/typesense_api_diagnostics.json"),
     base_url: z.string().min(1).optional(),
     max_call_depth: z.number().finite().default(8),
     fail_on_diagnostics: z.boolean().default(false),
@@ -56,9 +52,7 @@ export const extractorConfigSchema = z
   })
   .strict();
 
-export type RouteOverrideParameter = z.infer<
-  typeof routeOverrideParameterSchema
->;
+export type RouteOverrideParameter = z.infer<typeof routeOverrideParameterSchema>;
 export type RouteOverride = z.infer<typeof routeOverrideSchema>;
 export type ParsedExtractorConfig = z.infer<typeof extractorConfigSchema>;
 export type ParameterLocation = z.infer<typeof locationEnum>;

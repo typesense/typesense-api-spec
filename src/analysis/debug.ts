@@ -1,9 +1,6 @@
 import type { DebugConfig } from "../types.js";
 
-export function createDebugLogger(
-  routeKey: string,
-  debugConfig: DebugConfig,
-): (message: string) => void {
+export function createDebugLogger(routeKey: string, debugConfig: DebugConfig): (message: string) => void {
   const filter = debugConfig.routeFilter;
   const enabled = debugConfig.enabled || filter !== undefined;
   const shouldLog = filter === undefined || routeKey.includes(filter);

@@ -95,7 +95,8 @@ interface AnalysisState {
   readonly lambdas: Map<string, SyntaxNode>;
   /** Local tables of known keys, such as `{{QUERY_BY, &search_fields}, ...}`. */
   readonly keyTables: Map<string, KeyTable>;
-  readonly definition: FunctionDefinition; readonly collector: ParameterCollector;
+  readonly definition: FunctionDefinition;
+  readonly collector: ParameterCollector;
   readonly pathParamNames: ReadonlySet<string>;
   readonly routeKey: string;
   readonly debug: (message: string) => void;
@@ -111,7 +112,8 @@ export function analyzeFunction(
   debug: (message: string) => void,
 ): void {
   // A route handler receives the request; a helper only has what its caller passed.
-  const inheritedAliases = depth === 0 ? bootstrapAliases(definition.parameters, context.aliasTargets) : new Map(context.aliasTargets);
+  const inheritedAliases =
+    depth === 0 ? bootstrapAliases(definition.parameters, context.aliasTargets) : new Map(context.aliasTargets);
   const visitKey = serializeVisitKey(definition.qualifiedName, inheritedAliases, context.boundStrings);
   if (visited.has(visitKey)) {
     return;
@@ -314,8 +316,7 @@ function handleDeclaration(
 
     // `auto x = ...;` nests an init_declarator; a condition such as
     // `if (auto x = ...)` puts declarator/value directly on the declaration.
-    const isConditionDeclaration =
-      child.type === "declaration" && childForField(child, "value") !== undefined;
+    const isConditionDeclaration = child.type === "declaration" && childForField(child, "value") !== undefined;
     if (child.type !== "init_declarator" && !isConditionDeclaration) {
       return;
     }
@@ -413,7 +414,11 @@ function handleForRangeLoop(
   if (resolved?.location === "param-entry" && bindingNames?.[0] !== undefined) {
     scopedState.aliases.set(bindingNames[0], { location: "param-key", segments: [] });
   }
-  if (resolved?.location === "body-root" && resolved.segments.at(-1) === MAP_KEY_SEGMENT && bindingNames !== undefined) {
+  if (
+    resolved?.location === "body-root" &&
+    resolved.segments.at(-1) === MAP_KEY_SEGMENT &&
+    bindingNames !== undefined
+  ) {
     const [keyName, valueName] = bindingNames;
     if (keyName !== undefined) {
       scopedState.aliases.set(keyName, { location: "body-key", segments: resolved.segments.slice(0, -1) });
@@ -444,7 +449,8 @@ function resolveParamLookup(valueNode: SyntaxNode, state: AnalysisState): AliasT
 
   const base = resolveExpressionNode(callInfo.baseNode, state.aliases, state.constants);
   const key = resolveStringTokenNode(keyNode, state.constants);
-  const isParamsMap = (base?.location === "params-root" || base?.location === "query-root") && base.segments.length === 0;
+  const isParamsMap =
+    (base?.location === "params-root" || base?.location === "query-root") && base.segments.length === 0;
   return isParamsMap && key !== undefined ? { location: "param-lookup", segments: [key] } : undefined;
 }
 
@@ -648,7 +654,10 @@ function collectAssignmentExpression(node: SyntaxNode, state: AnalysisState): vo
 /** `std::stoi(req->params["x"])` and `StringUtils::is_uint32_t(req->params["x"])` type x. */
 function collectQueryValueRead(callInfo: ParsedCall, state: AnalysisState, node: SyntaxNode): void {
   const functionName = callInfo.calleeName.split("::").at(-1) ?? "";
-  const valueType = Object.hasOwn(queryValueReaders, functionName) ? queryValueReaders[functionName as keyof typeof queryValueReaders] : undefined;
+  const valueType =
+    Object.hasOwn(queryValueReaders, functionName) ?
+      queryValueReaders[functionName as keyof typeof queryValueReaders]
+    : undefined;
   const firstArgument = callInfo.arguments[0];
   if (valueType === undefined || firstArgument === undefined) {
     return;
@@ -664,7 +673,11 @@ function collectQueryValueRead(callInfo: ParsedCall, state: AnalysisState, node:
 function collectKeyTableLookup(callInfo: ParsedCall, state: AnalysisState): void {
   const table = callInfo.baseNode?.type === "identifier" ? state.keyTables.get(callInfo.baseNode.text) : undefined;
   const firstArgument = callInfo.arguments[0];
-  if (table === undefined || firstArgument === undefined || !["find", "count", "contains", "at"].includes(callInfo.methodName ?? "")) {
+  if (
+    table === undefined ||
+    firstArgument === undefined ||
+    !["find", "count", "contains", "at"].includes(callInfo.methodName ?? "")
+  ) {
     return;
   }
 
@@ -741,8 +754,7 @@ function collectCallExpression(node: SyntaxNode, state: AnalysisState, context: 
           state.debug(`call ${callInfo.calleeName} => ${segment}`);
           // nlohmann `.value(key, default)`: the default value's type is the field's type.
           const defaultArgument = normalizedMethodName === "value" ? callInfo.arguments[1] : undefined;
-          const valueType =
-            defaultArgument === undefined ? undefined : resolveValueTypeNode(defaultArgument, state);
+          const valueType = defaultArgument === undefined ? undefined : resolveValueTypeNode(defaultArgument, state);
           addParameter(resolved, [segment], state, node, valueType);
           if (
             normalizedMethodName === "find" ||
@@ -841,7 +853,12 @@ function comparedValueType(
 }
 
 /** `key == PREFIX`, where key comes from iterating a map, names that key. */
-function collectKeyComparison(keyNode: SyntaxNode, valueNode: SyntaxNode, state: AnalysisState, node: SyntaxNode): void {
+function collectKeyComparison(
+  keyNode: SyntaxNode,
+  valueNode: SyntaxNode,
+  state: AnalysisState,
+  node: SyntaxNode,
+): void {
   const keyOwner = resolveKeyOwner(keyNode, state);
   const key = keyOwner === undefined ? undefined : resolveStringTokenNode(valueNode, state.constants);
   if (keyOwner === undefined || key === undefined) {
@@ -874,7 +891,10 @@ function isRejectingKeyCheck(comparison: SyntaxNode): boolean {
   }
 
   const consequence = childForField(ifStatement, "consequence");
-  const lastStatement = consequence?.type === "compound_statement" ? consequence.namedChildren.filter((child) => child.type !== "comment").at(-1) : consequence;
+  const lastStatement =
+    consequence?.type === "compound_statement" ?
+      consequence.namedChildren.filter((child) => child.type !== "comment").at(-1)
+    : consequence;
   return lastStatement?.type === "continue_statement" || lastStatement?.type === "return_statement";
 }
 
@@ -894,7 +914,10 @@ function isDefaultFillCheck(countCall: SyntaxNode, baseNode: SyntaxNode, keyNode
   }
 
   const consequence = childForField(ifStatement, "consequence");
-  const statements = consequence?.type === "compound_statement" ? consequence.namedChildren.filter((child) => child.type !== "comment") : [consequence];
+  const statements =
+    consequence?.type === "compound_statement" ?
+      consequence.namedChildren.filter((child) => child.type !== "comment")
+    : [consequence];
   const assignment = statements.length === 1 ? statements[0]?.namedChild(0) : undefined;
   if (assignment?.type !== "assignment_expression") {
     return false;
@@ -931,7 +954,8 @@ function collectHelperCallExpression(
   helperDefinition.parameters.forEach((parameter, parameterIndex) => {
     const argument = callInfo.arguments[parameterIndex];
     if (argument === undefined || parameter.name.length === 0) return;
-    const boundString = isStringType(parameter.typeText) ? resolveStringTokenNode(argument, state.constants) : undefined;
+    const boundString =
+      isStringType(parameter.typeText) ? resolveStringTokenNode(argument, state.constants) : undefined;
     if (boundString !== undefined) {
       boundStrings.set(parameter.name, boundString);
     }
@@ -1133,14 +1157,20 @@ function findCallDefinition(
   }
 
   const arity = callInfo.arguments.length;
-  const calleeName = (callInfo.methodName ?? callInfo.calleeName).replace(/<.*>/s, "").replace(/\s+/g, "").replace(/^::/, "");
-  const receiverClass = callInfo.baseNode === undefined ? undefined : resolveReceiverClass(callInfo.baseNode, functions);
+  const calleeName = (callInfo.methodName ?? callInfo.calleeName)
+    .replace(/<.*>/s, "")
+    .replace(/\s+/g, "")
+    .replace(/^::/, "");
+  const receiverClass =
+    callInfo.baseNode === undefined ? undefined : resolveReceiverClass(callInfo.baseNode, functions);
   const resolved =
     calleeName.includes("::") ?
       lookupFunction(calleeName, arity, functions)
-    : (receiverClass === undefined ? undefined : lookupFunction(`${receiverClass}::${calleeName}`, arity, functions)) ??
+    : ((receiverClass === undefined ? undefined : (
+        lookupFunction(`${receiverClass}::${calleeName}`, arity, functions)
+      )) ??
       lookupInCurrentClass(calleeName, arity, callInfo, functions, state) ??
-      lookupFunction(calleeName, arity, functions);
+      lookupFunction(calleeName, arity, functions));
 
   return resolved?.qualifiedName === state.definition.qualifiedName ? undefined : resolved;
 }
@@ -1172,7 +1202,10 @@ function classNameIndex(functions: ReadonlyMap<string, FunctionDefinition>): Rea
  * The class of a method call's receiver, where its name says so:
  * `Foo::get_instance().bar()` is Foo, and `doc_analytics.bar()` is DocAnalytics.
  */
-function resolveReceiverClass(baseNode: SyntaxNode, functions: ReadonlyMap<string, FunctionDefinition>): string | undefined {
+function resolveReceiverClass(
+  baseNode: SyntaxNode,
+  functions: ReadonlyMap<string, FunctionDefinition>,
+): string | undefined {
   const receiver = unwrapExpressionNode(baseNode);
   if (receiver.type === "call_expression") {
     const callee = parseCallExpressionNode(receiver)?.calleeName ?? "";
@@ -1210,9 +1243,9 @@ function lookupInCurrentClass(
     return undefined;
   }
   const scopeEnd = state.definition.qualifiedName.lastIndexOf("::");
-  return scopeEnd < 0 ?
-      undefined
-    : lookupFunction(`${state.definition.qualifiedName.slice(0, scopeEnd)}::${calleeName}`, arity, functions);
+  return scopeEnd < 0 ? undefined : (
+      lookupFunction(`${state.definition.qualifiedName.slice(0, scopeEnd)}::${calleeName}`, arity, functions)
+    );
 }
 
 function firstConcreteSegment(segments: readonly string[]): string | undefined {

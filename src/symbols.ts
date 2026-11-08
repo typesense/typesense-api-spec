@@ -101,8 +101,7 @@ function materializeFunctionDefinition(
   }
 
   const nameNode = childForField(declaratorNode, "declarator");
-  const terminalNameNode =
-    nameNode?.type === "qualified_identifier" ? childForField(nameNode, "name") : nameNode;
+  const terminalNameNode = nameNode?.type === "qualified_identifier" ? childForField(nameNode, "name") : nameNode;
   if (terminalNameNode?.type === "destructor_name" || terminalNameNode?.type === "operator_name") {
     return undefined;
   }
@@ -132,7 +131,10 @@ function qualifiedFunctionName(nameNode: SyntaxNode | undefined, functionName: s
     return functionName;
   }
   // Drop template arguments and whitespace: `Foo<T> :: bar` is `Foo::bar`.
-  return nameNode.text.replace(/<[^<>]*>/g, "").replace(/\s+/g, "").replace(/^::/, "");
+  return nameNode.text
+    .replace(/<[^<>]*>/g, "")
+    .replace(/\s+/g, "")
+    .replace(/^::/, "");
 }
 
 function parseParametersFromDeclarator(declaratorNode: SyntaxNode): readonly FunctionParameter[] {

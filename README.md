@@ -18,7 +18,6 @@ Now visit [http://localhost:8080](http://localhost:8080) in your browser to view
 
 Once you've made edits, click on File -> Save as YAML. Then copy that file into this repo and rename the file to use a `.yml` extension.
 
-
 ## API extractor
 
 `src/` extracts routes and their path, query and body parameters from the Typesense C++ source on GitHub (see `config.json`) and writes them to `output/`. The `Extract Typesense API` workflow runs this nightly. When the API shape changes, it opens a pull request with the new output and a report linking each change to the Typesense source, so `openapi.yml` can be updated on the same branch. Changes that only move source lines don't open a pull request. A path in the config's `blacklist.paths` also covers its subpaths.

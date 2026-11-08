@@ -30,7 +30,7 @@ describe("removeUnbalancedConditionals", () => {
   });
 
   test("ignores braces in strings, characters and comments", () => {
-    const source = '#ifdef A\nlog("{"); char c = \'{\'; // {\n#endif';
+    const source = "#ifdef A\nlog(\"{\"); char c = '{'; // {\n#endif";
     expect(removeUnbalancedConditionals(source)).toBe(source);
   });
 
