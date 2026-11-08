@@ -17,8 +17,11 @@ export function findFirstNamedNode(rootNode: SyntaxNode, type: string): SyntaxNo
   return rootNode.namedChildren.find((child) => child.type === type) ?? undefined;
 }
 
-export function walkNamed(node: SyntaxNode, visit: (node: SyntaxNode) => void): void {
-  visit(node);
+/** Depth-first walk. A visitor can return false to skip the node's children. */
+export function walkNamed(node: SyntaxNode, visit: (node: SyntaxNode) => boolean | void): void {
+  if (visit(node) === false) {
+    return;
+  }
   node.namedChildren.forEach((child) => walkNamed(child, visit));
 }
 

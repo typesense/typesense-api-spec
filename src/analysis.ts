@@ -45,6 +45,7 @@ export function extractRouteData(
 
   const context: ExtractionContext = {
     aliasTargets: new Map<string, AliasTarget>(),
+    boundStrings: new Map<string, string>(),
     constants,
     functions,
     diagnostics,

@@ -211,11 +211,9 @@ describe("parameter locations", () => {
   });
 });
 
-describe("known issues", () => {
-  // Found in v31 (init_join_policy_args in collection_manager.cpp), where it
-  // produces a bogus `name` query parameter on GET .../documents/search. Delete
-  // `.failing` once a local variable correctly hides a constant of the same name.
-  test.failing("a lambda parameter is not resolved as a constant of the same name", async () => {
+describe("local names and constants", () => {
+  // v31's init_join_policy_args produced a bogus `name` query parameter this way.
+  test("a lambda parameter is not resolved as a constant of the same name", async () => {
     const { query } = await extractHandler(
       handlerWithBody(`
         auto get_param = [&](const std::string& name) -> std::string {
@@ -225,5 +223,88 @@ describe("known issues", () => {
       { constants: { name: "name" } },
     );
     expect(query).not.toContain("name");
+  });
+
+  test("a call to a local lambda binds its string argument", async () => {
+    const { query } = await extractHandler(
+      handlerWithBody(`
+        auto get_param = [&](const std::string& name) -> std::string {
+          auto it = req->params.find(name);
+          return it == req->params.end() ? "" : it->second;
+        };
+        auto filter = get_param("filter_by");
+        auto include = get_param(INCLUDE_FIELDS);`),
+      { constants: { name: "name", INCLUDE_FIELDS: "include_fields" } },
+    );
+    expect(query).toEqual(["filter_by", "include_fields"]);
+  });
+
+  test("a call to a local lambda binds its alias arguments", async () => {
+    const { body } = await extractHandler(
+      handlerWithBody(`
+        auto read_field = [](nlohmann::json& j) { j["from_lambda"]; };
+        read_field(body);`),
+    );
+    expect(body).toContain("from_lambda");
+  });
+
+  test("a lambda body sees aliases from the enclosing function", async () => {
+    const { body } = await extractHandler(handlerWithBody(`auto f = [&]() { body["captured"]; };`));
+    expect(body).toContain("captured");
+  });
+
+  test("a local variable hides a constant of the same name", async () => {
+    const { body } = await extractHandler(handlerWithBody(`std::string label = compute(); body[label];`), {
+      constants: { label: "wrong" },
+    });
+    expect(body).not.toContain("wrong");
+  });
+
+  test("a const local resolves to its string literal, whatever its case", async () => {
+    const { body } = await extractHandler(handlerWithBody(`const char* key = "from_local"; body[key];`));
+    expect(body).toContain("from_local");
+  });
+
+  test("a non-const local does not resolve to its initial string", async () => {
+    const { body } = await extractHandler(handlerWithBody(`std::string key = ""; key = compute(); body[key];`));
+    expect(body).not.toContain("");
+  });
+
+  test("a loop variable hides a constant of the same name", async () => {
+    const { body } = await extractHandler(handlerWithBody(`for (auto& label : names) { body[label]; }`), {
+      constants: { label: "wrong" },
+    });
+    expect(body).not.toContain("wrong");
+  });
+
+  test("a function parameter hides a constant of the same name", async () => {
+    const { body } = await extractHandler(
+      handlerWithBody(
+        `read_key(body, compute());`,
+        `void read_key(nlohmann::json& j, const std::string& label) { j[label]; }`,
+      ),
+      { constants: { label: "wrong" } },
+    );
+    expect(body).not.toContain("wrong");
+  });
+
+  test("a helper's string parameter takes the value the caller passed", async () => {
+    const { body } = await extractHandler(
+      handlerWithBody(
+        `read_key(body, "first"); read_key(body, SECOND);`,
+        `void read_key(nlohmann::json& j, const std::string& label) { j[label]; }`,
+      ),
+      { constants: { label: "wrong", SECOND: "second" } },
+    );
+    expectToIncludeAll(body, ["first", "second"]);
+    expect(body).not.toContain("wrong");
+  });
+
+  test("a caller's local variable does not hide a constant inside a helper", async () => {
+    const { body } = await extractHandler(
+      handlerWithBody(`std::string SOME_KEY = compute(); read_key(body);`, `void read_key(nlohmann::json& j) { j[SOME_KEY]; }`),
+      { constants: { SOME_KEY: "from_global" } },
+    );
+    expect(body).toContain("from_global");
   });
 });

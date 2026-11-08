@@ -192,6 +192,8 @@ export interface AliasTarget {
 
 export interface ExtractionContext {
   readonly aliasTargets: ReadonlyMap<string, AliasTarget>;
+  /** String arguments bound to the parameters of the function being analyzed. */
+  readonly boundStrings: ReadonlyMap<string, string>;
   readonly constants: ReadonlyMap<string, string>;
   readonly functions: ReadonlyMap<string, FunctionDefinition>;
   readonly diagnostics: DiagnosticCollector;

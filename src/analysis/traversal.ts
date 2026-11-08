@@ -66,6 +66,8 @@ interface AnalysisState {
   readonly parent: AnalysisState | undefined;
   /** Variable names declared in this scope (they shadow outer ones). */
   readonly declared: Set<string>;
+  /** Lambdas assigned to local variables, followed when they are called. */
+  readonly lambdas: Map<string, SyntaxNode>;
   readonly definition: FunctionDefinition; readonly collector: ParameterCollector;
   readonly pathParamNames: ReadonlySet<string>;
   readonly routeKey: string;
@@ -82,7 +84,7 @@ export function analyzeFunction(
   debug: (message: string) => void,
 ): void {
   const inheritedAliases = bootstrapAliases(definition.parameters, context.aliasTargets);
-  const visitKey = serializeVisitKey(definition.name, inheritedAliases);
+  const visitKey = serializeVisitKey(definition.name, inheritedAliases, context.boundStrings);
   if (visited.has(visitKey)) {
     return;
   }
@@ -113,12 +115,19 @@ export function analyzeFunction(
     return;
   }
 
+  // A parameter hides any constant of the same name, unless the caller passed a
+  // known string for it.
+  const constants = new Map(context.constants);
+  definition.parameters.forEach((parameter) => constants.delete(parameter.name));
+  context.boundStrings.forEach((value, name) => constants.set(name, value));
+
   const state: AnalysisState = {
     aliases: inheritedAliases,
-    constants: new Map(context.constants),
+    constants,
     valueTypes: new Map<string, TypePrimitives>(),
     parent: undefined,
     declared: new Set<string>(),
+    lambdas: new Map<string, SyntaxNode>(),
     definition,
     collector,
     pathParamNames: context.pathParamNames,
@@ -241,13 +250,18 @@ function handleDeclaration(
     const declaredName = extractDeclaratorName(declarator);
     if (declaredName !== undefined) {
       state.declared.add(declaredName);
-      // A new variable shadows any alias inherited from an outer scope.
+      // A new variable shadows any alias or constant from an outer scope.
       state.aliases.delete(declaredName);
+      state.constants.delete(declaredName);
       state.valueTypes.delete(declaredName);
     }
   });
 
   walkNamed(statement, (child) => {
+    if (child.type === "lambda_expression") {
+      return false;
+    }
+
     // `auto x = ...;` nests an init_declarator; a condition such as
     // `if (auto x = ...)` puts declarator/value directly on the declaration.
     const isConditionDeclaration =
@@ -263,8 +277,13 @@ function handleDeclaration(
       return;
     }
 
+    if (valueNode.type === "lambda_expression") {
+      state.lambdas.set(aliasName, valueNode);
+      return;
+    }
+
     const literalValue = resolveStringTokenNode(valueNode, state.constants);
-    if (literalValue !== undefined && isConstantIdentifier(aliasName)) {
+    if (literalValue !== undefined && (isConstantIdentifier(aliasName) || isConstDeclaration(statement))) {
       state.constants.set(aliasName, literalValue);
       state.debug(`const ${aliasName} = ${literalValue}`);
     }
@@ -317,6 +336,7 @@ function handleForRangeLoop(
 
   const scopedState = cloneState(state);
   scopedState.declared.add(aliasName);
+  scopedState.constants.delete(aliasName);
   const resolved = resolveLoopItemTarget(iterableNode, scopedState.aliases, scopedState.constants);
   if (resolved !== undefined) {
     scopedState.aliases.set(aliasName, resolved);
@@ -365,6 +385,11 @@ function walkExpression(
   depth: number,
 ): void {
   walkNamed(node, (currentNode) => {
+    if (currentNode.type === "lambda_expression") {
+      analyzeLambda(currentNode, state, context, visited, depth, new Map(), new Map());
+      return false;
+    }
+
     if (currentNode.type === "assignment_expression") {
       collectAssignmentExpression(currentNode, state);
       return;
@@ -551,15 +576,26 @@ function collectHelperCallExpression(
     return;
   }
 
+  const lambda = callInfo.methodName === undefined ? state.lambdas.get(callInfo.calleeName) : undefined;
+  if (lambda !== undefined) {
+    collectLambdaCall(lambda, callInfo.arguments, state, context, visited, depth);
+    return;
+  }
+
   const helperDefinition = findCallDefinition(callInfo, context.functions, state.definition.name);
   if (helperDefinition === undefined) {
     return;
   }
 
   const nextAliases = new Map<string, AliasTarget>();
+  const boundStrings = new Map<string, string>();
   helperDefinition.parameters.forEach((parameter, parameterIndex) => {
     const argument = callInfo.arguments[parameterIndex];
     if (argument === undefined || parameter.name.length === 0) return;
+    const boundString = isStringType(parameter.typeText) ? resolveStringTokenNode(argument, state.constants) : undefined;
+    if (boundString !== undefined) {
+      boundStrings.set(parameter.name, boundString);
+    }
     const resolved = resolveExpressionNode(argument, state.aliases, state.constants);
     if (resolved === undefined) return;
     nextAliases.set(parameter.name, resolved);
@@ -574,13 +610,97 @@ function collectHelperCallExpression(
 
   analyzeFunction(
     helperDefinition,
-    { ...context, aliasTargets: nextAliases, constants: state.constants },
+    { ...context, aliasTargets: nextAliases, boundStrings },
     state.collector,
     visited,
     depth + 1,
     state.routeKey,
     state.debug,
   );
+}
+
+/** Follows a call to a local lambda with its parameters bound to the arguments. */
+function collectLambdaCall(
+  lambda: SyntaxNode,
+  argumentsList: readonly SyntaxNode[],
+  state: AnalysisState,
+  context: ExtractionContext,
+  visited: Set<string>,
+  depth: number,
+): void {
+  const boundAliases = new Map<string, AliasTarget>();
+  const boundStrings = new Map<string, string>();
+  lambdaParameterNames(lambda).forEach((name, index) => {
+    const argument = argumentsList[index];
+    if (argument === undefined || name === undefined) return;
+    const boundString = resolveStringTokenNode(argument, state.constants);
+    if (boundString !== undefined) {
+      boundStrings.set(name, boundString);
+    }
+    const resolved = resolveExpressionNode(argument, state.aliases, state.constants);
+    if (resolved !== undefined) {
+      boundAliases.set(name, resolved);
+    }
+  });
+
+  if (boundAliases.size === 0 && boundStrings.size === 0) {
+    return;
+  }
+  const visitKey = `lambda@${serializeVisitKey(
+    `${state.definition.name}:${lambda.startIndex}`,
+    boundAliases,
+    boundStrings,
+  )}`;
+  if (visited.has(visitKey) || depth >= context.maxCallDepth) {
+    return;
+  }
+  visited.add(visitKey);
+  analyzeLambda(lambda, state, context, visited, depth + 1, boundAliases, boundStrings);
+}
+
+function analyzeLambda(
+  lambda: SyntaxNode,
+  state: AnalysisState,
+  context: ExtractionContext,
+  visited: Set<string>,
+  depth: number,
+  boundAliases: ReadonlyMap<string, AliasTarget>,
+  boundStrings: ReadonlyMap<string, string>,
+): void {
+  const body = childForField(lambda, "body");
+  if (body === undefined) {
+    return;
+  }
+
+  const scopedState = cloneState(state);
+  lambdaParameterNames(lambda).forEach((name) => {
+    if (name === undefined) return;
+    scopedState.declared.add(name);
+    scopedState.aliases.delete(name);
+    scopedState.constants.delete(name);
+    scopedState.valueTypes.delete(name);
+  });
+  boundAliases.forEach((target, name) => scopedState.aliases.set(name, target));
+  boundStrings.forEach((value, name) => scopedState.constants.set(name, value));
+  analyzeBlock(body, scopedState, context, visited, depth);
+}
+
+/** Parameter names in order; undefined marks an unnamed parameter. */
+function lambdaParameterNames(lambda: SyntaxNode): readonly (string | undefined)[] {
+  const parameters = childForField(lambda, "declarator")
+    ?.namedChildren.find((child) => child.type === "parameter_list")
+    ?.namedChildren.filter((child) => child.type.endsWith("parameter_declaration"));
+  return (parameters ?? []).map((parameter) => extractDeclaratorName(childForField(parameter, "declarator")));
+}
+
+function isConstDeclaration(declaration: SyntaxNode): boolean {
+  return declaration.namedChildren.some(
+    (child) => child.type === "type_qualifier" && (child.text === "const" || child.text === "constexpr"),
+  );
+}
+
+function isStringType(typeText: string): boolean {
+  return typeText.includes("string") || typeText.includes("char");
 }
 
 function addParameter(
@@ -681,12 +801,17 @@ function nodeSourceLocation(definition: FunctionDefinition, node: SyntaxNode): S
   };
 }
 
-function serializeVisitKey(functionName: string, aliases: ReadonlyMap<string, AliasTarget>): string {
+function serializeVisitKey(
+  functionName: string,
+  aliases: ReadonlyMap<string, AliasTarget>,
+  boundStrings: ReadonlyMap<string, string>,
+): string {
   return [
     functionName,
     ...Array.from(aliases.entries()).map(
       ([aliasName, target]) => `${aliasName}:${target.location}:${normalizePathSegments(target.segments)}`,
     ),
+    ...Array.from(boundStrings.entries()).map(([name, value]) => `${name}=${value}`),
   ].join("|");
 }
 
@@ -713,6 +838,7 @@ function cloneState(state: AnalysisState): AnalysisState {
     valueTypes: new Map(state.valueTypes),
     parent: state,
     declared: new Set<string>(),
+    lambdas: new Map(state.lambdas),
     definition: state.definition,
     collector: state.collector,
     pathParamNames: state.pathParamNames,
