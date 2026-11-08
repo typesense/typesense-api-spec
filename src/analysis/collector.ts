@@ -209,8 +209,10 @@ function mergeCollectedParameter(
     return incoming;
   }
 
+  // Keep the first read as the citation: validation comes first, while a later
+  // read can be unrelated, such as masking a credential for the response.
   return {
-    ...incoming,
+    ...existing,
     valueType: mergeValueTypes(existing.valueType, incoming.valueType),
   };
 }

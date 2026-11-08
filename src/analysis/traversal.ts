@@ -61,7 +61,8 @@ type TypeMethodName = keyof typeof typeMethods;
 type InferredValueType = (typeof typeMethods)[TypeMethodName] | (typeof typeTemplates)[TypeTemplateName];
 
 interface KeyTable {
-  readonly keys: readonly string[];
+  /** The entry that names each key, so a parameter can cite it. */
+  readonly keys: readonly { readonly name: string; readonly node: SyntaxNode }[];
   readonly valueType: TypePrimitives | undefined;
 }
 
@@ -430,7 +431,7 @@ function parseKeyTable(
   const keys = valueNode.namedChildren.flatMap((entry) => {
     const keyNode = entry.type === "initializer_list" ? entry.namedChildren[0] : entry;
     const key = keyNode === undefined ? undefined : resolveStringTokenNode(keyNode, state.constants);
-    return key === undefined ? [] : [key];
+    return key === undefined || keyNode === undefined ? [] : [{ name: key, node: keyNode }];
   });
   return { keys, valueType: mapMatch?.[1] === undefined ? undefined : inferTypeFromParameter(mapMatch[1]) };
 }
@@ -607,7 +608,7 @@ function collectAssignmentExpression(node: SyntaxNode, state: AnalysisState): vo
 }
 
 /** `table.find(key)` where key comes from iterating the params map names every key in the table. */
-function collectKeyTableLookup(callInfo: ParsedCall, state: AnalysisState, node: SyntaxNode): void {
+function collectKeyTableLookup(callInfo: ParsedCall, state: AnalysisState): void {
   const table = callInfo.baseNode?.type === "identifier" ? state.keyTables.get(callInfo.baseNode.text) : undefined;
   const firstArgument = callInfo.arguments[0];
   if (table === undefined || firstArgument === undefined || !["find", "count", "contains", "at"].includes(callInfo.methodName ?? "")) {
@@ -617,7 +618,7 @@ function collectKeyTableLookup(callInfo: ParsedCall, state: AnalysisState, node:
   const keyOwner = resolveKeyOwner(firstArgument, state);
   if (keyOwner !== undefined) {
     state.debug(`table lookup ${callInfo.calleeName} => ${table.keys.length} keys`);
-    table.keys.forEach((key) => addParameter(keyOwner, [key], state, node, table.valueType));
+    table.keys.forEach((key) => addParameter(keyOwner, [key.name], state, key.node, table.valueType));
   }
 }
 
@@ -649,7 +650,7 @@ function collectCallExpression(node: SyntaxNode, state: AnalysisState, context: 
     return;
   }
 
-  collectKeyTableLookup(callInfo, state, node);
+  collectKeyTableLookup(callInfo, state);
 
   const normalizedMethodName = callInfo.methodName === undefined ? undefined : normalizeMethodName(callInfo.methodName);
 

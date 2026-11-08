@@ -6,7 +6,7 @@ import { runExtraction } from "../src/index.js";
 import type { ApiRouteSpec, ApiSpec } from "../src/types.js";
 import { expectToIncludeAll } from "./helpers/assert.js";
 import { stubGithub } from "./helpers/fake-github.js";
-import { cloneRepo, hasClone, repoRoot } from "./helpers/local-clone.js";
+import { clonePath, cloneRepo, hasClone, repoRoot } from "./helpers/local-clone.js";
 
 // These run the whole pipeline on real Typesense source, with GitHub answered
 // from the gitignored clones in tmp/. They skip when the clones are absent:
@@ -78,6 +78,26 @@ describe.skipIf(!hasClone("typesense-v30"))("v30 clone", () => {
       // probably stale: git -C tmp/typesense-v30 fetch && git -C tmp/typesense-v30 reset --hard origin/v30
       const committed = await readFile(path.join(repoRoot, "output/typesense_api_spec.json"), "utf8");
       expect(text === committed).toBe(true);
+    },
+    TIMEOUT_MS,
+  );
+
+  test(
+    "cites where a parameter is read or named, not where it is masked or looked up",
+    async () => {
+      const { spec } = await extractFromClone("typesense-v30", "v30");
+      const citation = (method: string, routePath: string, location: "queryParams" | "bodyParams", name: string): string => {
+        const parameter = findRoute(spec, method, routePath)[location].find((candidate) => candidate.canonicalPath === name);
+        return parameter?.sources[0]?.filePath ?? "";
+      };
+
+      expect(citation("POST", "/nl_search_models", "bodyParams", "api_key")).toEndWith("/natural_language_search_model.cpp");
+      expect(citation("POST", "/conversations/models", "bodyParams", "api_key")).toEndWith("/conversation_model.cpp");
+
+      const route = findRoute(spec, "GET", "/collections/:collection/documents/search");
+      const perPage = route.queryParams.find((candidate) => candidate.canonicalPath === "limit_hits")?.sources[0];
+      const source = await Bun.$`git -C ${clonePath("typesense-v30")} show HEAD:src/collection.cpp`.text();
+      expect(source.split("\n")[(perPage?.line ?? 1) - 1]).toContain("LIMIT_HITS");
     },
     TIMEOUT_MS,
   );
