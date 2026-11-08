@@ -98,6 +98,20 @@ describe("value reads", () => {
     expect(types.get("enabled")).toBe("boolean");
   });
 
+  test("keeps tracking a value through get<nlohmann::json>()", async () => {
+    const { body } = await extractHandler(
+      handlerWithBody(`const auto& data = body["data"].get<nlohmann::json>(); data["nested"];`),
+    );
+    expect(body).toContain("data.nested");
+  });
+
+  test("get<std::string>() yields a plain value, not a tracked one", async () => {
+    const { body } = await extractHandler(
+      handlerWithBody(`auto text = body["text"].get<std::string>(); text["wrong"];`),
+    );
+    expect(body).toEqual(["text"]);
+  });
+
   test("records type checks made with is_* methods", async () => {
     const { types } = await extractHandler(handlerWithBody(`if (body["title"].is_string()) { return false; }`));
     expect(types.get("title")).toBe("string");
@@ -289,6 +303,36 @@ describe("helper calls", () => {
       ),
     );
     expect(body).toEqual([]);
+  });
+
+  test("picks the method by the receiver's name when classes share a method", async () => {
+    // doc_analytics.add_event and search_analytics.add_event both take (ip, json).
+    const { body } = await extractHandler(
+      handlerWithBody(
+        `doc_analytics.add_event(ip, body); search_analytics.add_event(ip, body);`,
+        `Option<bool> DocAnalytics::add_event(const std::string& ip, const nlohmann::json& e) { e["doc_id"]; return true; }
+         Option<bool> SearchAnalytics::add_event(const std::string& ip, const nlohmann::json& e) { e["q"]; return true; }`,
+      ),
+    );
+    expect(body).toEqual(["doc_id", "q"]);
+  });
+
+  test("picks the method from Class::get_instance()", async () => {
+    const { body } = await extractHandler(
+      handlerWithBody(
+        `Second::get_instance().add(body);`,
+        `void First::add(nlohmann::json& j) { j["wrong"]; }
+         void Second::add(nlohmann::json& j) { j["right"]; }`,
+      ),
+    );
+    expect(body).toEqual(["right"]);
+  });
+
+  test("falls back to the short name when the receiver says nothing", async () => {
+    const { body } = await extractHandler(
+      handlerWithBody(`thing.add(body);`, `void Only::add(nlohmann::json& j) { j["found"]; }`),
+    );
+    expect(body).toEqual(["found"]);
   });
 
   test("follows a method called on an untracked object", async () => {

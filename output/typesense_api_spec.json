@@ -236,9 +236,100 @@
           "valueType": "object",
           "sources": [
             {
+              "filePath": "https://raw.githubusercontent.com/typesense/typesense/v30/src/search_analytics.cpp",
+              "line": 124,
+              "column": 7
+            }
+          ]
+        },
+        {
+          "name": "analytics_tag",
+          "canonicalPath": "data.analytics_tag",
+          "location": "body",
+          "valueType": "string",
+          "sources": [
+            {
+              "filePath": "https://raw.githubusercontent.com/typesense/typesense/v30/src/search_analytics.cpp",
+              "line": 124,
+              "column": 98
+            }
+          ]
+        },
+        {
+          "name": "doc_id",
+          "canonicalPath": "data.doc_id",
+          "location": "body",
+          "valueType": "string",
+          "sources": [
+            {
               "filePath": "https://raw.githubusercontent.com/typesense/typesense/v30/src/doc_analytics.cpp",
-              "line": 56,
-              "column": 24
+              "line": 116,
+              "column": 11
+            }
+          ]
+        },
+        {
+          "name": "doc_ids",
+          "canonicalPath": "data.doc_ids",
+          "location": "body",
+          "valueType": "string[]",
+          "sources": [
+            {
+              "filePath": "https://raw.githubusercontent.com/typesense/typesense/v30/src/doc_analytics.cpp",
+              "line": 106,
+              "column": 11
+            }
+          ]
+        },
+        {
+          "name": "filter_by",
+          "canonicalPath": "data.filter_by",
+          "location": "body",
+          "valueType": "string",
+          "sources": [
+            {
+              "filePath": "https://raw.githubusercontent.com/typesense/typesense/v30/src/search_analytics.cpp",
+              "line": 123,
+              "column": 90
+            }
+          ]
+        },
+        {
+          "name": "q",
+          "canonicalPath": "data.q",
+          "location": "body",
+          "valueType": "string",
+          "sources": [
+            {
+              "filePath": "https://raw.githubusercontent.com/typesense/typesense/v30/src/search_analytics.cpp",
+              "line": 119,
+              "column": 7
+            }
+          ]
+        },
+        {
+          "name": "query",
+          "canonicalPath": "data.query",
+          "location": "body",
+          "valueType": "string",
+          "sources": [
+            {
+              "filePath": "https://raw.githubusercontent.com/typesense/typesense/v30/src/doc_analytics.cpp",
+              "line": 112,
+              "column": 36
+            }
+          ]
+        },
+        {
+          "name": "timestamp",
+          "canonicalPath": "data.timestamp",
+          "location": "body",
+          "valueType": "uint",
+          "sources": [
+            {
+              "filePath": "https://raw.githubusercontent.com/typesense/typesense/v30/src/search_analytics.cpp",
+              "line": 121,
+              "column": 36
             }
           ]
         },
@@ -249,9 +340,9 @@
           "valueType": "string",
           "sources": [
             {
-              "filePath": "https://raw.githubusercontent.com/typesense/typesense/v30/src/analytics_manager.cpp",
-              "line": 216,
-              "column": 38
+              "filePath": "https://raw.githubusercontent.com/typesense/typesense/v30/src/search_analytics.cpp",
+              "line": 122,
+              "column": 7
             }
           ]
         },
@@ -262,9 +353,9 @@
           "valueType": "string",
           "sources": [
             {
-              "filePath": "https://raw.githubusercontent.com/typesense/typesense/v30/src/doc_analytics.cpp",
-              "line": 74,
-              "column": 45
+              "filePath": "https://raw.githubusercontent.com/typesense/typesense/v30/src/search_analytics.cpp",
+              "line": 71,
+              "column": 28
             }
           ]
         }
@@ -371,9 +462,22 @@
           "valueType": "object",
           "sources": [
             {
-              "filePath": "https://raw.githubusercontent.com/typesense/typesense/v30/src/doc_analytics.cpp",
-              "line": 209,
-              "column": 66
+              "filePath": "https://raw.githubusercontent.com/typesense/typesense/v30/src/search_analytics.cpp",
+              "line": 323,
+              "column": 51
+            }
+          ]
+        },
+        {
+          "name": "capture_search_requests",
+          "canonicalPath": "[].params.capture_search_requests",
+          "location": "body",
+          "valueType": "boolean",
+          "sources": [
+            {
+              "filePath": "https://raw.githubusercontent.com/typesense/typesense/v30/src/search_analytics.cpp",
+              "line": 322,
+              "column": 63
             }
           ]
         },
@@ -397,9 +501,48 @@
           "valueType": "string",
           "sources": [
             {
-              "filePath": "https://raw.githubusercontent.com/typesense/typesense/v30/src/doc_analytics.cpp",
-              "line": 209,
-              "column": 66
+              "filePath": "https://raw.githubusercontent.com/typesense/typesense/v30/src/search_analytics.cpp",
+              "line": 291,
+              "column": 7
+            }
+          ]
+        },
+        {
+          "name": "expand_query",
+          "canonicalPath": "[].params.expand_query",
+          "location": "body",
+          "valueType": "boolean",
+          "sources": [
+            {
+              "filePath": "https://raw.githubusercontent.com/typesense/typesense/v30/src/search_analytics.cpp",
+              "line": 321,
+              "column": 52
+            }
+          ]
+        },
+        {
+          "name": "limit",
+          "canonicalPath": "[].params.limit",
+          "location": "body",
+          "valueType": "uint",
+          "sources": [
+            {
+              "filePath": "https://raw.githubusercontent.com/typesense/typesense/v30/src/search_analytics.cpp",
+              "line": 290,
+              "column": 7
+            }
+          ]
+        },
+        {
+          "name": "meta_fields",
+          "canonicalPath": "[].params.meta_fields",
+          "location": "body",
+          "valueType": "string[]",
+          "sources": [
+            {
+              "filePath": "https://raw.githubusercontent.com/typesense/typesense/v30/src/search_analytics.cpp",
+              "line": 323,
+              "column": 51
             }
           ]
         },
@@ -488,9 +631,22 @@
           "valueType": "object",
           "sources": [
             {
-              "filePath": "https://raw.githubusercontent.com/typesense/typesense/v30/src/doc_analytics.cpp",
-              "line": 209,
-              "column": 66
+              "filePath": "https://raw.githubusercontent.com/typesense/typesense/v30/src/search_analytics.cpp",
+              "line": 323,
+              "column": 51
+            }
+          ]
+        },
+        {
+          "name": "capture_search_requests",
+          "canonicalPath": "params.capture_search_requests",
+          "location": "body",
+          "valueType": "boolean",
+          "sources": [
+            {
+              "filePath": "https://raw.githubusercontent.com/typesense/typesense/v30/src/search_analytics.cpp",
+              "line": 322,
+              "column": 63
             }
           ]
         },
@@ -514,9 +670,48 @@
           "valueType": "string",
           "sources": [
             {
-              "filePath": "https://raw.githubusercontent.com/typesense/typesense/v30/src/doc_analytics.cpp",
-              "line": 209,
-              "column": 66
+              "filePath": "https://raw.githubusercontent.com/typesense/typesense/v30/src/search_analytics.cpp",
+              "line": 291,
+              "column": 7
+            }
+          ]
+        },
+        {
+          "name": "expand_query",
+          "canonicalPath": "params.expand_query",
+          "location": "body",
+          "valueType": "boolean",
+          "sources": [
+            {
+              "filePath": "https://raw.githubusercontent.com/typesense/typesense/v30/src/search_analytics.cpp",
+              "line": 321,
+              "column": 52
+            }
+          ]
+        },
+        {
+          "name": "limit",
+          "canonicalPath": "params.limit",
+          "location": "body",
+          "valueType": "uint",
+          "sources": [
+            {
+              "filePath": "https://raw.githubusercontent.com/typesense/typesense/v30/src/search_analytics.cpp",
+              "line": 290,
+              "column": 7
+            }
+          ]
+        },
+        {
+          "name": "meta_fields",
+          "canonicalPath": "params.meta_fields",
+          "location": "body",
+          "valueType": "string[]",
+          "sources": [
+            {
+              "filePath": "https://raw.githubusercontent.com/typesense/typesense/v30/src/search_analytics.cpp",
+              "line": 323,
+              "column": 51
             }
           ]
         },
@@ -677,9 +872,22 @@
           "valueType": "object",
           "sources": [
             {
-              "filePath": "https://raw.githubusercontent.com/typesense/typesense/v30/src/doc_analytics.cpp",
-              "line": 209,
-              "column": 66
+              "filePath": "https://raw.githubusercontent.com/typesense/typesense/v30/src/search_analytics.cpp",
+              "line": 323,
+              "column": 51
+            }
+          ]
+        },
+        {
+          "name": "capture_search_requests",
+          "canonicalPath": "params.capture_search_requests",
+          "location": "body",
+          "valueType": "boolean",
+          "sources": [
+            {
+              "filePath": "https://raw.githubusercontent.com/typesense/typesense/v30/src/search_analytics.cpp",
+              "line": 322,
+              "column": 63
             }
           ]
         },
@@ -703,9 +911,48 @@
           "valueType": "string",
           "sources": [
             {
-              "filePath": "https://raw.githubusercontent.com/typesense/typesense/v30/src/doc_analytics.cpp",
-              "line": 209,
-              "column": 66
+              "filePath": "https://raw.githubusercontent.com/typesense/typesense/v30/src/search_analytics.cpp",
+              "line": 291,
+              "column": 7
+            }
+          ]
+        },
+        {
+          "name": "expand_query",
+          "canonicalPath": "params.expand_query",
+          "location": "body",
+          "valueType": "boolean",
+          "sources": [
+            {
+              "filePath": "https://raw.githubusercontent.com/typesense/typesense/v30/src/search_analytics.cpp",
+              "line": 321,
+              "column": 52
+            }
+          ]
+        },
+        {
+          "name": "limit",
+          "canonicalPath": "params.limit",
+          "location": "body",
+          "valueType": "uint",
+          "sources": [
+            {
+              "filePath": "https://raw.githubusercontent.com/typesense/typesense/v30/src/search_analytics.cpp",
+              "line": 290,
+              "column": 7
+            }
+          ]
+        },
+        {
+          "name": "meta_fields",
+          "canonicalPath": "params.meta_fields",
+          "location": "body",
+          "valueType": "string[]",
+          "sources": [
+            {
+              "filePath": "https://raw.githubusercontent.com/typesense/typesense/v30/src/search_analytics.cpp",
+              "line": 323,
+              "column": 51
             }
           ]
         },
@@ -8796,7 +9043,7 @@
           "name": "preset",
           "canonicalPath": "searches[].preset",
           "location": "body",
-          "valueType": "unknown",
+          "valueType": "string",
           "sources": [
             {
               "filePath": "https://raw.githubusercontent.com/typesense/typesense/v30/src/natural_language_search_model_manager.cpp",
@@ -10220,8 +10467,8 @@
           "sources": [
             {
               "filePath": "https://raw.githubusercontent.com/typesense/typesense/v30/src/core_api.cpp",
-              "line": 2571,
-              "column": 39
+              "line": 2575,
+              "column": 30
             }
           ]
         }
@@ -10360,8 +10607,8 @@
           "sources": [
             {
               "filePath": "https://raw.githubusercontent.com/typesense/typesense/v30/src/core_api.cpp",
-              "line": 3015,
-              "column": 29
+              "line": 3018,
+              "column": 9
             }
           ]
         }

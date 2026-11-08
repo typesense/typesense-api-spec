@@ -122,6 +122,11 @@ function resolveMethodCallExpression(
     return baseTarget;
   }
 
+  // `x.get<nlohmann::json>()` is still x.
+  if (/^get\s*<.*json.*>$/s.test(callInfo.methodName ?? "")) {
+    return baseTarget;
+  }
+
   if (callInfo.methodName === "value") {
     if (callInfo.arguments.length === 0) {
       return baseTarget;

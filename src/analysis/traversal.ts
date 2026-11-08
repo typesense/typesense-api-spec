@@ -1037,12 +1037,51 @@ function findCallDefinition(
 
   const arity = callInfo.arguments.length;
   const calleeName = (callInfo.methodName ?? callInfo.calleeName).replace(/<.*>/s, "").replace(/\s+/g, "").replace(/^::/, "");
+  const receiverClass = callInfo.baseNode === undefined ? undefined : resolveReceiverClass(callInfo.baseNode, functions);
   const resolved =
     calleeName.includes("::") ?
       lookupFunction(calleeName, arity, functions)
-    : lookupInCurrentClass(calleeName, arity, callInfo, functions, state) ?? lookupFunction(calleeName, arity, functions);
+    : (receiverClass === undefined ? undefined : lookupFunction(`${receiverClass}::${calleeName}`, arity, functions)) ??
+      lookupInCurrentClass(calleeName, arity, callInfo, functions, state) ??
+      lookupFunction(calleeName, arity, functions);
 
   return resolved?.qualifiedName === state.definition.qualifiedName ? undefined : resolved;
+}
+
+const classNameIndexes = new WeakMap<ReadonlyMap<string, FunctionDefinition>, ReadonlyMap<string, string>>();
+
+function normalizeClassName(name: string): string {
+  return name.replaceAll("_", "").toLowerCase();
+}
+
+function classNameIndex(functions: ReadonlyMap<string, FunctionDefinition>): ReadonlyMap<string, string> {
+  let index = classNameIndexes.get(functions);
+  if (index === undefined) {
+    const classNames = new Map<string, string>();
+    for (const definition of functions.values()) {
+      const scopeEnd = definition.qualifiedName.lastIndexOf("::");
+      const className = scopeEnd < 0 ? "" : definition.qualifiedName.slice(0, scopeEnd).split("::").at(-1);
+      if (className !== undefined && className.length > 0) {
+        classNames.set(normalizeClassName(className), className);
+      }
+    }
+    index = classNames;
+    classNameIndexes.set(functions, index);
+  }
+  return index;
+}
+
+/**
+ * The class of a method call's receiver, where its name says so:
+ * `Foo::get_instance().bar()` is Foo, and `doc_analytics.bar()` is DocAnalytics.
+ */
+function resolveReceiverClass(baseNode: SyntaxNode, functions: ReadonlyMap<string, FunctionDefinition>): string | undefined {
+  const receiver = unwrapExpressionNode(baseNode);
+  if (receiver.type === "call_expression") {
+    const callee = parseCallExpressionNode(receiver)?.calleeName ?? "";
+    return callee.endsWith("::get_instance") ? callee.slice(0, -"::get_instance".length).split("::").at(-1) : undefined;
+  }
+  return receiver.type === "identifier" ? classNameIndex(functions).get(normalizeClassName(receiver.text)) : undefined;
 }
 
 /**

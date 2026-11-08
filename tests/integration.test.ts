@@ -113,7 +113,7 @@ describe.skipIf(!hasClone("typesense-v30"))("v30 clone", () => {
       expectToIncludeAll(multiSearch, ["searches[].q", "searches[].query_by"]);
       expectToIncludeAll(paths(findRoute(spec, "POST", "/conversations/models").bodyParams), ["model_name", "system_prompt"]);
       expectToIncludeAll(paths(findRoute(spec, "PUT", "/conversations/models/:id").bodyParams), ["model_name", "system_prompt"]);
-      expectToIncludeAll(paths(findRoute(spec, "POST", "/analytics/events").bodyParams), ["name", "data", "data.user_id"]);
+      expectToIncludeAll(paths(findRoute(spec, "POST", "/analytics/events").bodyParams), ["name", "data", "data.user_id", "data.doc_id", "data.q"]);
       expectToIncludeAll(paths(findRoute(spec, "PUT", "/synonym_sets/:name").bodyParams), ["items", "items[].synonyms"]);
       expectToIncludeAll(paths(findRoute(spec, "PATCH", "/collections/:collection").bodyParams), ["metadata", "fields", "fields[].name"]);
       expect(paths(findRoute(spec, "PUT", "/synonym_sets/:name").queryParams)).toEqual([]);
