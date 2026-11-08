@@ -953,13 +953,30 @@ function findCallDefinition(
   }
 
   const arity = callInfo.arguments.length;
-  const calleeName = (callInfo.methodName ?? callInfo.calleeName).replace(/<.*>/s, "").replace(/\s+/g, "");
+  const calleeName = (callInfo.methodName ?? callInfo.calleeName).replace(/<.*>/s, "").replace(/\s+/g, "").replace(/^::/, "");
   const resolved =
     calleeName.includes("::") ?
-      functions.get(`${calleeName.replace(/^::/, "")}#${arity}`)
-    : lookupInCurrentClass(calleeName, arity, callInfo, functions, state) ?? functions.get(`${calleeName}#${arity}`);
+      lookupFunction(calleeName, arity, functions)
+    : lookupInCurrentClass(calleeName, arity, callInfo, functions, state) ?? lookupFunction(calleeName, arity, functions);
 
   return resolved?.qualifiedName === state.definition.qualifiedName ? undefined : resolved;
+}
+
+/**
+ * Prefers an exact arity. A call may also pass fewer arguments than the definition
+ * has parameters, because default values are often only in the header.
+ */
+function lookupFunction(
+  name: string,
+  arity: number,
+  functions: ReadonlyMap<string, FunctionDefinition>,
+): FunctionDefinition | undefined {
+  const exact = functions.get(`${name}#${arity}`);
+  if (exact !== undefined) {
+    return exact;
+  }
+  const candidate = functions.get(name);
+  return candidate !== undefined && arity < candidate.parameters.length ? candidate : undefined;
 }
 
 /** An unqualified call inside `Foo::bar` means `Foo::baz` when that exists. */
@@ -976,7 +993,7 @@ function lookupInCurrentClass(
   const scopeEnd = state.definition.qualifiedName.lastIndexOf("::");
   return scopeEnd < 0 ?
       undefined
-    : functions.get(`${state.definition.qualifiedName.slice(0, scopeEnd)}::${calleeName}#${arity}`);
+    : lookupFunction(`${state.definition.qualifiedName.slice(0, scopeEnd)}::${calleeName}`, arity, functions);
 }
 
 function firstConcreteSegment(segments: readonly string[]): string | undefined {

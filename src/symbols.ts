@@ -1,7 +1,7 @@
 import type { SyntaxNode } from "tree-sitter";
 import { childForField, extractDeclaratorName, parseCpp } from "./cpp-ast.js";
 import { readTextFile } from "./fs.js";
-import { normalizeNewlines } from "./text.js";
+import { normalizeNewlines, removeUnbalancedConditionals } from "./text.js";
 import { listSourceFiles, resolveRawGithubUrl, resolveSourcePath } from "./source.js";
 import type { FunctionDefinition, FunctionParameter } from "./types.js";
 
@@ -37,7 +37,7 @@ export async function indexFunctions(
   const allDefinitions = (
     await Promise.all(
       sourceFiles.map(async (filePath) => {
-        const sourceText = normalizeNewlines(await readTextFile(filePath));
+        const sourceText = removeUnbalancedConditionals(normalizeNewlines(await readTextFile(filePath)));
         return extractFunctionDefinitions(filePath, sourceText);
       }),
     )

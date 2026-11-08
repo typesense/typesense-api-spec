@@ -182,6 +182,27 @@ describe("helper calls", () => {
     expect(body).toEqual(["right"]);
   });
 
+  test("follows a call that relies on defaults declared only in the header", async () => {
+    // curation_t::parse(json, id, out) has six parameters in curation.cpp.
+    const { body } = await extractHandler(
+      handlerWithBody(
+        `Parser::parse(body, "id");`,
+        `Option<bool> Parser::parse(const nlohmann::json& j, const std::string& id, const std::string& locale, int mode) {
+           j["from_parser"];
+           return true;
+         }`,
+      ),
+    );
+    expect(body).toContain("from_parser");
+  });
+
+  test("a call with too many arguments is not bound to that helper", async () => {
+    const { body } = await extractHandler(
+      handlerWithBody(`one_arg(body, 1, 2);`, `void one_arg(nlohmann::json& j) { j["wrong"]; }`),
+    );
+    expect(body).toEqual([]);
+  });
+
   test("a call with the wrong number of arguments is not bound to that helper", async () => {
     const { body } = await extractHandler(
       handlerWithBody(
@@ -323,6 +344,30 @@ describe("parse errors", () => {
     const { body } = await extractHandler(brokenHandler);
     expect(body).toContain("before_error");
     expect(body).not.toContain("not_called");
+  });
+});
+
+describe("preprocessor conditionals", () => {
+  test("reads a function whose #ifdef branches leave braces unbalanced", async () => {
+    // AnalyticsManager::add_external_event broke parsing from line 177 to 895.
+    const { body } = await extractHandler(
+      handlerWithBody(
+        `add_event(ip, body);`,
+        `Option<bool> add_event(const std::string& ip, const nlohmann::json& event) {
+           std::unique_lock lock(mutex);
+         #ifdef TEST_BUILD
+           if (limited) {
+         #endif
+           check_rate();
+         #ifdef TEST_BUILD
+           }
+         #endif
+           event["name"];
+           return true;
+         }`,
+      ),
+    );
+    expect(body).toContain("name");
   });
 });
 
