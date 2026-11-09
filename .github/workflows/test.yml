@@ -24,5 +24,12 @@ jobs:
       - name: Lint
         run: bun run lint
 
+      # The integration tests read this clone. Checking out the commit output/ records keeps
+      # them on released code, so upstream work in progress can't fail this repository's CI.
+      - name: Clone Typesense
+        run: |
+          git clone --quiet https://github.com/typesense/typesense tmp/typesense
+          git -C tmp/typesense checkout --quiet --detach "$(jq -r .sourceCommit output/typesense_api_spec.json)"
+
       - name: Test
         run: bun test
