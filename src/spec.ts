@@ -37,14 +37,35 @@ export function buildSpec(
       diagnostics: filterDiagnostics(overridden.diagnostics, overridden.route.method, overridden.route.pathTemplate),
     }));
 
+  const excludedRouteKeys = new Set(
+    extractions
+      .filter((extraction) => isRouteExcluded(config, extraction.route.method, extraction.route.pathTemplate))
+      .map((extraction) => `${extraction.route.method} ${extraction.route.pathTemplate}`),
+  );
+
   return {
     rootDir: config.rootDir,
     routeFile: config.routeFile,
     sourceBranch: config.sourceBranch,
     ...(sourceCommit === undefined ? {} : { sourceCommit }),
     routes: sortedReadonly(routes, compareRoutes),
-    diagnostics,
+    diagnostics: diagnostics.filter(
+      (diagnostic) => diagnostic.routeKey === undefined || !excludedRouteKeys.has(diagnostic.routeKey),
+    ),
   };
+}
+
+/** Blacklisted, or skipped by an override, so the route is left out of the output. */
+export function isRouteExcluded(config: ExtractorConfig, method: HttpMethod, pathTemplate: string): boolean {
+  return (
+    isPathBlacklisted(pathTemplate, config.blacklist.paths) ||
+    config.overrides.some(
+      (override) =>
+        override.skip === true &&
+        override.path === pathTemplate &&
+        (override.method === undefined || override.method === method),
+    )
+  );
 }
 
 function compareRoutes(left: ApiRouteSpec, right: ApiRouteSpec): number {

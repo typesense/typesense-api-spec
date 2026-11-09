@@ -4,7 +4,7 @@ import { writeTextFile } from "./fs.js";
 import { ProgressReporter } from "./progress.js";
 import { discoverRoutes } from "./routes.js";
 import { extractRouteData } from "./analysis.js";
-import { buildSpec } from "./spec.js";
+import { buildSpec, isRouteExcluded } from "./spec.js";
 import { indexFunctions } from "./symbols.js";
 import { resolveRawGithubUrl, resolveSourceCommit, resolveSourcePath } from "./source.js";
 import type { ApiSpec, CliOptions } from "./types.js";
@@ -38,14 +38,19 @@ export async function runExtraction(cliOptions: CliOptions): Promise<ApiSpec> {
   ]);
 
   const extractStep = progress.startStep("extracting route parameters");
-  const routeExtractions = routes.map((route) =>
-    extractRouteData(route, functions, constants, config.maxCallDepth, config.debug),
-  );
+  const routeExtractions = routes
+    .filter((route) => !isRouteExcluded(config, route.method, route.pathTemplate))
+    .map((route) => extractRouteData(route, functions, constants, config.maxCallDepth, config.debug));
   extractStep.done(`${routeExtractions.length} route scans`);
 
   const specStep = progress.startStep("building output");
-  const diagnostics = routeExtractions.flatMap((extraction) => extraction.diagnostics);
-  const spec = buildSpec(config, routeExtractions, diagnostics, sourceCommit);
+  const spec = buildSpec(
+    config,
+    routeExtractions,
+    routeExtractions.flatMap((extraction) => extraction.diagnostics),
+    sourceCommit,
+  );
+  const diagnostics = spec.diagnostics;
   const outputText = `${JSON.stringify(spec, null, 2)}\n`;
   await writeTextFile(config.outputPath, outputText);
   if (config.diagnosticsOutputPath !== undefined) {

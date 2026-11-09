@@ -181,6 +181,27 @@ describe("buildSpec", () => {
     ).routes;
     expect(route?.diagnostics.map((item) => item.routeKey)).toEqual(["GET /a"]);
   });
+
+  test("drops the diagnostics of blacklisted and skipped routes", () => {
+    const diagnostic = (routeKey: string | undefined): ApiDiagnostic => ({
+      level: "warning",
+      code: "c",
+      message: "m",
+      routeKey,
+      source: undefined,
+    });
+    const diagnostics = ["GET /a", "GET /limits/:id", "POST /skipped", undefined].map(diagnostic);
+    const spec = buildSpec(
+      {
+        ...baseConfig,
+        blacklist: { paths: ["/limits"], params: [] },
+        overrides: [{ path: "/skipped", method: "POST", skip: true }],
+      },
+      [extraction("/a"), extraction("/limits/:id"), extraction("/skipped", {}, "POST")],
+      diagnostics,
+    );
+    expect(spec.diagnostics.map((item) => item.routeKey)).toEqual(["GET /a", undefined]);
+  });
 });
 
 describe("mergeValueTypes", () => {
