@@ -1,15 +1,20 @@
+import { createHash } from "node:crypto";
+
 const RAW_PREFIX = "https://raw.githubusercontent.com/typesense/typesense/";
 const COMMIT_PATTERN = /^https:\/\/api\.github\.com\/repos\/typesense\/typesense\/commits\/([^?]+)/;
 const TREE_PATTERN = /^https:\/\/api\.github\.com\/repos\/typesense\/typesense\/git\/trees\/([^?]+)/;
 
-export const FAKE_COMMIT = "c0ffee0000000000000000000000000000000000";
+/** A commit SHA for a branch. Each branch gets its own, so tests don't share cached files. */
+export function fakeCommit(branch: string): string {
+  return createHash("sha1").update(branch).digest("hex");
+}
 
 export interface FakeRepo {
-  /** Repo-relative paths returned by the tree API. */
+  /** Repo-relative paths at a branch or commit, returned by the tree API. */
   listFiles(branch: string): readonly string[] | Promise<readonly string[]>;
-  /** File contents, or undefined to answer 404. */
+  /** File contents at a branch or commit, or undefined to answer 404. */
   readFile(branch: string, path: string): string | undefined | Promise<string | undefined>;
-  /** The commit a branch points at. Defaults to FAKE_COMMIT. */
+  /** The commit a branch points at. Defaults to fakeCommit(branch). */
   commit?(branch: string): string | Promise<string>;
 }
 
@@ -27,7 +32,8 @@ export function stubGithub(repo: FakeRepo): () => void {
 
     const commitMatch = COMMIT_PATTERN.exec(url);
     if (commitMatch?.[1] !== undefined) {
-      const sha = (await repo.commit?.(decodeURIComponent(commitMatch[1]))) ?? FAKE_COMMIT;
+      const branch = decodeURIComponent(commitMatch[1]);
+      const sha = (await repo.commit?.(branch)) ?? fakeCommit(branch);
       return Response.json({ sha });
     }
 

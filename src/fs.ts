@@ -1,5 +1,6 @@
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
+import { resolveFetchUrl } from "./source.js";
 
 const REMOTE_FETCH_ATTEMPTS = 4;
 const remoteFileCache = new Map<string, Promise<string>>();
@@ -10,11 +11,12 @@ export async function readTextFile(filePath: string): Promise<string> {
   }
 
   // Routes, constants and symbols all read some of the same files.
-  let cached = remoteFileCache.get(filePath);
+  const url = resolveFetchUrl(filePath);
+  let cached = remoteFileCache.get(url);
   if (cached === undefined) {
-    cached = fetchRemoteText(filePath);
-    remoteFileCache.set(filePath, cached);
-    cached.catch(() => remoteFileCache.delete(filePath));
+    cached = fetchRemoteText(url);
+    remoteFileCache.set(url, cached);
+    cached.catch(() => remoteFileCache.delete(url));
   }
   return cached;
 }

@@ -6,7 +6,7 @@ import { discoverRoutes } from "./routes.js";
 import { extractRouteData } from "./analysis.js";
 import { buildSpec, isRouteExcluded } from "./spec.js";
 import { indexFunctions } from "./symbols.js";
-import { resolveRawGithubUrl, resolveSourceCommit, resolveSourcePath } from "./source.js";
+import { pinSourceCommit, resolveRawGithubUrl, resolveSourcePath } from "./source.js";
 import type { ApiSpec, CliOptions } from "./types.js";
 
 export async function runExtraction(cliOptions: CliOptions): Promise<ApiSpec> {
@@ -15,12 +15,16 @@ export async function runExtraction(cliOptions: CliOptions): Promise<ApiSpec> {
   const config = await loadConfig(cliOptions.configPath ?? "./config.json", cliOptions);
   configStep.done();
 
+  // Every file below is read at this commit, which the output records.
+  const commitStep = progress.startStep("resolving source commit");
+  const sourceCommit = await pinSourceCommit(config.sourceBranch);
+  commitStep.done(sourceCommit);
+
   // These steps are independent, so fetch and parse their sources concurrently.
   const routesStep = progress.startStep("discovering routes");
   const constantsStep = progress.startStep("loading constants");
   const symbolsStep = progress.startStep("indexing functions");
-  const [sourceCommit, routes, constants, functions] = await Promise.all([
-    resolveSourceCommit(config.sourceBranch),
+  const [routes, constants, functions] = await Promise.all([
     discoverRoutes(resolveRawGithubUrl(config.sourceBranch, resolveSourcePath(config.rootDir, config.routeFile))).then(
       (result) => {
         routesStep.done(`${result.length} routes`);

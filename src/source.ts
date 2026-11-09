@@ -46,8 +46,35 @@ export function resolveRawGithubUrl(sourceBranch: string, sourcePath: string): s
   return `${GITHUB_RAW_BASE_URL}/${sourceBranch}/${normalizedSourcePath}`;
 }
 
+const pinnedCommits = new Map<string, string>();
+
+/**
+ * Resolves the commit the branch points at, and reads the branch at that commit from
+ * then on. A push during a run then can't mix two versions of the source, or move the
+ * lines the output cites away from the commit it records.
+ */
+export async function pinSourceCommit(sourceBranch: string): Promise<string> {
+  const commit = await resolveSourceCommit(sourceBranch);
+  pinnedCommits.set(sourceBranch, commit);
+  return commit;
+}
+
+/**
+ * Where to fetch a raw source URL: at its branch's pinned commit, if any. URLs keep the
+ * branch name in the output, so they don't all change with every upstream commit.
+ */
+export function resolveFetchUrl(url: string): string {
+  for (const [branch, commit] of pinnedCommits) {
+    const prefix = `${GITHUB_RAW_BASE_URL}/${branch}/`;
+    if (url.startsWith(prefix)) {
+      return `${GITHUB_RAW_BASE_URL}/${commit}/${url.slice(prefix.length)}`;
+    }
+  }
+  return url;
+}
+
 /** The commit the source branch points at, so reports can link to exact source. */
-export async function resolveSourceCommit(sourceBranch: string): Promise<string> {
+async function resolveSourceCommit(sourceBranch: string): Promise<string> {
   const response = await octokit.rest.repos
     .getCommit({
       owner: GITHUB_OWNER,
@@ -92,11 +119,12 @@ const treeCache = new Map<string, Promise<readonly string[]>>();
 
 /** Lists blob paths once per branch, so one extraction makes one API call. */
 function listBranchFiles(sourceBranch: string): Promise<readonly string[]> {
-  let cached = treeCache.get(sourceBranch);
+  const ref = pinnedCommits.get(sourceBranch) ?? sourceBranch;
+  let cached = treeCache.get(ref);
   if (cached === undefined) {
-    cached = fetchBranchFiles(sourceBranch);
-    treeCache.set(sourceBranch, cached);
-    cached.catch(() => treeCache.delete(sourceBranch));
+    cached = fetchBranchFiles(ref);
+    treeCache.set(ref, cached);
+    cached.catch(() => treeCache.delete(ref));
   }
   return cached;
 }

@@ -1,6 +1,8 @@
 import { afterEach, describe, expect, test } from "bun:test";
-import { listSourceFiles, resolveRawGithubUrl, resolveSourcePath } from "../src/source.js";
+import { readTextFile } from "../src/fs.js";
+import { listSourceFiles, pinSourceCommit, resolveRawGithubUrl, resolveSourcePath } from "../src/source.js";
 import { rejectionMessage } from "./helpers/assert.js";
+import { nextBranch, stubGithub } from "./helpers/fake-github.js";
 
 const originalFetch = globalThis.fetch;
 afterEach(() => {
@@ -99,6 +101,28 @@ describe("listSourceFiles", () => {
       } else {
         process.env.GITHUB_TOKEN = saved;
       }
+    }
+  });
+});
+
+describe("pinSourceCommit", () => {
+  test("reads the branch at the commit it resolved, even after the branch moves", async () => {
+    const branch = nextBranch();
+    let head = "1111111111111111111111111111111111111111";
+    const restore = stubGithub({
+      commit: () => head,
+      listFiles: (ref) => (ref === branch ? ["src/moved.cpp"] : ["src/pinned.cpp"]),
+      readFile: (ref) => (ref === branch ? "moved" : `at ${ref}`),
+    });
+    try {
+      expect(await pinSourceCommit(branch)).toBe(head);
+      const pinned = head;
+      head = "2222222222222222222222222222222222222222";
+
+      expect(await readTextFile(resolveRawGithubUrl(branch, "src/a.cpp"))).toBe(`at ${pinned}`);
+      expect(await listSourceFiles(branch, "", [".cpp"])).toEqual(["src/pinned.cpp"]);
+    } finally {
+      restore();
     }
   });
 });
