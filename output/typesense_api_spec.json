@@ -1674,8 +1674,8 @@
           "sources": [
             {
               "filePath": "https://raw.githubusercontent.com/typesense/typesense/v30/src/field.cpp",
-              "line": 18,
-              "column": 8
+              "line": 138,
+              "column": 9
             }
           ]
         },
@@ -2566,8 +2566,8 @@
           "sources": [
             {
               "filePath": "https://raw.githubusercontent.com/typesense/typesense/v30/src/field.cpp",
-              "line": 18,
-              "column": 8
+              "line": 138,
+              "column": 9
             }
           ]
         },

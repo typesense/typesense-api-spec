@@ -749,10 +749,10 @@ function collectCallExpression(node: SyntaxNode, state: AnalysisState, context: 
     if (resolved !== undefined) {
       const firstArgument = callInfo.arguments[0];
       const fillsDefault =
-        normalizedMethodName === "count" &&
+        (normalizedMethodName === "count" || normalizedMethodName === "contains" || normalizedMethodName === "find") &&
         firstArgument !== undefined &&
         callInfo.baseNode !== undefined &&
-        isDefaultFillCheck(node, callInfo.baseNode, firstArgument);
+        isDefaultFillCheck(node, normalizedMethodName, callInfo.baseNode, firstArgument);
       if (firstArgument !== undefined && !fillsDefault) {
         const segment = resolveStringTokenNode(firstArgument, state.constants);
         if (segment !== undefined) {
@@ -942,16 +942,24 @@ function keyRejection(
 }
 
 /** `if (x.count(k) == 0) { x[k] = default; }` fills in a default; it doesn't use what the client sent. */
-function isDefaultFillCheck(countCall: SyntaxNode, baseNode: SyntaxNode, keyNode: SyntaxNode): boolean {
-  const comparison = countCall.parent;
-  if (
-    comparison?.type !== "binary_expression" ||
-    childForField(comparison, "operator")?.text !== "==" ||
-    childForField(comparison, "right")?.text !== "0"
-  ) {
+function isDefaultFillCheck(
+  lookupCall: SyntaxNode,
+  methodName: string,
+  baseNode: SyntaxNode,
+  keyNode: SyntaxNode,
+): boolean {
+  const condition = outsideParentheses(lookupCall);
+  const missing =
+    methodName === "find" ?
+      isComparisonWith(condition, "==", `${compactText(baseNode)}.end()`)
+    : isComparisonWith(condition, "==", "0") ||
+      (condition?.type === "unary_expression" && childForField(condition, "operator")?.text === "!");
+  if (!missing || condition === undefined) {
     return false;
   }
-  const ifStatement = comparison.parent?.type === "condition_clause" ? comparison.parent.parent : undefined;
+
+  const conditionClause = outsideParentheses(condition);
+  const ifStatement = conditionClause?.type === "condition_clause" ? conditionClause.parent : undefined;
   if (ifStatement?.type !== "if_statement" || childForField(ifStatement, "alternative") !== undefined) {
     return false;
   }
@@ -961,12 +969,35 @@ function isDefaultFillCheck(countCall: SyntaxNode, baseNode: SyntaxNode, keyNode
     consequence?.type === "compound_statement" ?
       consequence.namedChildren.filter((child) => child.type !== "comment")
     : [consequence];
-  const assignment = statements.length === 1 ? statements[0]?.namedChild(0) : undefined;
-  if (assignment?.type !== "assignment_expression") {
+  const fillTarget = `${compactText(baseNode)}[${compactText(keyNode)}]`;
+  return statements.some((statement) => {
+    const assignment = statement?.type === "expression_statement" ? statement.namedChild(0) : undefined;
+    const target = assignment?.type === "assignment_expression" ? childForField(assignment, "left") : undefined;
+    return target?.type === "subscript_expression" && compactText(target) === fillTarget;
+  });
+}
+
+/** The nearest ancestor that isn't a pair of parentheses around this expression. */
+function outsideParentheses(node: SyntaxNode): SyntaxNode | undefined {
+  let parent = node.parent;
+  while (parent?.type === "parenthesized_expression") {
+    parent = parent.parent;
+  }
+  return parent ?? undefined;
+}
+
+/** `x OP value` or `value OP x`, where node is the comparison. */
+function isComparisonWith(node: SyntaxNode | undefined, operator: string, value: string): boolean {
+  if (node?.type !== "binary_expression" || childForField(node, "operator")?.text !== operator) {
     return false;
   }
-  const target = childForField(assignment, "left");
-  return target?.type === "subscript_expression" && target.text === `${baseNode.text}[${keyNode.text}]`;
+  const left = childForField(node, "left");
+  const right = childForField(node, "right");
+  return (left !== undefined && compactText(left) === value) || (right !== undefined && compactText(right) === value);
+}
+
+function compactText(node: SyntaxNode): string {
+  return node.text.replace(/\s+/g, "");
 }
 
 function collectHelperCallExpression(

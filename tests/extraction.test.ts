@@ -643,6 +643,20 @@ describe("JSON objects used as maps", () => {
     expect(body).toEqual(["required", "used"]);
   });
 
+  test("recognizes a default fill however the missing check is written", async () => {
+    const { body } = await extractHandler(
+      handlerWithBody(`
+        if (0 == body.count("a")) { body["a"] = 1; }
+        if (!body.count("b")) body["b"] = 1;
+        if (!body.contains("c")) { log("defaulting"); body[ "c" ] = 1; }
+        if (body.find("d") == body.end()) { body["d"] = 1; }
+        if ((body.count("e") == 0)) { body["e"] = 1; }
+        if (!body.contains("required")) { return false; }
+        if (body.count("other") == 0) { body["unrelated"] = 1; }`),
+    );
+    expect(body).toEqual(["other", "required"]);
+  });
+
   test("copying a body's items into another object keeps tracking its fields", async () => {
     // update_model merges the request into a copy of the stored model, then validates it.
     const { body } = await extractHandler(
