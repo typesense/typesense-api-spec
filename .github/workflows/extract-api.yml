@@ -146,54 +146,56 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           outputs="output/typesense_api_spec.json output/typesense_api_diagnostics.json"
+          # The bot branch is checked out in its own worktree, so the code run here is always
+          # this branch's, never code pushed to the bot branch.
+          bot="$RUNNER_TEMP/bot-branch"
           extracted() {
-            cp "$RUNNER_TEMP/typesense_api_spec.json" "$RUNNER_TEMP/typesense_api_diagnostics.json" output/
-            git add $outputs
+            cp $outputs "$bot/output/"
+            git -C "$bot" add $outputs
           }
-          cp $outputs "$RUNNER_TEMP/"
-          git checkout -- output
           base=$(git rev-parse HEAD)
 
           if [ -z "$PULL_REQUEST" ]; then
             # Nothing to preserve: a leftover branch belongs to a closed pull request.
-            git switch -C "$BOT_BRANCH"
+            git worktree add -B "$BOT_BRANCH" "$bot" "$base"
             extracted
-            git commit -m "chore: update extracted Typesense API artifacts"
-            git push --force origin "$BOT_BRANCH"
+            git -C "$bot" commit -m "chore: update extracted Typesense API artifacts"
+            git -C "$bot" push --force origin "$BOT_BRANCH"
             exit 0
           fi
 
           # Build on the open branch, so openapi.yml edits made there survive.
           git fetch origin "$BOT_BRANCH"
-          git switch -C "$BOT_BRANCH" FETCH_HEAD
+          branch_head=$(git rev-parse FETCH_HEAD)
+          git worktree add -B "$BOT_BRANCH" "$bot" "$branch_head"
 
           # Merge the base branch so the pull request stays mergeable. output/ is about to be
           # replaced, so its conflicts resolve to the new extraction; any other needs a person.
-          if ! git merge --no-edit -m "Merge $GITHUB_REF_NAME into $BOT_BRANCH" "$base"; then
-            if git diff --name-only --diff-filter=U | grep -qv '^output/'; then
-              git merge --abort
+          if ! git -C "$bot" merge --no-edit -m "Merge $GITHUB_REF_NAME into $BOT_BRANCH" "$base"; then
+            if git -C "$bot" diff --name-only --diff-filter=U | grep -qv '^output/'; then
+              git -C "$bot" merge --abort
               echo "::warning::$BOT_BRANCH conflicts with $GITHUB_REF_NAME outside output/, so it needs a manual merge."
             else
               extracted
-              git commit --no-edit
+              git -C "$bot" commit --no-edit
             fi
           fi
 
           # Source lines move on most upstream commits, so commit only a new API shape.
-          git show HEAD:output/typesense_api_spec.json > "$RUNNER_TEMP/branch-typesense-api-spec.json"
+          git -C "$bot" show HEAD:output/typesense_api_spec.json > "$RUNNER_TEMP/branch-typesense-api-spec.json"
           bun src/cli.ts semantic-diff \
             --previous "$RUNNER_TEMP/branch-typesense-api-spec.json" \
-            --next "$RUNNER_TEMP/typesense_api_spec.json" \
+            --next output/typesense_api_spec.json \
             --json-output "$RUNNER_TEMP/branch-api-diff.json"
           if [ "$(jq -r .changed "$RUNNER_TEMP/branch-api-diff.json")" = "true" ]; then
             extracted
-            git commit -m "chore: update extracted Typesense API artifacts"
+            git -C "$bot" commit -m "chore: update extracted Typesense API artifacts"
           fi
 
-          if [ "$(git rev-parse HEAD)" = "$(git rev-parse FETCH_HEAD)" ]; then
+          if [ "$(git -C "$bot" rev-parse HEAD)" = "$branch_head" ]; then
             echo "The open pull request is already up to date."
           else
-            git push origin "$BOT_BRANCH"
+            git -C "$bot" push origin "$BOT_BRANCH"
           fi
 
       # The report compares with the base branch, which can move while the branch doesn't.
