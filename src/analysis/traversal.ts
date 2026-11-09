@@ -624,7 +624,12 @@ function collectAssignmentExpression(node: SyntaxNode, state: AnalysisState): vo
   const inferredType = resolveValueTypeNode(rightNode, state);
   const aliasName = leftNode === undefined ? undefined : extractIdentifierName(leftNode);
   if (aliasName !== undefined) {
-    const resolved = resolveExpressionNode(rightNode, state.aliases, state.constants);
+    // `it = req->params.find("y")` moves the iterator to y; any other value leaves no parameter behind it.
+    const lookup = resolveParamLookup(rightNode, state);
+    const resolved = lookup ?? resolveExpressionNode(rightNode, state.aliases, state.constants);
+    if (resolved === undefined && state.aliases.get(aliasName)?.location === "param-lookup") {
+      assignInScope(state, aliasName, (scope) => scope.aliases.delete(aliasName));
+    }
     if (resolved !== undefined) {
       assignInScope(state, aliasName, (scope) => scope.aliases.set(aliasName, resolved));
       state.debug(`assign ${aliasName} => ${resolved.location}:${normalizePathSegments(resolved.segments)}`);

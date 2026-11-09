@@ -535,6 +535,23 @@ describe("JSON objects used as maps", () => {
     expect(types.get("cache")).toBe("boolean");
   });
 
+  test("a reassigned params.find() iterator follows its new parameter", async () => {
+    const { query, types } = await extractHandler(`
+      bool handler(const std::shared_ptr<http_req>& req, const std::shared_ptr<http_res>& res) {
+        auto it = req->params.find("x");
+        it = req->params.find("y");
+        std::stoi(it->second);
+        auto other_it = req->params.find("z");
+        other_it = other.find("unrelated");
+        std::stoi(other_it->second);
+        return true;
+      }`);
+    expect(query).toEqual(["x", "y", "z"]);
+    expect(types.get("x")).toBeUndefined();
+    expect(types.get("y")).toBe("integer");
+    expect(types.get("z")).toBeUndefined();
+  });
+
   test("a numeric union keeps its narrowest type, which validation declares", async () => {
     // list_collections rejects a negative offset with is_uint32_t, then converts it with stoi.
     const { types } = await extractHandler(`
