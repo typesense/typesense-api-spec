@@ -10,10 +10,12 @@ import { stubGithub } from "./helpers/fake-github.js";
 import { clonePath, cloneRepo, hasClone, hasCommit, repoRoot } from "./helpers/local-clone.js";
 
 // These run the whole pipeline on real Typesense source, with GitHub answered
-// from the gitignored clones in tmp/. They skip when the clones are absent:
-//   git clone https://github.com/typesense/typesense tmp/typesense            (v31)
-//   git clone -b v30 https://github.com/typesense/typesense tmp/typesense-v30
+// from the gitignored clone in tmp/. They skip when it is absent:
+//   git clone https://github.com/typesense/typesense tmp/typesense
 const TIMEOUT_MS = 120_000;
+const CLONE = "typesense";
+/** The v30 tests read the clone at this tag, wherever its HEAD is. */
+const V30 = "v30.2";
 
 const dirPromise = mkdtemp(path.join(tmpdir(), "integration-test-"));
 afterAll(async () => rm(await dirPromise, { recursive: true, force: true }));
@@ -73,22 +75,17 @@ const findRoute = (spec: ApiSpec, method: string, pathTemplate: string): ApiRout
 const paths = (parameters: ApiRouteSpec["bodyParams"]): readonly string[] =>
   parameters.map((parameter) => parameter.canonicalPath);
 
-// output/ records the Typesense commit it came from, so any clone that has that commit
-// can reproduce it, wherever the clone's own HEAD is. Fetch the clone if this skips.
+// output/ records the Typesense commit it came from, so the clone can reproduce it
+// wherever its own HEAD is. Fetch the clone if this skips.
 const committedText = readFileSync(path.join(repoRoot, "output/typesense_api_spec.json"), "utf8");
 const committed = JSON.parse(committedText) as ApiSpec;
 const committedCommit = committed.sourceCommit ?? "";
-const committedClone = ["typesense-v30", "typesense"].find((name) => hasCommit(name, committedCommit));
 
-describe.skipIf(committedClone === undefined)("committed output", () => {
+describe.skipIf(!hasCommit(CLONE, committedCommit))("committed output", () => {
   test(
     "is reproduced byte for byte from the commit it records",
     async () => {
-      const { spec, text } = await extractFromClone(
-        committedClone ?? "",
-        committed.sourceBranch ?? "",
-        committedCommit,
-      );
+      const { spec, text } = await extractFromClone(CLONE, committed.sourceBranch ?? "", committedCommit);
       expect(spec.diagnostics).toEqual([]);
       expect(text === committedText).toBe(true);
     },
@@ -96,11 +93,11 @@ describe.skipIf(committedClone === undefined)("committed output", () => {
   );
 });
 
-describe.skipIf(!hasClone("typesense-v30"))("v30 clone", () => {
+describe.skipIf(!hasCommit(CLONE, V30))("v30", () => {
   test(
     "cites where a parameter is read or named, not where it is masked or looked up",
     async () => {
-      const { spec } = await extractFromClone("typesense-v30", "v30");
+      const { spec } = await extractFromClone(CLONE, "v30", V30);
       const citation = (
         method: string,
         routePath: string,
@@ -120,7 +117,7 @@ describe.skipIf(!hasClone("typesense-v30"))("v30 clone", () => {
 
       const route = findRoute(spec, "GET", "/collections/:collection/documents/search");
       const perPage = route.queryParams.find((candidate) => candidate.canonicalPath === "limit_hits")?.sources[0];
-      const source = await Bun.$`git -C ${clonePath("typesense-v30")} show HEAD:src/collection.cpp`.text();
+      const source = await Bun.$`git -C ${clonePath(CLONE)} show ${`${V30}:src/collection.cpp`}`.text();
       expect(source.split("\n")[(perPage?.line ?? 1) - 1]).toContain("LIMIT_HITS");
     },
     TIMEOUT_MS,
@@ -129,7 +126,7 @@ describe.skipIf(!hasClone("typesense-v30"))("v30 clone", () => {
   test(
     "keeps the corrections made during PR review",
     async () => {
-      const { spec } = await extractFromClone("typesense-v30", "v30");
+      const { spec } = await extractFromClone(CLONE, "v30", V30);
 
       const multiSearch = paths(findRoute(spec, "POST", "/multi_search").bodyParams);
       expectToIncludeAll(multiSearch, ["searches", "union", "remove_duplicates"]);
@@ -188,11 +185,11 @@ describe.skipIf(!hasClone("typesense-v30"))("v30 clone", () => {
   );
 });
 
-describe.skipIf(!hasClone("typesense"))("v31 clone", () => {
+describe.skipIf(!hasClone(CLONE))("v31 clone", () => {
   test(
     "extracts without diagnostics and finds v31-only routes",
     async () => {
-      const { spec } = await extractFromClone("typesense", "v31");
+      const { spec } = await extractFromClone(CLONE, "v31");
       expect(spec.diagnostics).toEqual([]);
       expect(spec.routes.length).toBeGreaterThanOrEqual(90);
       expect(findRoute(spec, "PATCH", "/keys/:id").handler.length).toBeGreaterThan(0);
