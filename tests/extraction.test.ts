@@ -562,6 +562,22 @@ describe("JSON objects used as maps", () => {
     expect(body).toEqual(["a", "b", "c", "nested", "nested.d"]);
   });
 
+  test("a refused key isn't a field, even where it is read directly", async () => {
+    const { body } = await extractHandler(
+      handlerWithBody(`
+        body["before"];
+        for (auto& it : body.items()) {
+          if (it.key() == "before" || it.key() == "after") { return Option<bool>(400, "Not allowed."); }
+          if (it.key() == "rejected") { res->set(400, "Not allowed."); return false; }
+          if (it.key() == "done") { return true; }
+        }
+        body["after"];
+        body["rejected"];
+        body["done"];`),
+    );
+    expect(body).toEqual(["done"]);
+  });
+
   test("a key skip list covers every key it names", async () => {
     const { body } = await extractHandler(
       handlerWithBody(`

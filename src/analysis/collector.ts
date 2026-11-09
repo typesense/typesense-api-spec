@@ -11,7 +11,8 @@ export class ParameterCollector {
   readonly #body = new Map<string, CollectedParameter>();
   readonly #bodyTypeHints = new Map<string, ValueType>();
   readonly #overwrittenBodyPaths = new Set<string>();
-  readonly #rejectedBodyPaths = new Set<string>();
+  readonly #skippedBodyPaths = new Set<string>();
+  readonly #refusedBodyPaths = new Set<string>();
   readonly #mirroredBodyPaths = new Set<string>();
   readonly #queryMirrorPrefixes = new Set<string>();
 
@@ -38,7 +39,10 @@ export class ParameterCollector {
       return;
     }
     if (parameter.location === "body") {
-      if (this.#overwrittenBodyPaths.has(parameter.canonicalPath)) {
+      if (
+        this.#overwrittenBodyPaths.has(parameter.canonicalPath) ||
+        this.#refusedBodyPaths.has(parameter.canonicalPath)
+      ) {
         return;
       }
       this.#mirroredBodyPaths.delete(parameter.canonicalPath);
@@ -65,14 +69,21 @@ export class ParameterCollector {
   }
 
   /**
-   * A loop over the body refuses or skips this key, so it never reaches the params
-   * map. Code elsewhere can still read the field directly, and those reads count.
+   * A loop over the body skips this key, so it never reaches the params map. Code
+   * elsewhere can still read the field directly, and those reads count.
    */
-  markBodyPathRejected(canonicalPath: string): void {
-    this.#rejectedBodyPaths.add(canonicalPath);
+  markBodyPathSkipped(canonicalPath: string): void {
+    this.#skippedBodyPaths.add(canonicalPath);
     if (this.#mirroredBodyPaths.delete(canonicalPath)) {
       this.#body.delete(canonicalPath);
     }
+  }
+
+  /** The server answers with an error when a client sends this field, so no read of it counts. */
+  markBodyPathRefused(canonicalPath: string): void {
+    this.#refusedBodyPaths.add(canonicalPath);
+    this.#mirroredBodyPaths.delete(canonicalPath);
+    this.#body.delete(canonicalPath);
   }
 
   /**
@@ -86,7 +97,7 @@ export class ParameterCollector {
   #mirrorToBody(parameter: CollectedParameter): void {
     for (const prefix of this.#queryMirrorPrefixes) {
       const canonicalPath = `${prefix}.${parameter.canonicalPath}`;
-      if (this.#rejectedBodyPaths.has(canonicalPath)) {
+      if (this.#skippedBodyPaths.has(canonicalPath)) {
         continue;
       }
       const isDirectRead = this.#body.has(canonicalPath) && !this.#mirroredBodyPaths.has(canonicalPath);

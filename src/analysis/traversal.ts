@@ -865,20 +865,30 @@ function collectKeyComparison(
     return;
   }
 
-  if (keyOwner.location === "body-root" && isRejectingKeyCheck(node, keyOwner, state)) {
-    state.collector.markBodyPathRejected(normalizePathSegments([...keyOwner.segments, key]));
+  const rejection = keyOwner.location === "body-root" ? keyRejection(node, keyOwner, state) : undefined;
+  if (rejection !== undefined) {
+    const canonicalPath = normalizePathSegments([...keyOwner.segments, key]);
+    if (rejection === "refused") {
+      state.collector.markBodyPathRefused(canonicalPath);
+    } else {
+      state.collector.markBodyPathSkipped(canonicalPath);
+    }
     return;
   }
   addParameter(keyOwner, [key], state, node);
 }
 
 /**
- * `if (item.key() == "x") { continue; }`: the server ignores or refuses that field.
- * A branch that uses the item's value before leaving handles the field instead.
+ * `if (item.key() == "x") { continue; }` skips that field, and a branch that returns an
+ * error refuses it. A branch that uses the item's value before leaving handles the field.
  */
-function isRejectingKeyCheck(comparison: SyntaxNode, keyOwner: AliasTarget, state: AnalysisState): boolean {
+function keyRejection(
+  comparison: SyntaxNode,
+  keyOwner: AliasTarget,
+  state: AnalysisState,
+): "skipped" | "refused" | undefined {
   if (childForField(comparison, "operator")?.text !== "==") {
-    return false;
+    return undefined;
   }
   // Any one of `key == "a" || key == "b"` is enough to take the branch.
   let condition = comparison.parent;
@@ -890,7 +900,7 @@ function isRejectingKeyCheck(comparison: SyntaxNode, keyOwner: AliasTarget, stat
   }
   const ifStatement = condition?.type === "condition_clause" ? condition.parent : undefined;
   if (ifStatement?.type !== "if_statement" || childForField(ifStatement, "alternative") !== undefined) {
-    return false;
+    return undefined;
   }
 
   const consequence = childForField(ifStatement, "consequence");
@@ -898,12 +908,15 @@ function isRejectingKeyCheck(comparison: SyntaxNode, keyOwner: AliasTarget, stat
     consequence?.type === "compound_statement" ?
       consequence.namedChildren.filter((child) => child.type !== "comment").at(-1)
     : consequence;
-  if (lastStatement?.type !== "continue_statement" && lastStatement?.type !== "return_statement") {
-    return false;
+  if (
+    consequence === undefined ||
+    (lastStatement?.type !== "continue_statement" && lastStatement?.type !== "return_statement")
+  ) {
+    return undefined;
   }
 
   const itemSegments = normalizePathSegments([...keyOwner.segments, MAP_KEY_SEGMENT]);
-  const usesItem = consequence?.descendantsOfType("identifier").some((identifier) => {
+  const usesItem = consequence.descendantsOfType("identifier").some((identifier) => {
     const target = state.aliases.get(identifier.text);
     if (target?.location !== "body-root" || normalizePathSegments(target.segments) !== itemSegments) {
       return false;
@@ -912,7 +925,15 @@ function isRejectingKeyCheck(comparison: SyntaxNode, keyOwner: AliasTarget, stat
     const access = identifier.parent;
     return !(access?.type === "field_expression" && childForField(access, "field")?.text === "key");
   });
-  return usesItem !== true;
+  if (usesItem) {
+    return undefined;
+  }
+
+  // `return false;` or `return Option<bool>(400, ...)`, as opposed to returning early on success.
+  const returnsError =
+    lastStatement.type === "return_statement" &&
+    (lastStatement.namedChild(0)?.text === "false" || /\b4\d\d\b/.test(consequence.text));
+  return returnsError ? "refused" : "skipped";
 }
 
 /** `if (x.count(k) == 0) { x[k] = default; }` fills in a default; it doesn't use what the client sent. */
