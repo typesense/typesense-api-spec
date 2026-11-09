@@ -213,6 +213,10 @@ jobs:
           else
             cp "$RUNNER_TEMP/typesense-api-diff.md" "$body"
           fi
+          # output/ on the base branch holds the reviewed API shape, so only merging moves it.
+          printf '\n---\n\n%s\n' \
+            "Nothing to change in \`openapi.yml\`? Merge anyway: that records these changes as reviewed. Closing this only hides them until the next run opens a new pull request." \
+            >> "$body"
 
           if [ -n "$PULL_REQUEST" ]; then
             gh pr edit "$PULL_REQUEST" --repo "$GITHUB_REPOSITORY" --body-file "$body"
