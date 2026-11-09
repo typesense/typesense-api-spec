@@ -26,13 +26,17 @@ const toParams = (location: string, values: Readonly<Record<string, string>> = {
   }));
 
 let fileCounter = 0;
-const writeSpec = async (routes: readonly RouteInput[], sourceCommit?: string): Promise<string> => {
+const writeSpec = async (
+  routes: readonly RouteInput[],
+  sourceCommit?: string,
+  sourceBranch = "v31",
+): Promise<string> => {
   fileCounter += 1;
   const filePath = path.join(await dirPromise, `spec-${fileCounter}.json`);
   await writeFile(
     filePath,
     JSON.stringify({
-      sourceBranch: "v31",
+      sourceBranch,
       sourceCommit,
       routes: routes.map((route) => ({
         method: route.method ?? "GET",
@@ -194,6 +198,19 @@ describe("runSemanticDiff", () => {
     });
     expect(await readFile(markdownOutputPath, "utf8")).toContain(
       `| 🟢 Added | body | \`x\` | \`string\` | [\`src/x.cpp:7\`](${BLOB}/bbbbbbb2222/src/x.cpp#L7) |`,
+    );
+  });
+
+  test("names both versions when a new release changes them", async () => {
+    const markdownOutputPath = path.join(await dirPromise, "new-release.md");
+    await runSemanticDiff({
+      previousPath: await writeSpec([], "aaaaaaa1111", "v30.2"),
+      nextPath: await writeSpec([{ path: "/new" }], "bbbbbbb2222", "v31.0"),
+      jsonOutputPath: undefined,
+      markdownOutputPath,
+    });
+    expect(await readFile(markdownOutputPath, "utf8")).toContain(
+      "**Typesense `v30.2` → `v31.0`**: [`aaaaaaa...bbbbbbb`](https://github.com/typesense/typesense/compare/aaaaaaa1111...bbbbbbb2222)",
     );
   });
 

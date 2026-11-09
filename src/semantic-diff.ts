@@ -256,7 +256,13 @@ function formatTypeCell(valueType: ValueType | undefined): string {
 
 /** Which Typesense commits the changes came from. */
 function renderSourceRange(previous: ApiSpec, next: ApiSpec): string {
-  const branch = next.sourceBranch === undefined ? "**Typesense**" : `**Typesense \`${next.sourceBranch}\`**`;
+  // A new release changes the version, so name both.
+  const versions =
+    previous.sourceBranch !== undefined && previous.sourceBranch !== next.sourceBranch ?
+      `\`${previous.sourceBranch}\` → \`${next.sourceBranch ?? "unknown"}\``
+    : next.sourceBranch === undefined ? undefined
+    : `\`${next.sourceBranch}\``;
+  const branch = versions === undefined ? "**Typesense**" : `**Typesense ${versions}**`;
   if (next.sourceCommit === undefined) {
     return `${branch}: source commit unknown.`;
   }
