@@ -185,18 +185,15 @@ describe.skipIf(!hasCommit(CLONE, V30))("v30", () => {
   );
 });
 
-describe.skipIf(!hasClone(CLONE))("v31 clone", () => {
+// Whatever the clone has checked out, so pulling it is an early check that the
+// extractor still handles newer code. Assertions here must hold for any version.
+describe.skipIf(!hasClone(CLONE))("checked-out clone", () => {
   test(
-    "extracts without diagnostics and finds v31-only routes",
+    "extracts without diagnostics",
     async () => {
-      const { spec } = await extractFromClone(CLONE, "v31");
+      const { spec } = await extractFromClone(CLONE, "checked-out");
       expect(spec.diagnostics).toEqual([]);
-      expect(spec.routes.length).toBeGreaterThanOrEqual(90);
-      expect(findRoute(spec, "PATCH", "/keys/:id").handler.length).toBeGreaterThan(0);
-
-      const keys = paths(findRoute(spec, "POST", "/keys").bodyParams);
-      expectToIncludeAll(keys, ["joins", "joins.*.allowed_fields", "joins.*.denied_fields"]);
-      expect(keys).not.toContain("joins[]");
+      expect(spec.routes.length).toBeGreaterThanOrEqual(80);
 
       const search = paths(findRoute(spec, "GET", "/collections/:collection/documents/search").queryParams);
       expectToIncludeAll(search, ["q", "query_by", "filter_by", "include_fields", "per_page"]);
