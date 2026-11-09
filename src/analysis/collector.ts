@@ -96,7 +96,8 @@ export class ParameterCollector {
 
   #mirrorToBody(parameter: CollectedParameter): void {
     for (const prefix of this.#queryMirrorPrefixes) {
-      const canonicalPath = `${prefix}.${parameter.canonicalPath}`;
+      // An empty prefix is the body itself.
+      const canonicalPath = prefix === "" ? parameter.canonicalPath : `${prefix}.${parameter.canonicalPath}`;
       if (this.#skippedBodyPaths.has(canonicalPath)) {
         continue;
       }

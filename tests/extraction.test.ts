@@ -579,6 +579,19 @@ describe("JSON objects used as maps", () => {
     expect(body).toEqual(["a", "b", "c", "nested", "nested.d"]);
   });
 
+  test("copying the whole body into the params map mirrors params as top-level fields", async () => {
+    const { body } = await extractHandler(
+      handlerWithBody(`
+        for (auto& it : body.items()) {
+          if (it.key() == "skipped") { continue; }
+          req->params[it.key()] = it.value();
+        }
+        req->params["kept"];
+        req->params["skipped"];`),
+    );
+    expect(body).toEqual(["kept"]);
+  });
+
   test("a refused key isn't a field, even where it is read directly", async () => {
     const { body } = await extractHandler(
       handlerWithBody(`
