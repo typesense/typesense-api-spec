@@ -535,14 +535,15 @@ describe("JSON objects used as maps", () => {
     expect(types.get("cache")).toBe("boolean");
   });
 
-  test("a numeric union collapses to its widest type", async () => {
+  test("a numeric union keeps its narrowest type, which validation declares", async () => {
+    // list_collections rejects a negative offset with is_uint32_t, then converts it with stoi.
     const { types } = await extractHandler(`
       bool handler(const std::shared_ptr<http_req>& req, const std::shared_ptr<http_res>& res) {
         if (!StringUtils::is_uint32_t(req->params["n"])) { return false; }
         std::stoi(req->params["n"]);
         return true;
       }`);
-    expect(types.get("n")).toBe("integer");
+    expect(types.get("n")).toBe("uint");
   });
 
   test("a key skip list covers every key it names", async () => {

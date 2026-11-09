@@ -201,4 +201,10 @@ describe("mergeValueTypes", () => {
     const union = mergeValueTypes("integer", "string");
     expect(String(mergeValueTypes(union, "boolean"))).toBe("boolean | integer | string");
   });
+
+  test("keeps the narrowest numeric type", () => {
+    expect(mergeValueTypes("integer", "uint")).toBe("uint");
+    expect(mergeValueTypes("number", "integer")).toBe("integer");
+    expect(String(mergeValueTypes("number", mergeValueTypes("string", "uint")))).toBe("string | uint");
+  });
 });

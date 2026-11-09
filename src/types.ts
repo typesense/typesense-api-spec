@@ -33,7 +33,7 @@ export function isValueType(value: string): value is ValueType {
   return value.split(" | ").every((part) => KNOWN_VALUE_TYPES.has(part));
 }
 
-const NUMERIC_TYPES_WIDEST_FIRST: readonly string[] = ["number", "integer", "uint"];
+const NUMERIC_TYPES_NARROWEST_FIRST: readonly string[] = ["uint", "integer", "number"];
 
 export function mergeValueTypes(left: ValueType | undefined, right: ValueType | undefined): ValueType | undefined {
   if (left === undefined) {
@@ -50,9 +50,10 @@ export function mergeValueTypes(left: ValueType | undefined, right: ValueType | 
   }
 
   const variants = new Set([...left.split(" | "), ...right.split(" | ")]);
-  // uint fits in integer and integer fits in number, so a union of them says no more than the widest.
-  const widestNumeric = NUMERIC_TYPES_WIDEST_FIRST.find((type) => variants.has(type));
-  NUMERIC_TYPES_WIDEST_FIRST.filter((type) => type !== widestNumeric).forEach((type) => variants.delete(type));
+  // Reads of one value narrow it rather than widen it: `is_uint32_t(x)` rejects what
+  // `std::stoi(x)` would accept, and a default of 10 says nothing about the sign.
+  const narrowestNumeric = NUMERIC_TYPES_NARROWEST_FIRST.find((type) => variants.has(type));
+  NUMERIC_TYPES_NARROWEST_FIRST.filter((type) => type !== narrowestNumeric).forEach((type) => variants.delete(type));
   const merged = [...variants].sort((a, b) => a.localeCompare(b)).join(" | ");
   if (isValueType(merged)) {
     return merged;

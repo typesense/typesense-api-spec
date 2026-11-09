@@ -1042,7 +1042,7 @@
           "name": "limit",
           "canonicalPath": "limit",
           "location": "query",
-          "valueType": "integer",
+          "valueType": "uint",
           "sources": [
             {
               "filePath": "https://raw.githubusercontent.com/typesense/typesense/v30/src/core_api.cpp",
@@ -1055,7 +1055,7 @@
           "name": "offset",
           "canonicalPath": "offset",
           "location": "query",
-          "valueType": "integer",
+          "valueType": "uint",
           "sources": [
             {
               "filePath": "https://raw.githubusercontent.com/typesense/typesense/v30/src/core_api.cpp",
@@ -1553,7 +1553,7 @@
           "name": "ef_construction",
           "canonicalPath": "fields[].hnsw_params.ef_construction",
           "location": "body",
-          "valueType": "integer",
+          "valueType": "uint",
           "sources": [
             {
               "filePath": "https://raw.githubusercontent.com/typesense/typesense/v30/src/field.cpp",
@@ -1566,7 +1566,7 @@
           "name": "M",
           "canonicalPath": "fields[].hnsw_params.M",
           "location": "body",
-          "valueType": "integer",
+          "valueType": "uint",
           "sources": [
             {
               "filePath": "https://raw.githubusercontent.com/typesense/typesense/v30/src/field.cpp",
@@ -2445,7 +2445,7 @@
           "name": "ef_construction",
           "canonicalPath": "fields[].hnsw_params.ef_construction",
           "location": "body",
-          "valueType": "integer",
+          "valueType": "uint",
           "sources": [
             {
               "filePath": "https://raw.githubusercontent.com/typesense/typesense/v30/src/field.cpp",
@@ -2458,7 +2458,7 @@
           "name": "M",
           "canonicalPath": "fields[].hnsw_params.M",
           "location": "body",
-          "valueType": "integer",
+          "valueType": "uint",
           "sources": [
             {
               "filePath": "https://raw.githubusercontent.com/typesense/typesense/v30/src/field.cpp",
@@ -2772,7 +2772,7 @@
           "name": "batch_size",
           "canonicalPath": "batch_size",
           "location": "query",
-          "valueType": "integer",
+          "valueType": "uint",
           "sources": [
             {
               "filePath": "https://raw.githubusercontent.com/typesense/typesense/v30/src/core_api.cpp",
@@ -3326,7 +3326,7 @@
           "name": "batch_size",
           "canonicalPath": "batch_size",
           "location": "query",
-          "valueType": "integer",
+          "valueType": "uint",
           "sources": [
             {
               "filePath": "https://raw.githubusercontent.com/typesense/typesense/v30/src/core_api.cpp",
@@ -3459,7 +3459,7 @@
           "name": "cache_ttl",
           "canonicalPath": "cache_ttl",
           "location": "query",
-          "valueType": "integer",
+          "valueType": "uint",
           "sources": [
             {
               "filePath": "https://raw.githubusercontent.com/typesense/typesense/v30/src/core_api.cpp",
@@ -5547,7 +5547,7 @@
           "name": "position",
           "canonicalPath": "items[].includes[].position",
           "location": "body",
-          "valueType": "integer",
+          "valueType": "uint",
           "sources": [
             {
               "filePath": "https://raw.githubusercontent.com/typesense/typesense/v30/src/curation.cpp",
@@ -5757,7 +5757,7 @@
           "name": "limit",
           "canonicalPath": "limit",
           "location": "query",
-          "valueType": "integer",
+          "valueType": "uint",
           "sources": [
             {
               "filePath": "https://raw.githubusercontent.com/typesense/typesense/v30/src/core_api.cpp",
@@ -5770,7 +5770,7 @@
           "name": "offset",
           "canonicalPath": "offset",
           "location": "query",
-          "valueType": "integer",
+          "valueType": "uint",
           "sources": [
             {
               "filePath": "https://raw.githubusercontent.com/typesense/typesense/v30/src/core_api.cpp",
@@ -6077,7 +6077,7 @@
           "name": "position",
           "canonicalPath": "includes[].position",
           "location": "body",
-          "valueType": "integer",
+          "valueType": "uint",
           "sources": [
             {
               "filePath": "https://raw.githubusercontent.com/typesense/typesense/v30/src/curation.cpp",
@@ -6342,7 +6342,7 @@
           "name": "pending_write_batches_threshold",
           "canonicalPath": "pending_write_batches_threshold",
           "location": "query",
-          "valueType": "integer",
+          "valueType": "uint",
           "sources": [
             {
               "filePath": "https://raw.githubusercontent.com/typesense/typesense/v30/src/core_api.cpp",
@@ -6437,7 +6437,7 @@
           "name": "expires_at",
           "canonicalPath": "expires_at",
           "location": "body",
-          "valueType": "integer",
+          "valueType": "uint",
           "sources": [
             {
               "filePath": "https://raw.githubusercontent.com/typesense/typesense/v30/src/auth_manager.cpp",
@@ -6560,7 +6560,7 @@
           "name": "cache_ttl",
           "canonicalPath": "cache_ttl",
           "location": "query",
-          "valueType": "integer",
+          "valueType": "uint",
           "sources": [
             {
               "filePath": "https://raw.githubusercontent.com/typesense/typesense/v30/src/core_api.cpp",
@@ -7145,7 +7145,7 @@
           "name": "limit_multi_searches",
           "canonicalPath": "limit_multi_searches",
           "location": "query",
-          "valueType": "integer",
+          "valueType": "uint",
           "sources": [
             {
               "filePath": "https://raw.githubusercontent.com/typesense/typesense/v30/src/core_api.cpp",
@@ -10653,7 +10653,7 @@
           "name": "limit",
           "canonicalPath": "limit",
           "location": "query",
-          "valueType": "integer",
+          "valueType": "uint",
           "sources": [
             {
               "filePath": "https://raw.githubusercontent.com/typesense/typesense/v30/src/core_api.cpp",
@@ -10666,7 +10666,7 @@
           "name": "offset",
           "canonicalPath": "offset",
           "location": "query",
-          "valueType": "integer",
+          "valueType": "uint",
           "sources": [
             {
               "filePath": "https://raw.githubusercontent.com/typesense/typesense/v30/src/core_api.cpp",
