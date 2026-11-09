@@ -6,14 +6,15 @@ import { discoverRoutes } from "./routes.js";
 import { extractRouteData } from "./analysis.js";
 import { buildSpec, isRouteExcluded } from "./spec.js";
 import { indexFunctions } from "./symbols.js";
-import { pinSourceCommit, resolveRawGithubUrl, resolveSourcePath } from "./source.js";
+import { pinSourceCommit, resolveRawGithubUrl, resolveSourcePath, resolveSourceRef } from "./source.js";
 import type { ApiSpec, CliOptions } from "./types.js";
 
 export async function runExtraction(cliOptions: CliOptions): Promise<ApiSpec> {
   const progress = new ProgressReporter(cliOptions.json);
   const configStep = progress.startStep("loading config");
-  const config = await loadConfig(cliOptions.configPath ?? "./config.json", cliOptions);
-  configStep.done();
+  const loadedConfig = await loadConfig(cliOptions.configPath ?? "./config.json", cliOptions);
+  const config = { ...loadedConfig, sourceBranch: await resolveSourceRef(loadedConfig.sourceBranch) };
+  configStep.done(config.sourceBranch);
 
   // Every file below is read at this commit, which the output records.
   const commitStep = progress.startStep("resolving source commit");

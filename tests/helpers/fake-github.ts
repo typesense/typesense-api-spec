@@ -2,6 +2,7 @@ import { createHash } from "node:crypto";
 
 const RAW_PREFIX = "https://raw.githubusercontent.com/typesense/typesense/";
 const COMMIT_PATTERN = /^https:\/\/api\.github\.com\/repos\/typesense\/typesense\/commits\/([^?]+)/;
+const LATEST_RELEASE_URL = "https://api.github.com/repos/typesense/typesense/releases/latest";
 const TREE_PATTERN = /^https:\/\/api\.github\.com\/repos\/typesense\/typesense\/git\/trees\/([^?]+)/;
 
 /** A commit SHA for a branch. Each branch gets its own, so tests don't share cached files. */
@@ -14,6 +15,8 @@ export interface FakeRepo {
   listFiles(branch: string): readonly string[] | Promise<readonly string[]>;
   /** File contents at a branch or commit, or undefined to answer 404. */
   readFile(branch: string, path: string): string | undefined | Promise<string | undefined>;
+  /** The latest release's tag. Defaults to "v1.0". */
+  latestRelease?(): string;
   /** The commit a branch points at. Defaults to fakeCommit(branch). */
   commit?(branch: string): string | Promise<string>;
 }
@@ -29,6 +32,10 @@ export function stubGithub(repo: FakeRepo): () => void {
   const original = globalThis.fetch;
   const stub = async (input: RequestInfo | URL): Promise<Response> => {
     const url = input instanceof Request ? input.url : String(input);
+
+    if (url.startsWith(LATEST_RELEASE_URL)) {
+      return Response.json({ tag_name: repo.latestRelease?.() ?? "v1.0", prerelease: false });
+    }
 
     const commitMatch = COMMIT_PATTERN.exec(url);
     if (commitMatch?.[1] !== undefined) {

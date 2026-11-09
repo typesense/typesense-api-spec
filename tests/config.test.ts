@@ -34,7 +34,7 @@ describe("loadConfig", () => {
   test("applies defaults and resolves output paths against the config's directory", async () => {
     const dir = await dirPromise;
     const config = await loadConfig(await writeConfig({}), noCliOptions);
-    expect(config.sourceBranch).toBe("v30");
+    expect(config.sourceBranch).toBe("latest-release");
     expect(config.routeFile).toBe("src/main/typesense_server.cpp");
     expect(config.maxCallDepth).toBe(8);
     expect(config.outputPath).toBe(path.join(dir, "output/typesense_api_spec.json"));

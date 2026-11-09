@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { LATEST_RELEASE } from "./source.js";
 import { HttpMethodMap } from "./types.js";
 
 export const httpMethodSchema = z.nativeEnum(HttpMethodMap);
@@ -23,7 +24,8 @@ export const extractorConfigSchema = z
   .object({
     root_dir: z.string().default(""),
     route_file: z.string().min(1).default("src/main/typesense_server.cpp"),
-    source_branch: z.string().min(1).default("v30"),
+    /** A branch, a tag, or `latest-release` for the latest stable release. */
+    source_branch: z.string().min(1).default(LATEST_RELEASE),
     output_path: z.string().min(1).default("./output/typesense_api_spec.json"),
     diagnostics_output_path: z.string().min(1).optional().default("./output/typesense_api_diagnostics.json"),
     base_url: z.string().min(1).optional(),

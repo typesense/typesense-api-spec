@@ -1,6 +1,12 @@
 import { afterEach, describe, expect, test } from "bun:test";
 import { readTextFile } from "../src/fs.js";
-import { listSourceFiles, pinSourceCommit, resolveRawGithubUrl, resolveSourcePath } from "../src/source.js";
+import {
+  listSourceFiles,
+  pinSourceCommit,
+  resolveRawGithubUrl,
+  resolveSourcePath,
+  resolveSourceRef,
+} from "../src/source.js";
 import { rejectionMessage } from "./helpers/assert.js";
 import { nextBranch, stubGithub } from "./helpers/fake-github.js";
 
@@ -124,5 +130,22 @@ describe("pinSourceCommit", () => {
     } finally {
       restore();
     }
+  });
+});
+
+describe("resolveSourceRef", () => {
+  test("resolves latest-release to the latest release's tag", async () => {
+    const restore = stubGithub({ latestRelease: () => "v30.2", listFiles: () => [], readFile: () => "" });
+    try {
+      expect(await resolveSourceRef("latest-release")).toBe("v30.2");
+    } finally {
+      restore();
+    }
+  });
+
+  test("keeps an explicit branch or tag without asking GitHub", async () => {
+    globalThis.fetch = (() => Promise.reject(new Error("no request expected"))) as unknown as typeof fetch;
+    expect(await resolveSourceRef("v31")).toBe("v31");
+    expect(await resolveSourceRef("v30.2")).toBe("v30.2");
   });
 });

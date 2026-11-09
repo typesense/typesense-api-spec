@@ -46,6 +46,34 @@ export function resolveRawGithubUrl(sourceBranch: string, sourcePath: string): s
   return `${GITHUB_RAW_BASE_URL}/${sourceBranch}/${normalizedSourcePath}`;
 }
 
+/** The `source_branch` value that means the latest stable release. */
+export const LATEST_RELEASE = "latest-release";
+
+/**
+ * The branch or tag to extract. openapi.yml describes released servers, so by default this
+ * is the latest release's tag; GitHub's latest release is never a prerelease or a draft.
+ */
+export async function resolveSourceRef(sourceRef: string): Promise<string> {
+  if (sourceRef !== LATEST_RELEASE) {
+    return sourceRef;
+  }
+  const response = await octokit.rest.repos
+    .getLatestRelease({
+      owner: GITHUB_OWNER,
+      repo: GITHUB_REPO,
+      headers: {
+        "X-GitHub-Api-Version": GITHUB_API_VERSION,
+      },
+    })
+    .catch((error: unknown) => {
+      const message = error instanceof Error ? error.message : String(error);
+      throw new Error(
+        `Could not find the latest release of ${GITHUB_OWNER}/${GITHUB_REPO}: ${message}.${rateLimitHint()}`,
+      );
+    });
+  return response.data.tag_name;
+}
+
 const pinnedCommits = new Map<string, string>();
 
 /**
