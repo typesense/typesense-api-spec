@@ -177,6 +177,26 @@ describe("runSemanticDiff", () => {
     expect(markdown).toContain("not from Typesense");
   });
 
+  test("cites a Typesense source ahead of an override's config source", async () => {
+    const nextPath = await writeSpec([{ path: "/a", body: { x: "string" } }], "bbbbbbb2222");
+    const next = JSON.parse(await readFile(nextPath, "utf8")) as {
+      routes: { bodyParams: { sources: object[] }[] }[];
+    };
+    next.routes[0]?.bodyParams[0]?.sources.unshift({ filePath: "config", line: 1, column: 1 });
+    await writeFile(nextPath, JSON.stringify(next));
+
+    const markdownOutputPath = path.join(await dirPromise, "override-source.md");
+    await runSemanticDiff({
+      previousPath: await writeSpec([{ path: "/a" }], "aaaaaaa1111"),
+      nextPath,
+      jsonOutputPath: undefined,
+      markdownOutputPath,
+    });
+    expect(await readFile(markdownOutputPath, "utf8")).toContain(
+      `| 🟢 Added | body | \`x\` | \`string\` | [\`src/x.cpp:7\`](${BLOB}/bbbbbbb2222/src/x.cpp#L7) |`,
+    );
+  });
+
   test("handles a previous spec written before commits were recorded", async () => {
     const markdown = await markdownFor([], undefined, [{ path: "/new" }], "bbbbbbb2222");
     expect(markdown).toContain("[`bbbbbbb`](https://github.com/typesense/typesense/commit/bbbbbbb2222)");

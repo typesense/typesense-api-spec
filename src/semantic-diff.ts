@@ -299,8 +299,10 @@ class SpecDetails {
     return this.#renderSource(this.#routes.get(routeKey)?.source);
   }
 
+  /** Cites the first source that is in Typesense; an override's `config` source has no link. */
   parameterSource(routeKey: string, parameterKey: string): string {
-    return this.#renderSource(this.parameter(routeKey, parameterKey)?.sources[0]);
+    const sources = this.parameter(routeKey, parameterKey)?.sources ?? [];
+    return sources.map((source) => this.#renderSource(source)).find((rendered) => rendered !== "—") ?? "—";
   }
 
   #renderSource(source: SourceLocation | undefined): string {
