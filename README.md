@@ -20,7 +20,7 @@ Once you've made edits, click on File -> Save as YAML. Then copy that file into 
 
 ## API extractor
 
-`src/` extracts the API's routes and parameters from the Typesense source into `output/`. A nightly workflow opens a pull request when they change, with a report linking each change to its source. Update `openapi.yml` on that branch, then merge it, even if nothing needed updating: closing it only defers the report to the next run.
+`src/` extracts the API's routes and parameters from the latest stable Typesense release into `output/`, so `openapi.yml` only gains what has shipped. RC versions are skipped, set `source_branch` in `config.json` to read a branch or tag instead. A nightly workflow opens a pull request when they change, with a report linking each change to its source. Update `openapi.yml` on that branch, then merge it, even if nothing needed updating: closing it only defers the report to the next run.
 
 The project uses [Bun](https://bun.sh):
 
