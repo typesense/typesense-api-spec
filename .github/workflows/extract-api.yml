@@ -91,11 +91,28 @@ jobs:
           number=$(gh pr list --repo "$GITHUB_REPOSITORY" --head "$BOT_BRANCH" --base "$GITHUB_REF_NAME" --state open --json number --jq '.[0].number // ""')
           echo "number=$number" >> "$GITHUB_OUTPUT"
 
+      # output/ on the base branch can reach this shape without openapi.yml changing, for
+      # example when an extractor change regenerates it. Edits on the branch still need review.
       - name: Close the pull request when the API shape no longer differs
         if: steps.semantic_diff.outputs.changed != 'true' && steps.pull_request.outputs.number != ''
+        env:
+          PULL_REQUEST: ${{ steps.pull_request.outputs.number }}
         run: |
-          gh pr close "${{ steps.pull_request.outputs.number }}" --repo "$GITHUB_REPOSITORY" --delete-branch \
-            --comment "The extracted API shape matches \`$GITHUB_REF_NAME\` again, so this is no longer needed."
+          git fetch origin "$BOT_BRANCH"
+          edited=$(git diff --name-only HEAD...FETCH_HEAD -- . ':(exclude)output')
+          if [ -z "$edited" ]; then
+            gh pr close "$PULL_REQUEST" --repo "$GITHUB_REPOSITORY" --delete-branch \
+              --comment "The extracted API shape matches \`$GITHUB_REF_NAME\` again, so this is no longer needed."
+            exit 0
+          fi
+
+          body="$RUNNER_TEMP/pull-request-body.md"
+          {
+            printf 'The extracted API shape now matches `output/` on `%s`, so there is nothing new to report.\n\n' "$GITHUB_REF_NAME"
+            printf 'This branch also changes these files. Merge it once they are reviewed, or close it:\n\n'
+            printf -- '- `%s`\n' $edited
+          } > "$body"
+          gh pr edit "$PULL_REQUEST" --repo "$GITHUB_REPOSITORY" --body-file "$body"
 
       - name: Upload the API diff report
         if: steps.semantic_diff.outputs.changed == 'true'
