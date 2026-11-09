@@ -1,5 +1,4 @@
 import { existsSync } from "node:fs";
-import { readFile } from "node:fs/promises";
 import path from "node:path";
 import type { FakeRepo } from "./fake-github.js";
 
@@ -14,13 +13,20 @@ export function hasClone(name: string): boolean {
   return existsSync(path.join(clonePath(name), "src/main/typesense_server.cpp"));
 }
 
-/** Answers GitHub requests from a local checkout, whatever branch is requested. */
-export function cloneRepo(name: string): FakeRepo {
+/** Whether the clone has this commit, so it can reproduce output extracted from it. */
+export function hasCommit(name: string, commit: string): boolean {
+  return (
+    hasClone(name) && Bun.spawnSync(["git", "-C", clonePath(name), "cat-file", "-e", `${commit}^{commit}`]).success
+  );
+}
+
+/** Answers GitHub requests from a local clone at one commit, whatever branch is requested. */
+export function cloneRepo(name: string, ref = "HEAD"): FakeRepo {
   const root = clonePath(name);
   return {
-    commit: async () => (await Bun.$`git -C ${root} rev-parse HEAD`.text()).trim(),
+    commit: async () => (await Bun.$`git -C ${root} rev-parse ${ref}`.text()).trim(),
     listFiles: async () => {
-      const listing = await Bun.$`git -C ${root} ls-tree -r HEAD`.text();
+      const listing = await Bun.$`git -C ${root} ls-tree -r ${ref}`.text();
       return listing
         .split("\n")
         .filter((line) => line.length > 0)
@@ -28,12 +34,9 @@ export function cloneRepo(name: string): FakeRepo {
         .filter(([meta]) => meta?.split(" ")[1] === "blob" && meta?.split(" ")[0] !== "120000")
         .map(([, filePath]) => filePath ?? "");
     },
-    readFile: async (_branch, filePath) => {
-      try {
-        return await readFile(path.join(root, filePath), "utf8");
-      } catch {
-        return undefined;
-      }
+    readFile: async (_ref, filePath) => {
+      const result = await Bun.$`git -C ${root} show ${`${ref}:${filePath}`}`.quiet().nothrow();
+      return result.exitCode === 0 ? result.text() : undefined;
     },
   };
 }

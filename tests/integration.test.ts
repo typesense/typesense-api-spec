@@ -1,4 +1,5 @@
 import { afterAll, afterEach, beforeEach, describe, expect, mock, spyOn, test } from "bun:test";
+import { readFileSync } from "node:fs";
 import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
@@ -6,7 +7,7 @@ import { runExtraction } from "../src/index.js";
 import type { ApiRouteSpec, ApiSpec } from "../src/types.js";
 import { expectToIncludeAll } from "./helpers/assert.js";
 import { stubGithub } from "./helpers/fake-github.js";
-import { clonePath, cloneRepo, hasClone, repoRoot } from "./helpers/local-clone.js";
+import { clonePath, cloneRepo, hasClone, hasCommit, repoRoot } from "./helpers/local-clone.js";
 
 // These run the whole pipeline on real Typesense source, with GitHub answered
 // from the gitignored clones in tmp/. They skip when the clones are absent:
@@ -26,7 +27,11 @@ afterEach(() => {
   restoreGithub();
 });
 
-const extractFromClone = async (clone: string, branch: string): Promise<{ spec: ApiSpec; text: string }> => {
+const extractFromClone = async (
+  clone: string,
+  branch: string,
+  ref?: string,
+): Promise<{ spec: ApiSpec; text: string }> => {
   const dir = path.join(await dirPromise, branch);
   const repoConfig = JSON.parse(await readFile(path.join(repoRoot, "config.json"), "utf8")) as object;
   const configPath = path.join(await dirPromise, `${branch}.json`);
@@ -41,7 +46,7 @@ const extractFromClone = async (clone: string, branch: string): Promise<{ spec: 
     }),
   );
 
-  restoreGithub = stubGithub(cloneRepo(clone));
+  restoreGithub = stubGithub(cloneRepo(clone, ref));
   const spec = await runExtraction({
     command: "extract",
     configPath,
@@ -68,23 +73,30 @@ const findRoute = (spec: ApiSpec, method: string, pathTemplate: string): ApiRout
 const paths = (parameters: ApiRouteSpec["bodyParams"]): readonly string[] =>
   parameters.map((parameter) => parameter.canonicalPath);
 
-describe.skipIf(!hasClone("typesense-v30"))("v30 clone", () => {
+// output/ records the Typesense commit it came from, so any clone that has that commit
+// can reproduce it, wherever the clone's own HEAD is. Fetch the clone if this skips.
+const committedText = readFileSync(path.join(repoRoot, "output/typesense_api_spec.json"), "utf8");
+const committed = JSON.parse(committedText) as ApiSpec;
+const committedCommit = committed.sourceCommit ?? "";
+const committedClone = ["typesense-v30", "typesense"].find((name) => hasCommit(name, committedCommit));
+
+describe.skipIf(committedClone === undefined)("committed output", () => {
   test(
-    "reproduces the committed output byte for byte",
+    "is reproduced byte for byte from the commit it records",
     async () => {
-      const { spec, text } = await extractFromClone("typesense-v30", "v30");
+      const { spec, text } = await extractFromClone(
+        committedClone ?? "",
+        committed.sourceBranch ?? "",
+        committedCommit,
+      );
       expect(spec.diagnostics).toEqual([]);
-      // Once a bot pull request moves output/ to a newer Typesense commit, there is
-      // nothing to compare the clone with. To compare, check out that commit in the clone.
-      const committed = await readFile(path.join(repoRoot, "output/typesense_api_spec.json"), "utf8");
-      if ((JSON.parse(committed) as ApiSpec).sourceCommit !== spec.sourceCommit) {
-        return;
-      }
-      expect(text === committed).toBe(true);
+      expect(text === committedText).toBe(true);
     },
     TIMEOUT_MS,
   );
+});
 
+describe.skipIf(!hasClone("typesense-v30"))("v30 clone", () => {
   test(
     "cites where a parameter is read or named, not where it is masked or looked up",
     async () => {
