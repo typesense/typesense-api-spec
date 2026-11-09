@@ -83,9 +83,23 @@ jobs:
             --json-output "$RUNNER_TEMP/typesense-api-diff.json" \
             --markdown-output "$RUNNER_TEMP/typesense-api-diff.md"
           jq -r '"changed=\(.changed)"' "$RUNNER_TEMP/typesense-api-diff.json" >> "$GITHUB_OUTPUT"
+          cat "$RUNNER_TEMP/typesense-api-diff.md" >> "$GITHUB_STEP_SUMMARY"
+
+      # There is one bot branch, so a run from any other branch, such as a manual run to
+      # test a change, only reports. It must not push over the open pull request's branch.
+      - name: Only update the pull request from the default branch
+        id: branch
+        run: |
+          default=$(gh repo view "$GITHUB_REPOSITORY" --json defaultBranchRef --jq .defaultBranchRef.name)
+          if [ "$GITHUB_REF_NAME" = "$default" ]; then
+            echo "publish=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "::notice::Ran on $GITHUB_REF_NAME, not $default, so the report is only in this run's summary."
+          fi
 
       # Compare the API shape, not the files: source line numbers move on most upstream commits.
       - name: Find the open pull request
+        if: steps.branch.outputs.publish == 'true'
         id: pull_request
         run: |
           number=$(gh pr list --repo "$GITHUB_REPOSITORY" --head "$BOT_BRANCH" --base "$GITHUB_REF_NAME" --state open --json number --jq '.[0].number // ""')
@@ -94,7 +108,9 @@ jobs:
       # output/ on the base branch can reach this shape without openapi.yml changing, for
       # example when an extractor change regenerates it. Edits on the branch still need review.
       - name: Close the pull request when the API shape no longer differs
-        if: steps.semantic_diff.outputs.changed != 'true' && steps.pull_request.outputs.number != ''
+        if: >-
+          steps.branch.outputs.publish == 'true' && steps.semantic_diff.outputs.changed != 'true' &&
+          steps.pull_request.outputs.number != ''
         env:
           PULL_REQUEST: ${{ steps.pull_request.outputs.number }}
         run: |
@@ -122,7 +138,7 @@ jobs:
           path: ${{ runner.temp }}/typesense-api-diff.md
 
       - name: Commit extracted artifacts to the bot branch
-        if: steps.semantic_diff.outputs.changed == 'true'
+        if: steps.branch.outputs.publish == 'true' && steps.semantic_diff.outputs.changed == 'true'
         id: bot_branch
         env:
           PULL_REQUEST: ${{ steps.pull_request.outputs.number }}
@@ -162,7 +178,9 @@ jobs:
           git push origin "$BOT_BRANCH"
 
       - name: Open or update the pull request
-        if: steps.semantic_diff.outputs.changed == 'true' && steps.bot_branch.outputs.up_to_date != 'true'
+        if: >-
+          steps.branch.outputs.publish == 'true' && steps.semantic_diff.outputs.changed == 'true' &&
+          steps.bot_branch.outputs.up_to_date != 'true'
         env:
           PULL_REQUEST: ${{ steps.pull_request.outputs.number }}
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
