@@ -546,6 +546,22 @@ describe("JSON objects used as maps", () => {
     expect(types.get("n")).toBe("uint");
   });
 
+  test("a branch that uses a key's value before leaving handles that field", async () => {
+    const { body } = await extractHandler(
+      handlerWithBody(`
+        for (auto& it : body.items()) {
+          if (it.key() == "a" || it.key() == "b") { use(it.value()); continue; }
+          if (it.key() == "c") { return process(it); }
+          if (it.key() == "refused") { return error("Field " + it.key() + " is not allowed"); }
+        }
+        for (auto& [key, value] : body["nested"].items()) {
+          if (key == "d") { use(value); continue; }
+          if (key == "skipped") { continue; }
+        }`),
+    );
+    expect(body).toEqual(["a", "b", "c", "nested", "nested.d"]);
+  });
+
   test("a key skip list covers every key it names", async () => {
     const { body } = await extractHandler(
       handlerWithBody(`

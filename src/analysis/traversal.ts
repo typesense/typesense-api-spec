@@ -865,15 +865,18 @@ function collectKeyComparison(
     return;
   }
 
-  if (keyOwner.location === "body-root" && isRejectingKeyCheck(node)) {
+  if (keyOwner.location === "body-root" && isRejectingKeyCheck(node, keyOwner, state)) {
     state.collector.markBodyPathRejected(normalizePathSegments([...keyOwner.segments, key]));
     return;
   }
   addParameter(keyOwner, [key], state, node);
 }
 
-/** `if (item.key() == "x") { continue; }`: the server ignores or refuses that field. */
-function isRejectingKeyCheck(comparison: SyntaxNode): boolean {
+/**
+ * `if (item.key() == "x") { continue; }`: the server ignores or refuses that field.
+ * A branch that uses the item's value before leaving handles the field instead.
+ */
+function isRejectingKeyCheck(comparison: SyntaxNode, keyOwner: AliasTarget, state: AnalysisState): boolean {
   if (childForField(comparison, "operator")?.text !== "==") {
     return false;
   }
@@ -895,7 +898,21 @@ function isRejectingKeyCheck(comparison: SyntaxNode): boolean {
     consequence?.type === "compound_statement" ?
       consequence.namedChildren.filter((child) => child.type !== "comment").at(-1)
     : consequence;
-  return lastStatement?.type === "continue_statement" || lastStatement?.type === "return_statement";
+  if (lastStatement?.type !== "continue_statement" && lastStatement?.type !== "return_statement") {
+    return false;
+  }
+
+  const itemSegments = normalizePathSegments([...keyOwner.segments, MAP_KEY_SEGMENT]);
+  const usesItem = consequence?.descendantsOfType("identifier").some((identifier) => {
+    const target = state.aliases.get(identifier.text);
+    if (target?.location !== "body-root" || normalizePathSegments(target.segments) !== itemSegments) {
+      return false;
+    }
+    // Naming the key, as in an error message, doesn't use the value.
+    const access = identifier.parent;
+    return !(access?.type === "field_expression" && childForField(access, "field")?.text === "key");
+  });
+  return usesItem !== true;
 }
 
 /** `if (x.count(k) == 0) { x[k] = default; }` fills in a default; it doesn't use what the client sent. */
