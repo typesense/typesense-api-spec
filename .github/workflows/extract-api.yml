@@ -188,16 +188,9 @@ jobs:
             fi
           fi
 
-          # Source lines move on most upstream commits, so commit only a new API shape.
-          git -C "$bot" show HEAD:output/typesense_api_spec.json > "$RUNNER_TEMP/branch-typesense-api-spec.json"
-          bun src/cli.ts semantic-diff \
-            --previous "$RUNNER_TEMP/branch-typesense-api-spec.json" \
-            --next output/typesense_api_spec.json \
-            --json-output "$RUNNER_TEMP/branch-api-diff.json"
-          if [ "$(jq -r .changed "$RUNNER_TEMP/branch-api-diff.json")" = "true" ]; then
-            extracted
-            git -C "$bot" commit -m "chore: update extracted Typesense API artifacts"
-          fi
+          # test.yml checks output/ byte for byte against this code, so commit any difference.
+          extracted
+          git -C "$bot" diff --cached --quiet || git -C "$bot" commit -m "chore: update extracted Typesense API artifacts"
 
           if [ "$(git -C "$bot" rev-parse HEAD)" = "$branch_head" ]; then
             echo "The open pull request is already up to date."
