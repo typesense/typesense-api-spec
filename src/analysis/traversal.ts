@@ -252,11 +252,15 @@ function analyzeStatement(
     statement.type === "switch_statement"
   ) {
     const scopedState = cloneState(state);
-    analyzeOptionalDeclaration(childForField(statement, "condition"), scopedState, context, visited, depth);
     const body = childForField(statement, "body");
-    if (body !== undefined) {
-      analyzeStatement(body, cloneState(scopedState), context, visited, depth);
-    }
+    // In source order, so a do-while's condition sees what its body assigned.
+    statement.namedChildren.forEach((child) => {
+      if (child.id === body?.id) {
+        analyzeStatement(child, cloneState(scopedState), context, visited, depth);
+      } else {
+        analyzeOptionalDeclaration(child, scopedState, context, visited, depth);
+      }
+    });
     return;
   }
 
