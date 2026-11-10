@@ -29,7 +29,7 @@ export async function loadConfig(configPath: string, cliOptions: CliOptions): Pr
   return {
     rootDir: parsedConfig.root_dir,
     routeFile: parsedConfig.route_file,
-    sourceBranch: parsedConfig.source_branch,
+    sourceBranch: cliOptions.sourceBranch ?? parsedConfig.source_branch,
     outputPath:
       cliOptions.outputPath !== undefined ?
         path.resolve(cliOptions.outputPath)

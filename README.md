@@ -33,6 +33,10 @@ bun run lint
 # Extract. A token is optional, but avoids the anonymous GitHub API rate limit.
 GITHUB_TOKEN=$(gh auth token) bun src/cli.ts extract --config ./config.json
 
+# After changing the extractor, regenerate output/ from the release it records. Only the
+# bot pull request moves output/ to a newer release, so openapi.yml gets reviewed first.
+bun src/cli.ts extract --source-branch "$(jq -r .sourceBranch output/typesense_api_spec.json)"
+
 # Compare two extracted specs.
 bun src/cli.ts semantic-diff --previous old.json --next new.json --markdown-output diff.md
 ```

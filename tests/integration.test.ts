@@ -52,6 +52,7 @@ const extractFromClone = async (
   const spec = await runExtraction({
     command: "extract",
     configPath,
+    sourceBranch: undefined,
     outputPath: undefined,
     baseUrl: undefined,
     maxCallDepth: undefined,

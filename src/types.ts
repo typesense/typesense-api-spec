@@ -134,6 +134,7 @@ export interface ExtractorConfig {
 export interface CliOptions {
   readonly command: "extract";
   readonly configPath: string | undefined;
+  readonly sourceBranch: string | undefined;
   readonly outputPath: string | undefined;
   readonly baseUrl: string | undefined;
   readonly maxCallDepth: number | undefined;

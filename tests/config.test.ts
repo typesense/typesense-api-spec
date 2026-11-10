@@ -12,6 +12,7 @@ afterAll(async () => rm(await dirPromise, { recursive: true, force: true }));
 const noCliOptions: CliOptions = {
   command: "extract",
   configPath: undefined,
+  sourceBranch: undefined,
   outputPath: undefined,
   baseUrl: undefined,
   maxCallDepth: undefined,
@@ -47,12 +48,14 @@ describe("loadConfig", () => {
       {
         ...noCliOptions,
         maxCallDepth: 9,
+        sourceBranch: "v29.0",
         baseUrl: "http://cli",
         failOnUnresolved: false,
         outputPath: "relative.json",
       },
     );
     expect(config.maxCallDepth).toBe(9);
+    expect(config.sourceBranch).toBe("v29.0");
     expect(config.baseUrl).toBe("http://cli");
     expect(config.failOnUnresolved).toBe(false);
     expect(config.outputPath).toBe(path.resolve("relative.json"));

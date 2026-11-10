@@ -47,6 +47,7 @@ function parseExtractCli(argv: readonly string[]): CliOptions {
     allowPositionals: true,
     options: {
       config: { type: "string" },
+      "source-branch": { type: "string" },
       output: { type: "string" },
       "base-url": { type: "string" },
       "max-call-depth": { type: "string" },
@@ -74,6 +75,7 @@ function parseExtractCli(argv: readonly string[]): CliOptions {
   return {
     command: "extract",
     configPath: values.config,
+    sourceBranch: values["source-branch"],
     outputPath: values.output,
     baseUrl: values["base-url"],
     maxCallDepth,
