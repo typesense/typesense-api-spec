@@ -60,6 +60,11 @@ function scanConstants(sourceText: string): readonly ConstantEntry[] {
       }
     }
 
+    // A function's locals are not global constants; the traversal records them when it
+    // analyzes the function. A body with a parse error may hide later global code, though.
+    if ((node.type === "function_definition" && !node.hasError) || node.type === "lambda_expression") {
+      return;
+    }
     const scopeField = scopeNameFields[node.type];
     const scopeName = scopeField === undefined ? undefined : childForField(node, scopeField)?.text;
     const childScope = scopeName === undefined ? scope : [...scope, scopeName];
