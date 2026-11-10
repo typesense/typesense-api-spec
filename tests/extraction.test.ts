@@ -87,6 +87,19 @@ describe("variable scope", () => {
     expect(body).toContain("still_body");
   });
 
+  test("names declared in a condition or a try block are scoped to it", async () => {
+    const { body } = await extractHandler(
+      handlerWithBody(`
+      nlohmann::json s = body["s"];
+      if (nlohmann::json s = other(); z) { s = body["inner"]; }
+      s["outer"];
+      try { std::string body = "x"; } catch (const std::exception& e) { body["in_catch"]; }
+      body["after_try"];`),
+    );
+    expectToIncludeAll(body, ["s.outer", "in_catch", "after_try"]);
+    expect(body).not.toContain("inner.outer");
+  });
+
   test("library methods on std locals are not followed as helpers", async () => {
     const { types } = await extractHandler(
       handlerWithBody(

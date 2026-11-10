@@ -271,13 +271,11 @@ function analyzeStatement(
   }
 
   if (statement.type === "try_statement") {
-    const compoundChildren = statement.namedChildren.filter((child) => child.type === "compound_statement");
-    const [firstChild, ...restChildren] = compoundChildren;
-    if (firstChild !== undefined) {
-      analyzeBlock(firstChild, state, context, visited, depth);
-    }
-    restChildren.forEach((child) => {
-      analyzeBlock(child, cloneState(state), context, visited, depth);
+    statement.namedChildren.forEach((child) => {
+      const block = child.type === "catch_clause" ? childForField(child, "body") : child;
+      if (block !== undefined) {
+        analyzeStatement(block, state, context, visited, depth);
+      }
     });
     return;
   }
