@@ -100,6 +100,16 @@ describe("variable scope", () => {
     expect(body).not.toContain("inner.outer");
   });
 
+  test("a lambda is followed again when what it captures changes", async () => {
+    const { body } = await extractHandler(
+      handlerWithBody(`
+      nlohmann::json section = body["a"];
+      auto read = [&](const std::string& key) { section[key]; };
+      read("x"); section = body["b"]; read("x");`),
+    );
+    expectToIncludeAll(body, ["a.x", "b.x"]);
+  });
+
   test("library methods on std locals are not followed as helpers", async () => {
     const { types } = await extractHandler(
       handlerWithBody(

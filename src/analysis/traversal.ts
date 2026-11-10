@@ -1084,9 +1084,10 @@ function collectLambdaCall(
   if (boundAliases.size === 0 && boundStrings.size === 0) {
     return;
   }
+  // The body also reads the aliases it captures, so they belong in the key.
   const visitKey = `lambda@${serializeVisitKey(
-    `${state.definition.name}:${lambda.startIndex}`,
-    boundAliases,
+    `${state.definition.qualifiedName}:${lambda.startIndex}`,
+    new Map([...state.aliases, ...boundAliases]),
     boundStrings,
   )}`;
   if (visited.has(visitKey) || depth >= context.maxCallDepth) {
