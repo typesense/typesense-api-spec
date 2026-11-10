@@ -16,6 +16,7 @@ import {
   resolveExpressionNode,
   resolveLoopItemTarget,
   resolveStringTokenNode,
+  resolveSubscriptSegment,
 } from "./resolution.js";
 import {
   extractIdentifierName,
@@ -830,7 +831,7 @@ function collectSubscriptExpression(node: SyntaxNode, state: AnalysisState): voi
     return;
   }
 
-  const segment = resolveStringTokenNode(indexNode, state.constants) ?? "[]";
+  const segment = resolveSubscriptSegment(indexNode, state.constants);
   state.debug(`subscript ${baseNode.text}[${indexNode.text}] => ${segment}`);
   addParameter(resolved, [segment], state, node);
 }

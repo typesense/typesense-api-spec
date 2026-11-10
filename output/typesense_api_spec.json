@@ -1241,7 +1241,7 @@
           "name": "model_config",
           "canonicalPath": "fields[].embed.model_config",
           "location": "body",
-          "valueType": "object | string[]",
+          "valueType": "object",
           "sources": [
             {
               "filePath": "https://raw.githubusercontent.com/typesense/typesense/v30.2/src/field.cpp",
@@ -2133,7 +2133,7 @@
           "name": "model_config",
           "canonicalPath": "fields[].embed.model_config",
           "location": "body",
-          "valueType": "object | string[]",
+          "valueType": "object",
           "sources": [
             {
               "filePath": "https://raw.githubusercontent.com/typesense/typesense/v30.2/src/field.cpp",

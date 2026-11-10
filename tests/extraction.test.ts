@@ -816,6 +816,16 @@ describe("loops", () => {
     expect(body).toContain("list");
   });
 
+  test("a loop over key names indexes an object, not an array", async () => {
+    const { types } = await extractHandler(
+      handlerWithBody(`
+        if (!body["cfg"].is_object()) { return false; }
+        std::vector<std::string> keys = {"model_name", "api_key"};
+        for (auto& key : keys) { if (!body["cfg"][key].is_string()) { return false; } }`),
+    );
+    expect(types.get("cfg")).toBe("object");
+  });
+
   test("creates item aliases for body iterables", async () => {
     const { body } = await extractHandler(handlerWithBody(`for (auto& item : body["items"]) { item["sku"]; }`));
     expect(body).toContain("items[].sku");

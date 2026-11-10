@@ -3,6 +3,7 @@ import { MAP_KEY_SEGMENT } from "../text.js";
 import type { AliasTarget, FunctionParameter } from "../types.js";
 import type { SyntaxNode } from "tree-sitter";
 import {
+  extractLoopAliasName,
   extractSubscriptIndexNode,
   parseCallExpressionNode,
   parseFieldExpression,
@@ -184,7 +185,7 @@ function resolveSubscriptExpression(
     return undefined;
   }
 
-  const segment = resolveStringTokenNode(indexNode, constants) ?? "[]";
+  const segment = resolveSubscriptSegment(indexNode, constants);
   return {
     location: baseTarget.location,
     segments: [...baseTarget.segments, segment],
@@ -194,6 +195,24 @@ function resolveSubscriptExpression(
 function extractTerminalName(value: string): string | undefined {
   const parts = value.split("::");
   return parts[parts.length - 1];
+}
+
+/**
+ * The path segment a subscript names. An index that is not a known string is a
+ * position, unless it is the variable of an enclosing range-for loop, as in
+ * `for (auto& key : keys) object[key]`, which names any key.
+ */
+export function resolveSubscriptSegment(indexNode: SyntaxNode, constants: ReadonlyMap<string, string>): string {
+  const segment = resolveStringTokenNode(indexNode, constants);
+  if (segment !== undefined) {
+    return segment;
+  }
+  for (let ancestor = indexNode.parent; ancestor !== null; ancestor = ancestor.parent) {
+    if (ancestor.type === "for_range_loop" && extractLoopAliasName(ancestor) === indexNode.text) {
+      return MAP_KEY_SEGMENT;
+    }
+  }
+  return "[]";
 }
 
 export function resolveLoopItemTarget(
