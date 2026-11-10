@@ -871,8 +871,9 @@ describe("parameters read through a loop over the params map", () => {
     expect(types.get("per_page")).toBe("uint");
     expect(types.get("exhaustive")).toBe("boolean");
     expect(types.get("filter_by")).toBe("string");
-    expect(types.get("query_by")).toBe("string[]");
-    expect(types.get("num_typos")).toBe("uint[]");
+    // A list in the params map is one comma-separated string.
+    expect(types.get("query_by")).toBe("string");
+    expect(types.get("num_typos")).toBe("string");
     expect(types.get("lambda")).toBe("number");
   });
 

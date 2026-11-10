@@ -152,7 +152,7 @@ describe.skipIf(!hasCommit(CLONE, V30))("v30", () => {
       expect(paths(search)).not.toContain("collection");
       expect(paths(search)).not.toContain("name");
       expect(search.find((parameter) => parameter.canonicalPath === "per_page")?.valueType).toBe("uint");
-      expect(search.find((parameter) => parameter.canonicalPath === "query_by")?.valueType).toBe("string[]");
+      expect(search.find((parameter) => parameter.canonicalPath === "query_by")?.valueType).toBe("string");
 
       expectToIncludeAll(multiSearch, ["searches[].q", "searches[].query_by"]);
       expectToIncludeAll(paths(findRoute(spec, "POST", "/conversations/models").bodyParams), [

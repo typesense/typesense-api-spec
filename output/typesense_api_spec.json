@@ -3693,7 +3693,7 @@
           "name": "exclude_fields",
           "canonicalPath": "exclude_fields",
           "location": "query",
-          "valueType": "string[]",
+          "valueType": "string",
           "sources": [
             {
               "filePath": "https://raw.githubusercontent.com/typesense/typesense/v30.2/src/collection.cpp",
@@ -3719,7 +3719,7 @@
           "name": "facet_by",
           "canonicalPath": "facet_by",
           "location": "query",
-          "valueType": "string[]",
+          "valueType": "string",
           "sources": [
             {
               "filePath": "https://raw.githubusercontent.com/typesense/typesense/v30.2/src/collection.cpp",
@@ -3758,7 +3758,7 @@
           "name": "facet_return_parent",
           "canonicalPath": "facet_return_parent",
           "location": "query",
-          "valueType": "string[]",
+          "valueType": "string",
           "sources": [
             {
               "filePath": "https://raw.githubusercontent.com/typesense/typesense/v30.2/src/collection.cpp",
@@ -3849,7 +3849,7 @@
           "name": "group_by",
           "canonicalPath": "group_by",
           "location": "query",
-          "valueType": "string[]",
+          "valueType": "string",
           "sources": [
             {
               "filePath": "https://raw.githubusercontent.com/typesense/typesense/v30.2/src/collection.cpp",
@@ -3979,7 +3979,7 @@
           "name": "include_fields",
           "canonicalPath": "include_fields",
           "location": "query",
-          "valueType": "string[]",
+          "valueType": "string",
           "sources": [
             {
               "filePath": "https://raw.githubusercontent.com/typesense/typesense/v30.2/src/collection.cpp",
@@ -4161,7 +4161,7 @@
           "name": "num_typos",
           "canonicalPath": "num_typos",
           "location": "query",
-          "valueType": "uint[]",
+          "valueType": "string",
           "sources": [
             {
               "filePath": "https://raw.githubusercontent.com/typesense/typesense/v30.2/src/collection.cpp",
@@ -4408,7 +4408,7 @@
           "name": "query_by",
           "canonicalPath": "query_by",
           "location": "query",
-          "valueType": "string[]",
+          "valueType": "string",
           "sources": [
             {
               "filePath": "https://raw.githubusercontent.com/typesense/typesense/v30.2/src/collection.cpp",
@@ -4421,7 +4421,7 @@
           "name": "query_by_weights",
           "canonicalPath": "query_by_weights",
           "location": "query",
-          "valueType": "uint[]",
+          "valueType": "string",
           "sources": [
             {
               "filePath": "https://raw.githubusercontent.com/typesense/typesense/v30.2/src/collection.cpp",
@@ -4577,7 +4577,7 @@
           "name": "synonym_sets",
           "canonicalPath": "synonym_sets",
           "location": "query",
-          "valueType": "string[]",
+          "valueType": "string",
           "sources": [
             {
               "filePath": "https://raw.githubusercontent.com/typesense/typesense/v30.2/src/collection.cpp",
@@ -6807,7 +6807,7 @@
           "name": "exclude_fields",
           "canonicalPath": "exclude_fields",
           "location": "query",
-          "valueType": "string[]",
+          "valueType": "string",
           "sources": [
             {
               "filePath": "https://raw.githubusercontent.com/typesense/typesense/v30.2/src/collection.cpp",
@@ -6833,7 +6833,7 @@
           "name": "facet_by",
           "canonicalPath": "facet_by",
           "location": "query",
-          "valueType": "string[]",
+          "valueType": "string",
           "sources": [
             {
               "filePath": "https://raw.githubusercontent.com/typesense/typesense/v30.2/src/collection.cpp",
@@ -6872,7 +6872,7 @@
           "name": "facet_return_parent",
           "canonicalPath": "facet_return_parent",
           "location": "query",
-          "valueType": "string[]",
+          "valueType": "string",
           "sources": [
             {
               "filePath": "https://raw.githubusercontent.com/typesense/typesense/v30.2/src/collection.cpp",
@@ -6963,7 +6963,7 @@
           "name": "group_by",
           "canonicalPath": "group_by",
           "location": "query",
-          "valueType": "string[]",
+          "valueType": "string",
           "sources": [
             {
               "filePath": "https://raw.githubusercontent.com/typesense/typesense/v30.2/src/collection.cpp",
@@ -7093,7 +7093,7 @@
           "name": "include_fields",
           "canonicalPath": "include_fields",
           "location": "query",
-          "valueType": "string[]",
+          "valueType": "string",
           "sources": [
             {
               "filePath": "https://raw.githubusercontent.com/typesense/typesense/v30.2/src/collection.cpp",
@@ -7288,7 +7288,7 @@
           "name": "num_typos",
           "canonicalPath": "num_typos",
           "location": "query",
-          "valueType": "uint[]",
+          "valueType": "string",
           "sources": [
             {
               "filePath": "https://raw.githubusercontent.com/typesense/typesense/v30.2/src/collection.cpp",
@@ -7535,7 +7535,7 @@
           "name": "query_by",
           "canonicalPath": "query_by",
           "location": "query",
-          "valueType": "string[]",
+          "valueType": "string",
           "sources": [
             {
               "filePath": "https://raw.githubusercontent.com/typesense/typesense/v30.2/src/collection.cpp",
@@ -7548,7 +7548,7 @@
           "name": "query_by_weights",
           "canonicalPath": "query_by_weights",
           "location": "query",
-          "valueType": "uint[]",
+          "valueType": "string",
           "sources": [
             {
               "filePath": "https://raw.githubusercontent.com/typesense/typesense/v30.2/src/collection.cpp",
@@ -7704,7 +7704,7 @@
           "name": "synonym_sets",
           "canonicalPath": "synonym_sets",
           "location": "query",
-          "valueType": "string[]",
+          "valueType": "string",
           "sources": [
             {
               "filePath": "https://raw.githubusercontent.com/typesense/typesense/v30.2/src/collection.cpp",
@@ -8057,7 +8057,7 @@
           "name": "exclude_fields",
           "canonicalPath": "searches[].exclude_fields",
           "location": "body",
-          "valueType": "string[]",
+          "valueType": "string",
           "sources": [
             {
               "filePath": "https://raw.githubusercontent.com/typesense/typesense/v30.2/src/collection.cpp",
@@ -8083,7 +8083,7 @@
           "name": "facet_by",
           "canonicalPath": "searches[].facet_by",
           "location": "body",
-          "valueType": "string[]",
+          "valueType": "string",
           "sources": [
             {
               "filePath": "https://raw.githubusercontent.com/typesense/typesense/v30.2/src/collection.cpp",
@@ -8122,7 +8122,7 @@
           "name": "facet_return_parent",
           "canonicalPath": "searches[].facet_return_parent",
           "location": "body",
-          "valueType": "string[]",
+          "valueType": "string",
           "sources": [
             {
               "filePath": "https://raw.githubusercontent.com/typesense/typesense/v30.2/src/collection.cpp",
@@ -8213,7 +8213,7 @@
           "name": "group_by",
           "canonicalPath": "searches[].group_by",
           "location": "body",
-          "valueType": "string[]",
+          "valueType": "string",
           "sources": [
             {
               "filePath": "https://raw.githubusercontent.com/typesense/typesense/v30.2/src/collection.cpp",
@@ -8343,7 +8343,7 @@
           "name": "include_fields",
           "canonicalPath": "searches[].include_fields",
           "location": "body",
-          "valueType": "string[]",
+          "valueType": "string",
           "sources": [
             {
               "filePath": "https://raw.githubusercontent.com/typesense/typesense/v30.2/src/collection.cpp",
@@ -8525,7 +8525,7 @@
           "name": "num_typos",
           "canonicalPath": "searches[].num_typos",
           "location": "body",
-          "valueType": "uint[]",
+          "valueType": "string",
           "sources": [
             {
               "filePath": "https://raw.githubusercontent.com/typesense/typesense/v30.2/src/collection.cpp",
@@ -8772,7 +8772,7 @@
           "name": "query_by",
           "canonicalPath": "searches[].query_by",
           "location": "body",
-          "valueType": "string[]",
+          "valueType": "string",
           "sources": [
             {
               "filePath": "https://raw.githubusercontent.com/typesense/typesense/v30.2/src/collection.cpp",
@@ -8785,7 +8785,7 @@
           "name": "query_by_weights",
           "canonicalPath": "searches[].query_by_weights",
           "location": "body",
-          "valueType": "uint[]",
+          "valueType": "string",
           "sources": [
             {
               "filePath": "https://raw.githubusercontent.com/typesense/typesense/v30.2/src/collection.cpp",
@@ -8941,7 +8941,7 @@
           "name": "synonym_sets",
           "canonicalPath": "searches[].synonym_sets",
           "location": "body",
-          "valueType": "string[]",
+          "valueType": "string",
           "sources": [
             {
               "filePath": "https://raw.githubusercontent.com/typesense/typesense/v30.2/src/collection.cpp",

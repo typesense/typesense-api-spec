@@ -709,7 +709,10 @@ function collectKeyTableLookup(callInfo: ParsedCall, state: AnalysisState): void
   const keyOwner = resolveKeyOwner(firstArgument, state);
   if (keyOwner !== undefined) {
     state.debug(`table lookup ${callInfo.calleeName} => ${table.keys.length} keys`);
-    table.keys.forEach((key) => addParameter(keyOwner, [key.name], state, key.node, table.valueType));
+    // A params-map value is one string, so a list arrives comma-separated in it.
+    const valueType =
+      keyOwner.location === "params-root" && table.valueType?.endsWith("[]") ? "string" : table.valueType;
+    table.keys.forEach((key) => addParameter(keyOwner, [key.name], state, key.node, valueType));
   }
 }
 
