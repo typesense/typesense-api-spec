@@ -89,6 +89,8 @@ interface AnalysisState {
   readonly valueTypes: Map<string, TypePrimitives>;
   /** Enclosing scope; assignments propagate to it unless the name is declared here. */
   readonly parent: AnalysisState | undefined;
+  /** A branch, loop body, catch block or lambda, which can be skipped when the enclosing scope runs. */
+  readonly mayNotRun: boolean;
   /** Variables declared in this scope (they shadow outer ones), with their declared type. */
   readonly declared: Map<string, string>;
   /** Lambdas assigned to local variables, followed when they are called. */
@@ -157,6 +159,7 @@ export function analyzeFunction(
     constants,
     valueTypes: new Map<string, TypePrimitives>(),
     parent: undefined,
+    mayNotRun: false,
     declared: new Map(definition.parameters.map((parameter) => [parameter.name, parameter.typeText])),
     lambdas: new Map<string, SyntaxNode>(),
     keyTables: new Map<string, KeyTable>(),
@@ -237,11 +240,11 @@ function analyzeStatement(
     analyzeOptionalDeclaration(childForField(statement, "condition"), scopedState, context, visited, depth);
     const consequence = childForField(statement, "consequence");
     if (consequence !== undefined) {
-      analyzeStatement(consequence, cloneState(scopedState), context, visited, depth);
+      analyzeStatement(consequence, cloneState(scopedState, true), context, visited, depth);
     }
     const alternative = childForField(statement, "alternative");
     alternative?.namedChildren.forEach((branch) => {
-      analyzeStatement(branch, cloneState(scopedState), context, visited, depth);
+      analyzeStatement(branch, cloneState(scopedState, true), context, visited, depth);
     });
     return;
   }
@@ -256,7 +259,7 @@ function analyzeStatement(
     // In source order, so a do-while's condition sees what its body assigned.
     statement.namedChildren.forEach((child) => {
       if (child.id === body?.id) {
-        analyzeStatement(child, cloneState(scopedState), context, visited, depth);
+        analyzeStatement(child, cloneState(scopedState, statement.type !== "do_statement"), context, visited, depth);
       } else {
         analyzeOptionalDeclaration(child, scopedState, context, visited, depth);
       }
@@ -276,9 +279,10 @@ function analyzeStatement(
 
   if (statement.type === "try_statement") {
     statement.namedChildren.forEach((child) => {
-      const block = child.type === "catch_clause" ? childForField(child, "body") : child;
+      const isCatch = child.type === "catch_clause";
+      const block = isCatch ? childForField(child, "body") : child;
       if (block !== undefined) {
-        analyzeStatement(block, state, context, visited, depth);
+        analyzeStatement(block, isCatch ? cloneState(state, true) : state, context, visited, depth);
       }
     });
     return;
@@ -398,7 +402,7 @@ function handleForRangeLoop(
 
   walkExpression(iterableNode, state, context, visited, depth);
 
-  const scopedState = cloneState(state);
+  const scopedState = cloneState(state, true);
   const bindingNames = structuredBindingNames(statement);
   const aliasName = bindingNames === undefined ? extractLoopAliasName(statement) : undefined;
   if (aliasName === undefined && bindingNames === undefined) {
@@ -501,7 +505,7 @@ function handleForLoop(
       analyzeOptionalDeclaration(child, scopedState, context, visited, depth);
     });
   if (body !== undefined) {
-    analyzeStatement(body, cloneState(scopedState), context, visited, depth);
+    analyzeStatement(body, cloneState(scopedState, true), context, visited, depth);
   }
 }
 
@@ -637,7 +641,12 @@ function collectAssignmentExpression(node: SyntaxNode, state: AnalysisState): vo
       assignInScope(state, aliasName, (scope) => scope.aliases.delete(aliasName));
     }
     if (resolved !== undefined) {
-      assignInScope(state, aliasName, (scope) => scope.aliases.set(aliasName, resolved));
+      // Past a scope that may not run, an enclosing scope keeps any alias it already has.
+      let mayNotRun = false;
+      assignInScope(state, aliasName, (scope) => {
+        if (!mayNotRun || !scope.aliases.has(aliasName)) scope.aliases.set(aliasName, resolved);
+        mayNotRun ||= scope.mayNotRun;
+      });
       state.debug(`assign ${aliasName} => ${resolved.location}:${normalizePathSegments(resolved.segments)}`);
     }
     if (inferredType !== undefined) {
@@ -1116,7 +1125,7 @@ function analyzeLambda(
     return;
   }
 
-  const scopedState = cloneState(state);
+  const scopedState = cloneState(state, true);
   lambdaParameterNames(lambda).forEach((name) => {
     if (name === undefined) return;
     scopedState.declared.set(name, "");
@@ -1388,12 +1397,13 @@ function isLibraryType(typeText: string | undefined): boolean {
   return typeText !== undefined && /^(?:const\s+)?(?:std|nlohmann)::(?!shared_ptr|unique_ptr)/.test(typeText.trim());
 }
 
-function cloneState(state: AnalysisState): AnalysisState {
+function cloneState(state: AnalysisState, mayNotRun = false): AnalysisState {
   return {
     aliases: new Map(state.aliases),
     constants: new Map(state.constants),
     valueTypes: new Map(state.valueTypes),
     parent: state,
+    mayNotRun,
     declared: new Map<string, string>(),
     lambdas: new Map(state.lambdas),
     keyTables: new Map(state.keyTables),

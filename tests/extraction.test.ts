@@ -87,6 +87,18 @@ describe("variable scope", () => {
     expect(body).toContain("still_body");
   });
 
+  test("a branch that may not run keeps the outer alias, and a block that always runs replaces it", async () => {
+    const { body } = await extractHandler(
+      handlerWithBody(`
+      nlohmann::json a = body["a"]; if (z) { a = body["a2"]; } a["kept"];
+      nlohmann::json b = body["b"]; try { b = body["b2"]; } catch (...) {} b["replaced"];
+      nlohmann::json c; do { c = body["c"]; } while (c["more"].get<bool>());`),
+    );
+    expectToIncludeAll(body, ["a.kept", "b2.replaced", "c.more"]);
+    expect(body).not.toContain("a2.kept");
+    expect(body).not.toContain("b.replaced");
+  });
+
   test("names declared in a condition or a try block are scoped to it", async () => {
     const { body } = await extractHandler(
       handlerWithBody(`
