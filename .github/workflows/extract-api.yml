@@ -217,7 +217,7 @@ jobs:
           fi
           # output/ on the base branch holds the reviewed API shape, so only merging moves it.
           printf '\n---\n\n%s\n' \
-            "Nothing to change in \`openapi.yml\`? Merge anyway: that records these changes as reviewed. Closing this only hides them until the next run opens a new pull request." \
+            "Nothing to change in \`openapi.yml\`? Merge anyway: that records these changes as reviewed. Closing this only hides them until the next run opens a new pull request. Each run rewrites this description, so leave notes as comments." \
             >> "$body"
 
           if [ -n "$PULL_REQUEST" ]; then
