@@ -122,13 +122,26 @@ async function resolveSourceCommit(sourceBranch: string): Promise<string> {
   return response.data.sha;
 }
 
-/** A link to a raw source file's line, pinned to a commit when one is known. */
-export function githubBlobUrl(rawUrl: string, line: number, commit: string | undefined): string | undefined {
+/**
+ * A raw source file's repo path, and a link to its line, pinned to a commit when one is
+ * known. The source branch follows the repo in the raw URL and can itself contain a slash.
+ */
+export function githubBlobLink(
+  rawUrl: string,
+  line: number,
+  sourceBranch: string | undefined,
+  commit: string | undefined,
+): { readonly filePath: string; readonly url: string } | undefined {
   if (!rawUrl.startsWith(`${GITHUB_RAW_BASE_URL}/`)) {
     return undefined;
   }
-  const [ref, ...filePath] = rawUrl.slice(GITHUB_RAW_BASE_URL.length + 1).split("/");
-  return `${GITHUB_WEB_URL}/blob/${commit ?? ref ?? ""}/${filePath.join("/")}#L${String(line)}`;
+  const refAndPath = rawUrl.slice(GITHUB_RAW_BASE_URL.length + 1);
+  const ref =
+    sourceBranch !== undefined && refAndPath.startsWith(`${sourceBranch}/`) ?
+      sourceBranch
+    : (refAndPath.split("/")[0] ?? "");
+  const filePath = refAndPath.slice(ref.length + 1);
+  return { filePath, url: `${GITHUB_WEB_URL}/blob/${commit ?? ref}/${filePath}#L${String(line)}` };
 }
 
 export function githubCommitRangeUrl(previousCommit: string, nextCommit: string): string {

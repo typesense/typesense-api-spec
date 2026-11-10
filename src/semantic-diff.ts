@@ -1,5 +1,5 @@
 import { readTextFile, writeTextFile } from "./fs.js";
-import { githubBlobUrl, githubCommitRangeUrl, githubCommitUrl } from "./source.js";
+import { githubBlobLink, githubCommitRangeUrl, githubCommitUrl } from "./source.js";
 import type {
   ApiParameterSpec,
   ApiRouteSpec,
@@ -283,10 +283,12 @@ function shortCommit(commit: string): string {
 
 /** Looks up what the report shows about a route or parameter in one spec. */
 class SpecDetails {
+  readonly #branch: string | undefined;
   readonly #commit: string | undefined;
   readonly #routes: ReadonlyMap<string, ApiRouteSpec>;
 
   constructor(spec: ApiSpec) {
+    this.#branch = spec.sourceBranch;
     this.#commit = spec.sourceCommit;
     this.#routes = new Map(spec.routes.map((route) => [buildRouteKey(route.method, route.pathTemplate), route]));
   }
@@ -312,12 +314,12 @@ class SpecDetails {
   }
 
   #renderSource(source: SourceLocation | undefined): string {
-    const url = source === undefined ? undefined : githubBlobUrl(source.filePath, source.line, this.#commit);
-    if (source === undefined || url === undefined) {
+    const link =
+      source === undefined ? undefined : githubBlobLink(source.filePath, source.line, this.#branch, this.#commit);
+    if (source === undefined || link === undefined) {
       return "—";
     }
-    const filePath = new URL(url).pathname.split("/").slice(5).join("/");
-    return `[\`${filePath}:${String(source.line)}\`](${url})`;
+    return `[\`${link.filePath}:${String(source.line)}\`](${link.url})`;
   }
 }
 

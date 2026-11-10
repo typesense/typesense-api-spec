@@ -214,6 +214,23 @@ describe("runSemanticDiff", () => {
     );
   });
 
+  test("links the source of a branch whose name has a slash", async () => {
+    const nextPath = await writeSpec([{ path: "/new" }], "bbbbbbb2222", "release/v31");
+    const next = (await readFile(nextPath, "utf8")).replaceAll("/typesense/v31/", "/typesense/release/v31/");
+    await writeFile(nextPath, next);
+
+    const markdownOutputPath = path.join(await dirPromise, "slash-branch.md");
+    await runSemanticDiff({
+      previousPath: await writeSpec([], "aaaaaaa1111"),
+      nextPath,
+      jsonOutputPath: undefined,
+      markdownOutputPath,
+    });
+    expect(await readFile(markdownOutputPath, "utf8")).toContain(
+      `| \`GET /new\` | [\`src/server.cpp:3\`](${BLOB}/bbbbbbb2222/src/server.cpp#L3) |`,
+    );
+  });
+
   test("handles a previous spec written before commits were recorded", async () => {
     const markdown = await markdownFor([], undefined, [{ path: "/new" }], "bbbbbbb2222");
     expect(markdown).toContain("[`bbbbbbb`](https://github.com/typesense/typesense/commit/bbbbbbb2222)");
