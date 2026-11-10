@@ -34,6 +34,11 @@ describe("removeUnbalancedConditionals", () => {
     expect(removeUnbalancedConditionals(source)).toBe(source);
   });
 
+  test("ignores braces and directives in block comments", () => {
+    const source = "#ifdef A\n/* see { below\n#endif */\nvoid f() {}\n#endif";
+    expect(removeUnbalancedConditionals(source)).toBe(source);
+  });
+
   test("tolerates an #endif with no opening directive", () => {
     expect(removeUnbalancedConditionals("#endif\na();")).toBe("#endif\na();");
   });

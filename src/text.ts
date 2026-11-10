@@ -3,7 +3,7 @@ export function normalizeNewlines(input: string): string {
 }
 
 const CONDITIONAL_DIRECTIVE = /^\s*#\s*(ifdef|ifndef|if|elif|else|endif)\b/;
-const NON_CODE_TEXT = /"(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*'|\/\/.*$/g;
+const NON_CODE_TEXT = /"(?:[^"\\\n]|\\[\s\S])*"|'(?:[^'\\\n]|\\[\s\S])*'|\/\/[^\n]*|\/\*[\s\S]*?\*\//g;
 
 interface ConditionalFrame {
   readonly kind: string;
@@ -19,9 +19,11 @@ interface ConditionalFrame {
  */
 export function removeUnbalancedConditionals(source: string): string {
   const lines = source.split("\n");
+  // The same lines without strings and comments, which can hold braces and directives.
+  const code = source.replace(NON_CODE_TEXT, (text) => text.replace(/[^\n]/g, "")).split("\n");
   const stack: ConditionalFrame[] = [];
 
-  lines.forEach((line, index) => {
+  code.forEach((line, index) => {
     const directive = CONDITIONAL_DIRECTIVE.exec(line)?.[1];
     if (directive === undefined) {
       return;
@@ -39,19 +41,19 @@ export function removeUnbalancedConditionals(source: string): string {
     frame.hasElse ||= directive === "else";
     if (directive === "endif") {
       stack.pop();
-      resolveIfUnbalanced(lines, frame);
+      resolveIfUnbalanced(lines, code, frame);
     }
   });
 
   return lines.join("\n");
 }
 
-function resolveIfUnbalanced(lines: string[], frame: ConditionalFrame): void {
+function resolveIfUnbalanced(lines: string[], code: string[], frame: ConditionalFrame): void {
   const branchCount = frame.directives.length - 1;
   const branchIsBalanced = (branch: number): boolean => {
     const from = (frame.directives[branch] ?? 0) + 1;
     const to = frame.directives[branch + 1] ?? from;
-    return braceDelta(lines.slice(from, to)) === 0;
+    return braceDelta(code.slice(from, to)) === 0;
   };
   if (Array.from({ length: branchCount }, (_unused, branch) => branch).every(branchIsBalanced)) {
     return;
@@ -69,15 +71,13 @@ function resolveIfUnbalanced(lines: string[], frame: ConditionalFrame): void {
   for (let index = first; index <= last; index += 1) {
     if (index <= keptFrom || index >= keptTo) {
       lines[index] = "";
+      code[index] = "";
     }
   }
 }
 
-function braceDelta(lines: readonly string[]): number {
-  return lines.reduce((delta, line) => {
-    const code = line.replace(NON_CODE_TEXT, "");
-    return delta + (code.match(/\{/g)?.length ?? 0) - (code.match(/\}/g)?.length ?? 0);
-  }, 0);
+function braceDelta(code: readonly string[]): number {
+  return code.reduce((delta, line) => delta + (line.match(/\{/g)?.length ?? 0) - (line.match(/\}/g)?.length ?? 0), 0);
 }
 
 /** Path segment for any key of a JSON object, as in `joins.*.allowed_fields`. */
