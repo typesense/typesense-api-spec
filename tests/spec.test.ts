@@ -224,9 +224,12 @@ describe("mergeValueTypes", () => {
     expect(String(mergeValueTypes(union, "boolean"))).toBe("boolean | integer | string");
   });
 
-  test("keeps the narrowest numeric type", () => {
+  test("keeps the narrowest integer type", () => {
     expect(mergeValueTypes("integer", "uint")).toBe("uint");
-    expect(mergeValueTypes("number", "integer")).toBe("integer");
-    expect(String(mergeValueTypes("number", mergeValueTypes("string", "uint")))).toBe("string | uint");
+    expect(String(mergeValueTypes("integer", mergeValueTypes("string", "uint")))).toBe("string | uint");
+  });
+
+  test("keeps a float alongside an integer", () => {
+    expect(String(mergeValueTypes("number", "integer"))).toBe("integer | number");
   });
 });

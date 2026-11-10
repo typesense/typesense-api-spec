@@ -33,7 +33,7 @@ export function isValueType(value: string): value is ValueType {
   return value.split(" | ").every((part) => KNOWN_VALUE_TYPES.has(part));
 }
 
-const NUMERIC_TYPES_NARROWEST_FIRST: readonly string[] = ["uint", "integer", "number"];
+const NUMERIC_TYPES_NARROWEST_FIRST: readonly string[] = ["uint", "integer"];
 
 export function mergeValueTypes(left: ValueType | undefined, right: ValueType | undefined): ValueType | undefined {
   if (left === undefined) {
@@ -48,7 +48,8 @@ export function mergeValueTypes(left: ValueType | undefined, right: ValueType | 
     variants.delete("array");
   }
   // Reads of one value narrow it rather than widen it: `is_uint32_t(x)` rejects what
-  // `std::stoi(x)` would accept, and a default of 10 says nothing about the sign.
+  // `std::stoi(x)` would accept, and a default of 10 says nothing about the sign. A float
+  // read stays, since `is_number_integer()` and `is_number_float()` are usually alternatives.
   const narrowestNumeric = NUMERIC_TYPES_NARROWEST_FIRST.find((type) => variants.has(type));
   NUMERIC_TYPES_NARROWEST_FIRST.filter((type) => type !== narrowestNumeric).forEach((type) => variants.delete(type));
   const merged = [...variants].sort((a, b) => a.localeCompare(b)).join(" | ");
