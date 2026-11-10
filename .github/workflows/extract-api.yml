@@ -23,8 +23,9 @@ env:
   BOT_BRANCH: bot/extracted-api-update
   GH_TOKEN: ${{ github.token }}
 
+# Only default-branch runs publish, so runs on other branches needn't queue behind them.
 concurrency:
-  group: extract-api
+  group: extract-api-${{ github.ref }}
   cancel-in-progress: false
 
 jobs:
