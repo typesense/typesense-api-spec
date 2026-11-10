@@ -12,7 +12,6 @@ export class ParameterCollector {
   readonly #bodyTypeHints = new Map<string, ValueType>();
   readonly #overwrittenBodyPaths = new Set<string>();
   readonly #skippedBodyPaths = new Set<string>();
-  readonly #refusedBodyPaths = new Set<string>();
   readonly #mirroredBodyPaths = new Set<string>();
   readonly #queryMirrorPrefixes = new Set<string>();
 
@@ -39,10 +38,7 @@ export class ParameterCollector {
       return;
     }
     if (parameter.location === "body") {
-      if (
-        this.#overwrittenBodyPaths.has(parameter.canonicalPath) ||
-        this.#refusedBodyPaths.has(parameter.canonicalPath)
-      ) {
+      if (this.#overwrittenBodyPaths.has(parameter.canonicalPath)) {
         return;
       }
       this.#mirroredBodyPaths.delete(parameter.canonicalPath);
@@ -77,13 +73,6 @@ export class ParameterCollector {
     if (this.#mirroredBodyPaths.delete(canonicalPath)) {
       this.#body.delete(canonicalPath);
     }
-  }
-
-  /** The server answers with an error when a client sends this field, so no read of it counts. */
-  markBodyPathRefused(canonicalPath: string): void {
-    this.#refusedBodyPaths.add(canonicalPath);
-    this.#mirroredBodyPaths.delete(canonicalPath);
-    this.#body.delete(canonicalPath);
   }
 
   /**

@@ -647,20 +647,22 @@ describe("JSON objects used as maps", () => {
     expect(body).toEqual(["kept"]);
   });
 
-  test("a refused key isn't a field, even where it is read directly", async () => {
+  test("a key rejected only under another condition is still a field", async () => {
+    // multi_search's `is_conversation && key == "q"`, written as a nested if, and a loop
+    // that only runs in strict mode.
     const { body } = await extractHandler(
       handlerWithBody(`
-        body["before"];
         for (auto& it : body.items()) {
-          if (it.key() == "before" || it.key() == "after") { return Option<bool>(400, "Not allowed."); }
-          if (it.key() == "rejected") { res->set(400, "Not allowed."); return false; }
-          if (it.key() == "done") { return true; }
+          if (is_conversation) { if (it.key() == "q") { return Option<bool>(400, "Not allowed."); } }
+          req->params[it.key()] = it.value().get<std::string>();
         }
-        body["after"];
-        body["rejected"];
-        body["done"];`),
+        req->params["q"];
+        if (strict) {
+          for (auto& it : body.items()) { if (it.key() == "legacy") { return false; } }
+        }
+        body["legacy"];`),
     );
-    expect(body).toEqual(["done"]);
+    expect(body).toEqual(["legacy", "q"]);
   });
 
   test("a key skip list covers every key it names", async () => {

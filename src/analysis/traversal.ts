@@ -885,30 +885,20 @@ function collectKeyComparison(
     return;
   }
 
-  const rejection = keyOwner.location === "body-root" ? keyRejection(node, keyOwner, state) : undefined;
-  if (rejection !== undefined) {
-    const canonicalPath = normalizePathSegments([...keyOwner.segments, key]);
-    if (rejection === "refused") {
-      state.collector.markBodyPathRefused(canonicalPath);
-    } else {
-      state.collector.markBodyPathSkipped(canonicalPath);
-    }
+  if (keyOwner.location === "body-root" && isKeySkip(node, keyOwner, state)) {
+    state.collector.markBodyPathSkipped(normalizePathSegments([...keyOwner.segments, key]));
     return;
   }
   addParameter(keyOwner, [key], state, node);
 }
 
 /**
- * `if (item.key() == "x") { continue; }` skips that field, and a branch that returns an
- * error refuses it. A branch that uses the item's value before leaving handles the field.
+ * `if (item.key() == "x") { continue; }`, or a branch that returns, skips that field. A
+ * branch that uses the item's value before leaving handles the field.
  */
-function keyRejection(
-  comparison: SyntaxNode,
-  keyOwner: AliasTarget,
-  state: AnalysisState,
-): "skipped" | "refused" | undefined {
+function isKeySkip(comparison: SyntaxNode, keyOwner: AliasTarget, state: AnalysisState): boolean {
   if (childForField(comparison, "operator")?.text !== "==") {
-    return undefined;
+    return false;
   }
   // Any one of `key == "a" || key == "b"` is enough to take the branch.
   let condition = comparison.parent;
@@ -920,7 +910,15 @@ function keyRejection(
   }
   const ifStatement = condition?.type === "condition_clause" ? condition.parent : undefined;
   if (ifStatement?.type !== "if_statement" || childForField(ifStatement, "alternative") !== undefined) {
-    return undefined;
+    return false;
+  }
+  // Only a check that runs for every item skips the key; one under another condition may not.
+  let loop = ifStatement.parent;
+  while (loop?.type === "compound_statement") {
+    loop = loop.parent;
+  }
+  if (loop?.type !== "for_range_loop") {
+    return false;
   }
 
   const consequence = childForField(ifStatement, "consequence");
@@ -932,11 +930,11 @@ function keyRejection(
     consequence === undefined ||
     (lastStatement?.type !== "continue_statement" && lastStatement?.type !== "return_statement")
   ) {
-    return undefined;
+    return false;
   }
 
   const itemSegments = normalizePathSegments([...keyOwner.segments, MAP_KEY_SEGMENT]);
-  const usesItem = consequence.descendantsOfType("identifier").some((identifier) => {
+  return !consequence.descendantsOfType("identifier").some((identifier) => {
     const target = state.aliases.get(identifier.text);
     if (target?.location !== "body-root" || normalizePathSegments(target.segments) !== itemSegments) {
       return false;
@@ -945,15 +943,6 @@ function keyRejection(
     const access = identifier.parent;
     return !(access?.type === "field_expression" && childForField(access, "field")?.text === "key");
   });
-  if (usesItem) {
-    return undefined;
-  }
-
-  // `return false;` or `return Option<bool>(400, ...)`, as opposed to returning early on success.
-  const returnsError =
-    lastStatement.type === "return_statement" &&
-    (lastStatement.namedChild(0)?.text === "false" || /\b4\d\d\b/.test(consequence.text));
-  return returnsError ? "refused" : "skipped";
 }
 
 /** `if (x.count(k) == 0) { x[k] = default; }` fills in a default; it doesn't use what the client sent. */
