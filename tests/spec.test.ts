@@ -160,6 +160,27 @@ describe("buildSpec", () => {
     expect(names(route?.bodyParams)).toEqual(["deep.added"]);
   });
 
+  test("an override that adds an extracted param keeps its extracted type", () => {
+    const [route] = buildSpec(
+      {
+        ...baseConfig,
+        overrides: [
+          {
+            path: "/a",
+            addParams: [
+              { location: "query", name: "per_page" },
+              { location: "body", name: "flag" },
+            ],
+          },
+        ],
+      },
+      [extraction("/a", { query: [param("query", "per_page", "uint")], body: [param("body", "flag", "boolean")] })],
+      [],
+    ).routes;
+    expect(route?.queryParams[0]?.valueType).toBe("uint");
+    expect(route?.bodyParams[0]?.valueType).toBe("boolean");
+  });
+
   test("builds the URL template without a doubled slash", () => {
     const [route] = buildSpec({ ...baseConfig, baseUrl: "http://host:8108/" }, [extraction("/a")], []).routes;
     expect(route?.urlTemplate).toBe("http://host:8108/a");

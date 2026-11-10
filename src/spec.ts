@@ -85,31 +85,24 @@ function materializeParameters(
     .filter((parameter) => isValidCanonicalPath(parameter.canonicalPath))
     .filter((parameter) => !isParamBlacklisted(extractPathName(parameter.canonicalPath), blacklistedNames));
 
+  // Default missing types after merging, so an override that adds an extracted
+  // parameter without a type doesn't widen the extracted one.
   const deduped = new Map<string, ApiParameterSpec>();
   validParameters.forEach((parameter) => {
-    const name = extractPathName(parameter.canonicalPath);
     const existing = deduped.get(parameter.canonicalPath);
-    if (existing === undefined) {
-      deduped.set(parameter.canonicalPath, {
-        name,
-        canonicalPath: parameter.canonicalPath,
-        location,
-        valueType: normalizeValueType(parameter.valueType, location),
-        sources: [parameter.source],
-      });
-      return;
-    }
-
     deduped.set(parameter.canonicalPath, {
-      ...existing,
-      valueType: mergeValueTypes(existing.valueType, normalizeValueType(parameter.valueType, location)),
-      sources: [...existing.sources, parameter.source],
+      name: extractPathName(parameter.canonicalPath),
+      canonicalPath: parameter.canonicalPath,
+      location,
+      valueType: mergeValueTypes(existing?.valueType, parameter.valueType),
+      sources: [...(existing?.sources ?? []), parameter.source],
     });
   });
 
   return sortedReadonly(
     Array.from(deduped.values()).map((spec) => ({
       ...spec,
+      valueType: normalizeValueType(spec.valueType, location),
       sources: sortedReadonly(spec.sources, compareLocations),
     })),
     compareParameters,
