@@ -208,7 +208,8 @@ jobs:
           # GitHub rejects pull request bodies over 65,536 characters.
           body="$RUNNER_TEMP/pull-request-body.md"
           if [ "$(wc -c < "$RUNNER_TEMP/typesense-api-diff.md")" -gt 60000 ]; then
-            head -c 60000 "$RUNNER_TEMP/typesense-api-diff.md" > "$body"
+            # Drop the last, partial line, so no table row or character is cut in two.
+            head -c 60000 "$RUNNER_TEMP/typesense-api-diff.md" | sed '$d' > "$body"
             printf '\n\n**Report truncated.** The full report is in the artifacts of [this run](%s).\n' "$RUN_URL" >> "$body"
           else
             cp "$RUNNER_TEMP/typesense-api-diff.md" "$body"
