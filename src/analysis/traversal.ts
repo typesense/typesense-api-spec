@@ -297,21 +297,24 @@ function handleDeclaration(
   visited: Set<string>,
   depth: number,
 ): void {
-  statement.childrenForFieldName("declarator").forEach((declarator) => {
-    const declaredName = extractDeclaratorName(declarator);
-    if (declaredName !== undefined) {
-      state.declared.set(declaredName, childForField(statement, "type")?.text ?? "");
-      // A new variable shadows any alias or constant from an outer scope.
-      state.aliases.delete(declaredName);
-      state.constants.delete(declaredName);
-      state.valueTypes.delete(declaredName);
-      state.keyTables.delete(declaredName);
-    }
-  });
-
   walkNamed(statement, (child) => {
     if (child.type === "lambda_expression") {
       return false;
+    }
+
+    // The statement itself, or one nested in a condition: `if (auto x = ...; ...)`.
+    if (child.type === "declaration") {
+      child.childrenForFieldName("declarator").forEach((declarator) => {
+        const declaredName = extractDeclaratorName(declarator);
+        if (declaredName !== undefined) {
+          state.declared.set(declaredName, childForField(child, "type")?.text ?? "");
+          // A new variable shadows any alias or constant from an outer scope.
+          state.aliases.delete(declaredName);
+          state.constants.delete(declaredName);
+          state.valueTypes.delete(declaredName);
+          state.keyTables.delete(declaredName);
+        }
+      });
     }
 
     // `auto x = ...;` nests an init_declarator; a condition such as
