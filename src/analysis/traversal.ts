@@ -541,10 +541,11 @@ function walkExpression(
     if (currentNode.type === "assignment_expression") {
       collectAssignmentExpression(currentNode, state);
       // Storing into the params map or body is the server's doing, not a client parameter.
+      // The right side is evaluated first, so it still reads the client's value.
       const rightNode = childForField(currentNode, "right");
       if (rightNode !== undefined && isRequestDataWrite(currentNode, state)) {
-        recordBodyWrite(currentNode, rightNode, state, depth);
         walkExpression(rightNode, state, context, visited, depth);
+        recordBodyWrite(currentNode, rightNode, state, depth);
         return false;
       }
       return;
@@ -568,6 +569,10 @@ function walkExpression(
 }
 
 function isRequestDataWrite(assignment: SyntaxNode, state: AnalysisState): boolean {
+  // `x += y` reads x as well.
+  if (childForField(assignment, "operator")?.text !== "=") {
+    return false;
+  }
   const leftNode = childForField(assignment, "left");
   const baseNode = leftNode?.type === "subscript_expression" ? childForField(leftNode, "argument") : undefined;
   const target = baseNode === undefined ? undefined : resolveExpressionNode(baseNode, state.aliases, state.constants);

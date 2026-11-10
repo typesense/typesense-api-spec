@@ -1067,6 +1067,18 @@ describe("server-side writes", () => {
     expect(body).toEqual(["name"]);
   });
 
+  test("a write's right side and a compound assignment read the client's value", async () => {
+    const { body, query } = await extractHandler(
+      handlerWithBody(`
+        body["limit"] = body.value("limit", 10);
+        body["name"] = trim(body["name"].get<std::string>());
+        body["count"] += 1;
+        req->params["filter_by"] += " && visible:true";`),
+    );
+    expect(body).toEqual(["count", "limit", "name"]);
+    expect(query).toEqual(["filter_by"]);
+  });
+
   test("storing into a params map held by a helper is not a client parameter", async () => {
     const { query } = await extractHandler(
       handlerWithBody(
