@@ -10573,7 +10573,7 @@
           "name": "root",
           "canonicalPath": "items[].root",
           "location": "body",
-          "valueType": "array | string | string[]",
+          "valueType": "string | string[]",
           "sources": [
             {
               "filePath": "https://raw.githubusercontent.com/typesense/typesense/v30.2/src/synonym_index.cpp",
@@ -10817,7 +10817,7 @@
           "name": "root",
           "canonicalPath": "root",
           "location": "body",
-          "valueType": "array | string | string[]",
+          "valueType": "string | string[]",
           "sources": [
             {
               "filePath": "https://raw.githubusercontent.com/typesense/typesense/v30.2/src/synonym_index.cpp",

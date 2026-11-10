@@ -42,14 +42,11 @@ export function mergeValueTypes(left: ValueType | undefined, right: ValueType | 
   if (right === undefined || left === right) {
     return left;
   }
-  if (left === "array" && right.endsWith("[]")) {
-    return right;
-  }
-  if (right === "array" && left.endsWith("[]")) {
-    return left;
-  }
-
   const variants = new Set([...left.split(" | "), ...right.split(" | ")]);
+  // A typed array such as `string[]` says more than `is_array()` does.
+  if ([...variants].some((type) => type.endsWith("[]"))) {
+    variants.delete("array");
+  }
   // Reads of one value narrow it rather than widen it: `is_uint32_t(x)` rejects what
   // `std::stoi(x)` would accept, and a default of 10 says nothing about the sign.
   const narrowestNumeric = NUMERIC_TYPES_NARROWEST_FIRST.find((type) => variants.has(type));

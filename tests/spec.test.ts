@@ -214,6 +214,7 @@ describe("mergeValueTypes", () => {
   test("prefers a specific array type over plain array", () => {
     expect(mergeValueTypes("array", "string[]")).toBe("string[]");
     expect(mergeValueTypes("string[]", "array")).toBe("string[]");
+    expect(String(mergeValueTypes(mergeValueTypes("string", "array"), "string[]"))).toBe("string | string[]");
   });
 
   test("builds a sorted union that does not depend on argument order", () => {
