@@ -4,6 +4,7 @@ import { CountingSemaphore } from "./concurrency.js";
 import { resolveFetchUrl } from "./source.js";
 
 const REMOTE_FETCH_ATTEMPTS = 4;
+const MAX_RETRY_AFTER_SECONDS = 60;
 // Shared by every step that reads source, since they run at the same time.
 const remoteFetches = new CountingSemaphore(8);
 const remoteFileCache = new Map<string, Promise<string>>();
@@ -36,6 +37,7 @@ async function fetchRemoteText(url: string): Promise<string> {
 async function fetchWithRetries(url: string): Promise<string> {
   for (let attempt = 1; ; attempt += 1) {
     let failure: string;
+    let delayMs = 500 * 2 ** (attempt - 1);
     try {
       const response = await fetch(url, {
         headers: {
@@ -50,6 +52,10 @@ async function fetchWithRetries(url: string): Promise<string> {
       if (response.status !== 429 && response.status < 500) {
         throw new Error(`Could not read remote file ${url}: ${failure}`);
       }
+      const retryAfterSeconds = Number(response.headers.get("retry-after"));
+      if (retryAfterSeconds > 0) {
+        delayMs = Math.min(retryAfterSeconds, MAX_RETRY_AFTER_SECONDS) * 1000;
+      }
     } catch (error) {
       if (error instanceof Error && error.message.startsWith("Could not read remote file")) {
         throw error;
@@ -60,7 +66,7 @@ async function fetchWithRetries(url: string): Promise<string> {
     if (attempt >= REMOTE_FETCH_ATTEMPTS) {
       throw new Error(`Could not read remote file ${url} after ${attempt} attempts: ${failure}`);
     }
-    await new Promise((resolve) => setTimeout(resolve, 500 * 2 ** (attempt - 1)));
+    await new Promise((resolve) => setTimeout(resolve, delayMs));
   }
 }
 

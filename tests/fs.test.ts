@@ -64,6 +64,18 @@ describe("readTextFile from a URL", () => {
     expect(fetchMock).toHaveBeenCalledTimes(2);
   });
 
+  test("waits as long as a 429's Retry-After asks", async () => {
+    const delays: number[] = [];
+    spyOn(globalThis, "setTimeout").mockImplementation(((callback: () => void, ms: number) => {
+      delays.push(ms);
+      callback();
+      return 0;
+    }) as unknown as typeof setTimeout);
+    stubFetch(new Response("", { status: 429, headers: { "Retry-After": "5" } }), new Response("recovered"));
+    expect(await readTextFile(uniqueUrl())).toBe("recovered");
+    expect(delays).toEqual([5000]);
+  });
+
   test("retries a network error", async () => {
     const fetchMock = stubFetch(new Error("socket hang up"), new Response("recovered"));
     expect(await readTextFile(uniqueUrl())).toBe("recovered");
