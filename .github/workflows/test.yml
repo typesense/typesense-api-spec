@@ -24,6 +24,9 @@ jobs:
       - name: Lint
         run: bun run lint
 
+      - name: Check formatting
+        run: bun run format:check
+
       # The integration tests read this clone. Checking out the commit output/ records keeps
       # them on released code, so upstream work in progress can't fail this repository's CI.
       - name: Clone Typesense
