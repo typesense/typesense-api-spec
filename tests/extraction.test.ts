@@ -100,6 +100,15 @@ describe("variable scope", () => {
     expect(body).not.toContain("inner.outer");
   });
 
+  test("a re-declaration in a block shadows the outer lambda", async () => {
+    const { body } = await extractHandler(
+      handlerWithBody(`
+      auto f = [&](const std::string& key) { body[key]; };
+      { std::function<void(const std::string&)> f = other; f("shadowed_lambda"); }`),
+    );
+    expect(body).not.toContain("shadowed_lambda");
+  });
+
   test("a lambda is followed again when what it captures changes", async () => {
     const { body } = await extractHandler(
       handlerWithBody(`

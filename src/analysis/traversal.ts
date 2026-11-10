@@ -306,11 +306,12 @@ function handleDeclaration(
         const declaredName = extractDeclaratorName(declarator);
         if (declaredName !== undefined) {
           state.declared.set(declaredName, childForField(child, "type")?.text ?? "");
-          // A new variable shadows any alias or constant from an outer scope.
+          // A new variable shadows any alias, constant or lambda from an outer scope.
           state.aliases.delete(declaredName);
           state.constants.delete(declaredName);
           state.valueTypes.delete(declaredName);
           state.keyTables.delete(declaredName);
+          state.lambdas.delete(declaredName);
         }
       });
     }
