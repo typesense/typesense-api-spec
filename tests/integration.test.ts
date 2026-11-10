@@ -88,6 +88,8 @@ describe.skipIf(!hasCommit(CLONE, committedCommit))("committed output", () => {
     async () => {
       const { spec, text } = await extractFromClone(CLONE, committed.sourceBranch ?? "", committedCommit);
       expect(spec.diagnostics).toEqual([]);
+      // If the extractor's output changed, regenerate output/ from the release it records:
+      //   bun src/cli.ts extract --source-branch "$(jq -r .sourceBranch output/typesense_api_spec.json)"
       expect(text === committedText).toBe(true);
     },
     TIMEOUT_MS,
