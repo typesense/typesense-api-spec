@@ -178,6 +178,17 @@ function renderMarkdown(summary: DiffSummary, previous: ApiSpec, next: ApiSpec):
 
   if (summary.addedRoutes.length > 0) {
     lines.push("## Added routes", "", ...renderRouteTable(summary.addedRoutes, nextDetails), "");
+    summary.addedRoutes.forEach((routeKey) => {
+      const parameterKeys = nextDetails.parameterKeys(routeKey);
+      if (parameterKeys.length > 0) {
+        lines.push(
+          ...renderParameterTable(
+            routeKey,
+            parameterKeys.map((key) => renderParameterRow("🟢 Added", key, undefined, routeKey, nextDetails)),
+          ),
+        );
+      }
+    });
   }
 
   if (summary.removedRoutes.length > 0) {
@@ -188,18 +199,17 @@ function renderMarkdown(summary: DiffSummary, previous: ApiSpec, next: ApiSpec):
     lines.push("## Changed routes", "");
     summary.changedRoutes.forEach((route) => {
       lines.push(
-        `### \`${route.routeKey}\``,
-        "",
-        "| Change | In | Parameter | Type | Source |",
-        "| --- | --- | --- | --- | --- |",
-        ...route.addedParams.map((key) => renderParameterRow("🟢 Added", key, undefined, route.routeKey, nextDetails)),
-        ...route.removedParams.map((key) =>
-          renderParameterRow("🔴 Removed", key, undefined, route.routeKey, previousDetails),
-        ),
-        ...route.changedParamTypes.map((change) =>
-          renderParameterRow("🟡 Type changed", change.parameterKey, change, route.routeKey, nextDetails),
-        ),
-        "",
+        ...renderParameterTable(route.routeKey, [
+          ...route.addedParams.map((key) =>
+            renderParameterRow("🟢 Added", key, undefined, route.routeKey, nextDetails),
+          ),
+          ...route.removedParams.map((key) =>
+            renderParameterRow("🔴 Removed", key, undefined, route.routeKey, previousDetails),
+          ),
+          ...route.changedParamTypes.map((change) =>
+            renderParameterRow("🟡 Type changed", change.parameterKey, change, route.routeKey, nextDetails),
+          ),
+        ]),
       );
     });
   }
@@ -229,6 +239,17 @@ function renderRouteTable(routeKeys: readonly string[], details: SpecDetails): r
     "| Route | Source |",
     "| --- | --- |",
     ...routeKeys.map((routeKey) => `| \`${routeKey}\` | ${details.routeSource(routeKey)} |`),
+  ];
+}
+
+function renderParameterTable(routeKey: string, rows: readonly string[]): readonly string[] {
+  return [
+    `### \`${routeKey}\``,
+    "",
+    "| Change | In | Parameter | Type | Source |",
+    "| --- | --- | --- | --- | --- |",
+    ...rows,
+    "",
   ];
 }
 
@@ -301,6 +322,16 @@ class SpecDetails {
     return [...route.pathParams, ...route.queryParams, ...route.bodyParams].find(
       (candidate) => buildParameterKey(candidate.location, candidate) === parameterKey,
     );
+  }
+
+  parameterKeys(routeKey: string): readonly string[] {
+    const route = this.#routes.get(routeKey);
+    if (route === undefined) {
+      return [];
+    }
+    return [...route.pathParams, ...route.queryParams, ...route.bodyParams]
+      .map((parameter) => buildParameterKey(parameter.location, parameter))
+      .sort((left, right) => left.localeCompare(right));
   }
 
   routeSource(routeKey: string): string {

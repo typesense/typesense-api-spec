@@ -166,6 +166,25 @@ describe("runSemanticDiff", () => {
     );
   });
 
+  test("lists an added route's parameters", async () => {
+    const markdown = await markdownFor(
+      [],
+      "aaaaaaa1111",
+      [{ path: "/new", query: { q: "string" }, body: { x: "integer" } }],
+      "bbbbbbb2222",
+    );
+    expect(markdown).toContain(
+      [
+        "### `GET /new`",
+        "",
+        "| Change | In | Parameter | Type | Source |",
+        "| --- | --- | --- | --- | --- |",
+        `| 🟢 Added | body | \`x\` | \`integer\` | [\`src/x.cpp:7\`](${BLOB}/bbbbbbb2222/src/x.cpp#L7) |`,
+        `| 🟢 Added | query | \`q\` | \`string\` | [\`src/q.cpp:7\`](${BLOB}/bbbbbbb2222/src/q.cpp#L7) |`,
+      ].join("\n"),
+    );
+  });
+
   test("escapes union types so they stay in one table cell", async () => {
     const markdown = await markdownFor(
       [{ path: "/a", body: { x: "uint" } }],
