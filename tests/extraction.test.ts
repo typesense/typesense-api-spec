@@ -86,6 +86,17 @@ describe("variable scope", () => {
     );
     expect(body).toContain("still_body");
   });
+
+  test("library methods on std locals are not followed as helpers", async () => {
+    const { types } = await extractHandler(
+      handlerWithBody(
+        `std::set<std::string> allowed;
+         for (const auto& f : body["meta_fields"]) { if (f == "filter_by") { allowed.insert(f); } }`,
+        `bool array::insert(size_t index, const uint32_t* values, size_t n) { return true; }`,
+      ),
+    );
+    expect(types.get("meta_fields")).toBe("string[]");
+  });
 });
 
 describe("value reads", () => {

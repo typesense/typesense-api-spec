@@ -89,8 +89,8 @@ interface AnalysisState {
   readonly valueTypes: Map<string, TypePrimitives>;
   /** Enclosing scope; assignments propagate to it unless the name is declared here. */
   readonly parent: AnalysisState | undefined;
-  /** Variable names declared in this scope (they shadow outer ones). */
-  readonly declared: Set<string>;
+  /** Variables declared in this scope (they shadow outer ones), with their declared type. */
+  readonly declared: Map<string, string>;
   /** Lambdas assigned to local variables, followed when they are called. */
   readonly lambdas: Map<string, SyntaxNode>;
   /** Local tables of known keys, such as `{{QUERY_BY, &search_fields}, ...}`. */
@@ -157,7 +157,7 @@ export function analyzeFunction(
     constants,
     valueTypes: new Map<string, TypePrimitives>(),
     parent: undefined,
-    declared: new Set<string>(),
+    declared: new Map(definition.parameters.map((parameter) => [parameter.name, parameter.typeText])),
     lambdas: new Map<string, SyntaxNode>(),
     keyTables: new Map<string, KeyTable>(),
     definition,
@@ -300,7 +300,7 @@ function handleDeclaration(
   statement.childrenForFieldName("declarator").forEach((declarator) => {
     const declaredName = extractDeclaratorName(declarator);
     if (declaredName !== undefined) {
-      state.declared.add(declaredName);
+      state.declared.set(declaredName, childForField(statement, "type")?.text ?? "");
       // A new variable shadows any alias or constant from an outer scope.
       state.aliases.delete(declaredName);
       state.constants.delete(declaredName);
@@ -401,7 +401,7 @@ function handleForRangeLoop(
   }
 
   for (const name of bindingNames ?? [aliasName ?? ""]) {
-    scopedState.declared.add(name);
+    scopedState.declared.set(name, "");
     scopedState.aliases.delete(name);
     scopedState.constants.delete(name);
   }
@@ -1112,7 +1112,7 @@ function analyzeLambda(
   const scopedState = cloneState(state);
   lambdaParameterNames(lambda).forEach((name) => {
     if (name === undefined) return;
-    scopedState.declared.add(name);
+    scopedState.declared.set(name, "");
     scopedState.aliases.delete(name);
     scopedState.constants.delete(name);
     scopedState.valueTypes.delete(name);
@@ -1221,11 +1221,13 @@ function findCallDefinition(
   functions: ReadonlyMap<string, FunctionDefinition>,
   state: AnalysisState,
 ): FunctionDefinition | undefined {
-  // A method on a value we already track (json, params map) is a library call,
-  // even if the codebase has an unrelated function with the same name.
+  // A method on a value we already track (json, params map), or on a local
+  // declared as a std or nlohmann type, is a library call, even if the codebase
+  // has an unrelated function with the same name.
   if (
     callInfo.baseNode !== undefined &&
-    resolveExpressionNode(callInfo.baseNode, state.aliases, state.constants) !== undefined
+    (resolveExpressionNode(callInfo.baseNode, state.aliases, state.constants) !== undefined ||
+      isLibraryType(declaredType(state, callInfo.baseNode.text)))
   ) {
     return undefined;
   }
@@ -1364,13 +1366,28 @@ function assignInScope(state: AnalysisState, name: string, apply: (scope: Analys
   }
 }
 
+function declaredType(state: AnalysisState, name: string): string | undefined {
+  for (let scope: AnalysisState | undefined = state; scope !== undefined; scope = scope.parent) {
+    const typeText = scope.declared.get(name);
+    if (typeText !== undefined) {
+      return typeText;
+    }
+  }
+  return undefined;
+}
+
+/** `std::set<std::string>`, `nlohmann::json`; not a smart pointer to a codebase class. */
+function isLibraryType(typeText: string | undefined): boolean {
+  return typeText !== undefined && /^(?:const\s+)?(?:std|nlohmann)::(?!shared_ptr|unique_ptr)/.test(typeText.trim());
+}
+
 function cloneState(state: AnalysisState): AnalysisState {
   return {
     aliases: new Map(state.aliases),
     constants: new Map(state.constants),
     valueTypes: new Map(state.valueTypes),
     parent: state,
-    declared: new Set<string>(),
+    declared: new Map<string, string>(),
     lambdas: new Map(state.lambdas),
     keyTables: new Map(state.keyTables),
     definition: state.definition,
