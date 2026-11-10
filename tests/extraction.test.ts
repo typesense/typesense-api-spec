@@ -793,6 +793,17 @@ describe("JSON fields copied into the params map", () => {
     expect(query).toContain("per_page");
   });
 
+  test("a param only read from the params map is a string in each search too", async () => {
+    const { types } = await extractHandler(
+      handler("add_params(req->params, search_params); do_search(req->params);").replace(
+        "item.value().get<std::string>()",
+        "item.value().is_string() ? item.value().get<std::string>() : std::to_string(item.value().get<int64_t>())",
+      ),
+    );
+    expect(types.get("searches[].q")).toBe("string");
+    expect(types.get("searches[].per_page")).toBe("uint");
+  });
+
   test("params read before the copy are not mirrored", async () => {
     const { body, query } = await extractHandler(
       handler("add_params(req->params, search_params); do_search(req->params);"),

@@ -8356,7 +8356,7 @@
           "name": "infix",
           "canonicalPath": "searches[].infix",
           "location": "body",
-          "valueType": "unknown",
+          "valueType": "string",
           "sources": [
             {
               "filePath": "https://raw.githubusercontent.com/typesense/typesense/v30.2/src/collection.cpp",
@@ -8486,7 +8486,7 @@
           "name": "nl_model_id",
           "canonicalPath": "searches[].nl_model_id",
           "location": "body",
-          "valueType": "unknown",
+          "valueType": "string",
           "sources": [
             {
               "filePath": "https://raw.githubusercontent.com/typesense/typesense/v30.2/src/natural_language_search_model_manager.cpp",
@@ -8694,7 +8694,7 @@
           "name": "prefix",
           "canonicalPath": "searches[].prefix",
           "location": "body",
-          "valueType": "unknown",
+          "valueType": "string",
           "sources": [
             {
               "filePath": "https://raw.githubusercontent.com/typesense/typesense/v30.2/src/collection.cpp",
@@ -8889,7 +8889,7 @@
           "name": "split_join_tokens",
           "canonicalPath": "searches[].split_join_tokens",
           "location": "body",
-          "valueType": "unknown",
+          "valueType": "string",
           "sources": [
             {
               "filePath": "https://raw.githubusercontent.com/typesense/typesense/v30.2/src/collection.cpp",
@@ -8954,7 +8954,7 @@
           "name": "text_match_type",
           "canonicalPath": "searches[].text_match_type",
           "location": "body",
-          "valueType": "unknown",
+          "valueType": "string",
           "sources": [
             {
               "filePath": "https://raw.githubusercontent.com/typesense/typesense/v30.2/src/collection.cpp",
@@ -9019,7 +9019,7 @@
           "name": "x-typesense-user-id",
           "canonicalPath": "searches[].x-typesense-user-id",
           "location": "body",
-          "valueType": "unknown",
+          "valueType": "string",
           "sources": [
             {
               "filePath": "https://raw.githubusercontent.com/typesense/typesense/v30.2/src/collection_manager.cpp",

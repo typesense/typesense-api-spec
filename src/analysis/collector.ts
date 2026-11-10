@@ -106,7 +106,10 @@ export class ParameterCollector {
     const parameters = resolveArrayItems(
       [...this.#body.values()].map((parameter) => ({
         ...parameter,
-        valueType: mergeValueTypes(parameter.valueType, this.#bodyTypeHints.get(parameter.canonicalPath)),
+        valueType:
+          mergeValueTypes(parameter.valueType, this.#bodyTypeHints.get(parameter.canonicalPath)) ??
+          // Only read once copied into the params map, where every value is a string.
+          (this.#mirroredBodyPaths.has(parameter.canonicalPath) ? "string" : undefined),
       })),
     );
     const wildcards = new Map(
