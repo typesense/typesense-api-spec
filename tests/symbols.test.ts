@@ -61,6 +61,12 @@ describe("indexFunctions", () => {
     }
   });
 
+  test("qualifies a method defined inside its class body", async () => {
+    const functions = await index("class A { void read(int a) {} };\nstruct B { void read(int b) {} };");
+    expect(functions.get("A::read#1")?.parameters[0]?.name).toBe("a");
+    expect(functions.get("B::read#1")?.parameters[0]?.name).toBe("b");
+  });
+
   test("keeps same-named methods of different classes apart", async () => {
     const functions = await index("void A::init(int a) {}\nvoid B::init(int b) {}");
     expect(functions.get("A::init#1")?.parameters[0]?.name).toBe("a");

@@ -131,7 +131,15 @@ function materializeFunctionDefinition(
 
 function qualifiedFunctionName(nameNode: SyntaxNode | undefined, functionName: string): string {
   if (nameNode?.type !== "qualified_identifier") {
-    return functionName;
+    // A method defined inside its class body is still `Class::method`.
+    const classNames: string[] = [];
+    for (let node = nameNode?.parent; node; node = node.parent) {
+      const className = classScopeTypes.has(node.type) ? childForField(node, "name")?.text : undefined;
+      if (className !== undefined) {
+        classNames.unshift(className);
+      }
+    }
+    return [...classNames, functionName].join("::");
   }
   // Drop template arguments and whitespace: `Foo<T> :: bar` is `Foo::bar`.
   return nameNode.text
@@ -165,6 +173,8 @@ function parseParametersFromDeclarator(declaratorNode: SyntaxNode): readonly Fun
       };
     });
 }
+
+const classScopeTypes: ReadonlySet<string> = new Set(["class_specifier", "struct_specifier"]);
 
 const parameterDeclarationTypes: ReadonlySet<string> = new Set([
   "parameter_declaration",
