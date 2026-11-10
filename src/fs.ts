@@ -1,8 +1,11 @@
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
+import { CountingSemaphore } from "./concurrency.js";
 import { resolveFetchUrl } from "./source.js";
 
 const REMOTE_FETCH_ATTEMPTS = 4;
+// Shared by every step that reads source, since they run at the same time.
+const remoteFetches = new CountingSemaphore(8);
 const remoteFileCache = new Map<string, Promise<string>>();
 
 export async function readTextFile(filePath: string): Promise<string> {
@@ -22,6 +25,15 @@ export async function readTextFile(filePath: string): Promise<string> {
 }
 
 async function fetchRemoteText(url: string): Promise<string> {
+  await remoteFetches.acquire();
+  try {
+    return await fetchWithRetries(url);
+  } finally {
+    remoteFetches.release();
+  }
+}
+
+async function fetchWithRetries(url: string): Promise<string> {
   for (let attempt = 1; ; attempt += 1) {
     let failure: string;
     try {
