@@ -92,7 +92,7 @@ jobs:
         id: branch
         run: |
           default=$(gh repo view "$GITHUB_REPOSITORY" --json defaultBranchRef --jq .defaultBranchRef.name)
-          if [ "$GITHUB_REF_NAME" = "$default" ]; then
+          if [ "$GITHUB_REF" = "refs/heads/$default" ]; then
             echo "publish=true" >> "$GITHUB_OUTPUT"
           else
             echo "::notice::Ran on $GITHUB_REF_NAME, not $default, so the report is only in this run's summary."
