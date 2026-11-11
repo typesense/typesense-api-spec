@@ -51,27 +51,64 @@ export const LATEST_RELEASE = "latest-release";
 
 /**
  * The branch or tag to extract. openapi.yml describes released servers, so by default this
- * is the latest release's tag; GitHub's latest release is never a prerelease or a draft.
+ * is the highest stable release. GitHub's "latest" flag goes to the last release published,
+ * which can be a backport such as v29.1 published after v30.2.
  */
 export async function resolveSourceRef(sourceRef: string): Promise<string> {
   if (sourceRef !== LATEST_RELEASE) {
     return sourceRef;
   }
-  const response = await octokit.rest.repos
-    .getLatestRelease({
+  const releases = await octokit
+    .paginate(octokit.rest.repos.listReleases, {
       owner: GITHUB_OWNER,
       repo: GITHUB_REPO,
+      per_page: 100,
       headers: {
         "X-GitHub-Api-Version": GITHUB_API_VERSION,
       },
     })
     .catch((error: unknown) => {
       const message = error instanceof Error ? error.message : String(error);
-      throw new Error(
-        `Could not find the latest release of ${GITHUB_OWNER}/${GITHUB_REPO}: ${message}.${rateLimitHint()}`,
-      );
+      throw new Error(`Could not list the releases of ${GITHUB_OWNER}/${GITHUB_REPO}: ${message}.${rateLimitHint()}`);
     });
-  return response.data.tag_name;
+  const tag = highestStableRelease(releases);
+  if (tag === undefined) {
+    throw new Error(`${GITHUB_OWNER}/${GITHUB_REPO} has no stable release with a version tag such as v30.2.`);
+  }
+  return tag;
+}
+
+interface ReleaseSummary {
+  readonly tag_name: string;
+  readonly draft: boolean;
+  readonly prerelease: boolean;
+}
+
+/** The tag of the highest-versioned release that is neither a draft nor a prerelease. */
+export function highestStableRelease(releases: readonly ReleaseSummary[]): string | undefined {
+  let highest: { readonly tag: string; readonly version: readonly number[] } | undefined;
+  for (const release of releases) {
+    const version = release.draft || release.prerelease ? undefined : parseReleaseVersion(release.tag_name);
+    if (version !== undefined && (highest === undefined || compareVersions(version, highest.version) > 0)) {
+      highest = { tag: release.tag_name, version };
+    }
+  }
+  return highest?.tag;
+}
+
+/** `v30.2` and `v0.25.2` are versions; an RC tag such as `v30.0.rc5` is not. */
+function parseReleaseVersion(tag: string): readonly number[] | undefined {
+  return /^v?\d+(?:\.\d+)*$/.test(tag) ? tag.replace(/^v/, "").split(".").map(Number) : undefined;
+}
+
+function compareVersions(left: readonly number[], right: readonly number[]): number {
+  for (let index = 0; index < Math.max(left.length, right.length); index += 1) {
+    const difference = (left[index] ?? 0) - (right[index] ?? 0);
+    if (difference !== 0) {
+      return difference;
+    }
+  }
+  return 0;
 }
 
 const pinnedCommits = new Map<string, string>();

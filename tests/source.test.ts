@@ -134,10 +134,35 @@ describe("pinSourceCommit", () => {
 });
 
 describe("resolveSourceRef", () => {
-  test("resolves latest-release to the latest release's tag", async () => {
-    const restore = stubGithub({ latestRelease: () => "v30.2", listFiles: () => [], readFile: () => "" });
+  test("resolves latest-release to the highest stable release, not the last one published", async () => {
+    // GitHub's own order: v29.1, a backport, was published after v30.2.
+    const restore = stubGithub({
+      releases: () => [
+        { tag_name: "v31.0.rc1", prerelease: true },
+        { tag_name: "v31.0", draft: true },
+        { tag_name: "v29.1" },
+        { tag_name: "v30.2" },
+        { tag_name: "v30.1" },
+        { tag_name: "v0.25.2" },
+      ],
+      listFiles: () => [],
+      readFile: () => "",
+    });
     try {
       expect(await resolveSourceRef("latest-release")).toBe("v30.2");
+    } finally {
+      restore();
+    }
+  });
+
+  test("fails when no release is stable", async () => {
+    const restore = stubGithub({
+      releases: () => [{ tag_name: "v31.0.rc1", prerelease: true }, { tag_name: "nightly" }],
+      listFiles: () => [],
+      readFile: () => "",
+    });
+    try {
+      expect(await rejectionMessage(resolveSourceRef("latest-release"))).toContain("no stable release");
     } finally {
       restore();
     }
