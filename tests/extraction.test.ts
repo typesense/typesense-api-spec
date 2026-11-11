@@ -384,6 +384,40 @@ describe("helper calls", () => {
     expect(body).toEqual(["right"]);
   });
 
+  test("picks the method from the receiver's declared type over its name", async () => {
+    // As in `SynonymIndexManager& manager = ...`, where `manager` names no class.
+    const { body } = await extractHandler(
+      handlerWithBody(
+        `SearchAnalytics& doc_analytics = SearchAnalytics::get_instance(); doc_analytics.add_event(ip, body);`,
+        `Option<bool> DocAnalytics::add_event(const std::string& ip, const nlohmann::json& e) { e["wrong"]; return true; }
+         Option<bool> SearchAnalytics::add_event(const std::string& ip, const nlohmann::json& e) { e["right"]; return true; }`,
+      ),
+    );
+    expect(body).toEqual(["right"]);
+  });
+
+  test("picks the method from a declared smart pointer's class", async () => {
+    const { body } = await extractHandler(
+      handlerWithBody(
+        `std::shared_ptr<Second> thing = make(); thing->add(body);`,
+        `void First::add(nlohmann::json& j) { j["wrong"]; }
+         void Second::add(nlohmann::json& j) { j["right"]; }`,
+      ),
+    );
+    expect(body).toEqual(["right"]);
+  });
+
+  test("picks the method by name for a receiver declared auto", async () => {
+    const { body } = await extractHandler(
+      handlerWithBody(
+        `auto& search_analytics = make(); search_analytics.add_event(ip, body);`,
+        `Option<bool> DocAnalytics::add_event(const std::string& ip, const nlohmann::json& e) { e["wrong"]; return true; }
+         Option<bool> SearchAnalytics::add_event(const std::string& ip, const nlohmann::json& e) { e["right"]; return true; }`,
+      ),
+    );
+    expect(body).toEqual(["right"]);
+  });
+
   test("falls back to the short name when the receiver says nothing", async () => {
     const { body } = await extractHandler(
       handlerWithBody(`thing.add(body);`, `void Only::add(nlohmann::json& j) { j["found"]; }`),

@@ -1252,7 +1252,7 @@ function findCallDefinition(
     .replace(/\s+/g, "")
     .replace(/^::/, "");
   const receiverClass =
-    callInfo.baseNode === undefined ? undefined : resolveReceiverClass(callInfo.baseNode, functions);
+    callInfo.baseNode === undefined ? undefined : resolveReceiverClass(callInfo.baseNode, functions, state);
   const resolved =
     calleeName.includes("::") ?
       lookupFunction(calleeName, arity, functions)
@@ -1289,19 +1289,38 @@ function classNameIndex(functions: ReadonlyMap<string, FunctionDefinition>): Rea
 }
 
 /**
- * The class of a method call's receiver, where its name says so:
- * `Foo::get_instance().bar()` is Foo, and `doc_analytics.bar()` is DocAnalytics.
+ * The class of a method call's receiver: `Foo::get_instance().bar()` is Foo, and so is
+ * `bar()` on a variable declared as `Foo& manager`. A variable declared `auto` falls back
+ * to its name: `doc_analytics.bar()` is DocAnalytics.
  */
 function resolveReceiverClass(
   baseNode: SyntaxNode,
   functions: ReadonlyMap<string, FunctionDefinition>,
+  state: AnalysisState,
 ): string | undefined {
   const receiver = unwrapExpressionNode(baseNode);
   if (receiver.type === "call_expression") {
     const callee = parseCallExpressionNode(receiver)?.calleeName ?? "";
     return callee.endsWith("::get_instance") ? callee.slice(0, -"::get_instance".length).split("::").at(-1) : undefined;
   }
-  return receiver.type === "identifier" ? classNameIndex(functions).get(normalizeClassName(receiver.text)) : undefined;
+  if (receiver.type !== "identifier") {
+    return undefined;
+  }
+  const classNames = classNameIndex(functions);
+  const declaredClass = declaredClassName(declaredType(state, receiver.text));
+  return (
+    (declaredClass === undefined ? undefined : classNames.get(normalizeClassName(declaredClass))) ??
+    classNames.get(normalizeClassName(receiver.text))
+  );
+}
+
+/** `const Foo&`, `ns::Foo*` and `std::shared_ptr<Foo>` name Foo; `auto` names nothing. */
+function declaredClassName(typeText: string | undefined): string | undefined {
+  const bare = typeText
+    ?.replace(/\bconst\b|[&*\s]/g, "")
+    .replace(/^(?:std::)?(?:shared_ptr|unique_ptr)<(.+)>$/, "$1")
+    .replace(/<.*>/s, "");
+  return bare === undefined || bare === "" || bare === "auto" ? undefined : bare.split("::").at(-1);
 }
 
 /**
