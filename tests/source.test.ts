@@ -135,7 +135,7 @@ describe("pinSourceCommit", () => {
 
 describe("resolveSourceRef", () => {
   test("resolves latest-release to the highest stable release, not the last one published", async () => {
-    // GitHub's own order: v29.1, a backport, was published after v30.2.
+    // Listed newest first, as GitHub does. v29.1 is a backport published after v30.2.
     const restore = stubGithub({
       releases: () => [
         { tag_name: "v31.0.rc1", prerelease: true },

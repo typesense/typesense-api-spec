@@ -52,7 +52,7 @@ export const LATEST_RELEASE = "latest-release";
 /**
  * The branch or tag to extract. openapi.yml describes released servers, so by default this
  * is the highest stable release. GitHub's "latest" flag goes to the last release published,
- * which can be a backport such as v29.1 published after v30.2.
+ * so a backport such as v29.1, if published after v30.2, would take it.
  */
 export async function resolveSourceRef(sourceRef: string): Promise<string> {
   if (sourceRef !== LATEST_RELEASE) {
