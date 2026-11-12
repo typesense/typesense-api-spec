@@ -407,6 +407,42 @@ describe("helper calls", () => {
     expect(body).toEqual(["right"]);
   });
 
+  test("picks the method from a parameter's declared const type", async () => {
+    const { body } = await extractHandler(
+      handlerWithBody(
+        `forward(search_analytics, body);`,
+        `Option<bool> DocAnalytics::add_event(const nlohmann::json& e) { e["wrong"]; return true; }
+         Option<bool> SearchAnalytics::add_event(const nlohmann::json& e) { e["right"]; return true; }
+         void forward(const SearchAnalytics& manager, const nlohmann::json& j) { manager.add_event(j); }`,
+      ),
+    );
+    expect(body).toEqual(["right"]);
+  });
+
+  test("doesn't borrow another class's method for a declared class without one", async () => {
+    // As in `const api_key_t& existing_key`, whose to_json is inline in a header.
+    const { body } = await extractHandler(
+      handlerWithBody(
+        `SearchAnalytics& analytics = make(); analytics.add_event(body);`,
+        `Option<bool> DocAnalytics::add_event(const nlohmann::json& e) { e["wrong"]; return true; }
+         void SearchAnalytics::flush() {}`,
+      ),
+    );
+    expect(body).toEqual([]);
+  });
+
+  test("still borrows a method for a class guessed from the receiver's name", async () => {
+    // `collection` names Collection, but the variable holds a Thing.
+    const { body } = await extractHandler(
+      handlerWithBody(
+        `auto collection = make_thing(); collection.add(body);`,
+        `void Thing::add(nlohmann::json& j) { j["right"]; }
+         void Collection::other() {}`,
+      ),
+    );
+    expect(body).toEqual(["right"]);
+  });
+
   test("picks the method by name for a receiver declared auto", async () => {
     const { body } = await extractHandler(
       handlerWithBody(

@@ -1251,8 +1251,9 @@ function findCallDefinition(
     .replace(/<.*>/s, "")
     .replace(/\s+/g, "")
     .replace(/^::/, "");
-  const receiverClass =
+  const receiver =
     callInfo.baseNode === undefined ? undefined : resolveReceiverClass(callInfo.baseNode, functions, state);
+  const receiverClass = receiver?.className;
   const resolved =
     calleeName.includes("::") ?
       lookupFunction(calleeName, arity, functions)
@@ -1262,6 +1263,12 @@ function findCallDefinition(
       lookupInCurrentClass(calleeName, arity, callInfo, functions, state) ??
       lookupFunction(calleeName, arity, functions));
 
+  // A declared class's method can be inline in a header, so it isn't indexed. Don't fall back
+  // to another class's method of that name, as when api_key_t's to_json resolved to curation_t's.
+  const resolvedClass = resolved?.qualifiedName.split("::").at(-2);
+  if (receiver?.declared === true && resolvedClass !== undefined && resolvedClass !== receiverClass) {
+    return undefined;
+  }
   return resolved?.qualifiedName === state.definition.qualifiedName ? undefined : resolved;
 }
 
@@ -1290,27 +1297,34 @@ function classNameIndex(functions: ReadonlyMap<string, FunctionDefinition>): Rea
 
 /**
  * The class of a method call's receiver: `Foo::get_instance().bar()` is Foo, and so is
- * `bar()` on a variable declared as `Foo& manager`. A variable declared `auto` falls back
- * to its name: `doc_analytics.bar()` is DocAnalytics.
+ * `bar()` on a variable declared as `Foo& manager`. A receiver with no declared class, such as
+ * a class member or an `auto` variable, falls back to its name: `doc_analytics.bar()` is
+ * DocAnalytics. `declared` is true when the class comes from a declaration or `get_instance()`,
+ * not from the name.
  */
 function resolveReceiverClass(
   baseNode: SyntaxNode,
   functions: ReadonlyMap<string, FunctionDefinition>,
   state: AnalysisState,
-): string | undefined {
+): { readonly className: string; readonly declared: boolean } | undefined {
   const receiver = unwrapExpressionNode(baseNode);
   if (receiver.type === "call_expression") {
     const callee = parseCallExpressionNode(receiver)?.calleeName ?? "";
-    return callee.endsWith("::get_instance") ? callee.slice(0, -"::get_instance".length).split("::").at(-1) : undefined;
+    const className =
+      callee.endsWith("::get_instance") ? callee.slice(0, -"::get_instance".length).split("::").at(-1) : undefined;
+    return className === undefined ? undefined : { className, declared: true };
   }
   if (receiver.type !== "identifier") {
     return undefined;
   }
   const classNames = classNameIndex(functions);
   const declaredClass = declaredClassName(declaredType(state, receiver.text));
+  const declared = declaredClass === undefined ? undefined : classNames.get(normalizeClassName(declaredClass));
+  const named = classNames.get(normalizeClassName(receiver.text));
   return (
-    (declaredClass === undefined ? undefined : classNames.get(normalizeClassName(declaredClass))) ??
-    classNames.get(normalizeClassName(receiver.text))
+    declared !== undefined ? { className: declared, declared: true }
+    : named !== undefined ? { className: named, declared: false }
+    : undefined
   );
 }
 
