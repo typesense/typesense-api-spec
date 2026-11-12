@@ -1,0 +1,41 @@
+name: Test Extractor
+
+on: [push, pull_request]
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version-file: package.json
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Type check
+        run: bun run check
+
+      - name: Lint
+        run: bun run lint
+
+      - name: Check formatting
+        run: bun run format:check
+
+      # The integration tests read this clone. Checking out the commit output/ records keeps
+      # them on released code, so upstream work in progress can't fail this repository's CI.
+      - name: Clone Typesense
+        run: |
+          git clone --quiet https://github.com/typesense/typesense tmp/typesense
+          git -C tmp/typesense checkout --quiet --detach "$(jq -r .sourceCommit output/typesense_api_spec.json)"
+
+      - name: Test
+        run: bun test

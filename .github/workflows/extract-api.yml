@@ -1,0 +1,228 @@
+name: Extract Typesense API
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "17 4 * * *"
+  push:
+    branches:
+      - master
+    paths:
+      - "src/**"
+      - "config.json"
+      - "package.json"
+      - "bun.lock"
+      - "tsconfig.json"
+      - ".github/workflows/extract-api.yml"
+
+permissions:
+  contents: write
+  pull-requests: write
+
+env:
+  BOT_BRANCH: bot/extracted-api-update
+  GH_TOKEN: ${{ github.token }}
+
+# Only default-branch runs publish, so runs on other branches needn't queue behind them.
+concurrency:
+  group: extract-api-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  extract:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version-file: package.json
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Save previous extracted spec
+        run: |
+          if git cat-file -e HEAD:output/typesense_api_spec.json 2>/dev/null; then
+            git show HEAD:output/typesense_api_spec.json > "$RUNNER_TEMP/previous-typesense-api-spec.json"
+          else
+            printf '%s\n' '{"rootDir":"","routeFile":"","routes":[],"diagnostics":[]}' > "$RUNNER_TEMP/previous-typesense-api-spec.json"
+          fi
+
+      - name: Run extractor
+        id: extract
+        continue-on-error: true
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: bun src/cli.ts extract --config ./config.json --fail-on-diagnostics
+
+      - name: Upload extractor artifacts for debugging
+        if: steps.extract.outcome != 'success'
+        uses: actions/upload-artifact@v4
+        with:
+          name: extractor-debug-artifacts
+          if-no-files-found: warn
+          path: |
+            output/typesense_api_spec.json
+            output/typesense_api_diagnostics.json
+
+      - name: Stop on extractor diagnostics
+        if: steps.extract.outcome != 'success'
+        run: exit 1
+
+      - name: Build semantic API diff
+        id: semantic_diff
+        run: |
+          bun src/cli.ts semantic-diff \
+            --previous "$RUNNER_TEMP/previous-typesense-api-spec.json" \
+            --next output/typesense_api_spec.json \
+            --json-output "$RUNNER_TEMP/typesense-api-diff.json" \
+            --markdown-output "$RUNNER_TEMP/typesense-api-diff.md"
+          jq -r '"changed=\(.changed)"' "$RUNNER_TEMP/typesense-api-diff.json" >> "$GITHUB_OUTPUT"
+          cat "$RUNNER_TEMP/typesense-api-diff.md" >> "$GITHUB_STEP_SUMMARY"
+
+      # There is one bot branch, so a run from any other branch, such as a manual run to
+      # test a change, only reports. It must not push over the open pull request's branch.
+      - name: Only update the pull request from the default branch
+        id: branch
+        run: |
+          default=$(gh repo view "$GITHUB_REPOSITORY" --json defaultBranchRef --jq .defaultBranchRef.name)
+          if [ "$GITHUB_REF" = "refs/heads/$default" ]; then
+            echo "publish=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "::notice::Ran on $GITHUB_REF_NAME, not $default, so the report is only in this run's summary."
+          fi
+
+      # Compare the API shape, not the files: source line numbers move on most upstream commits.
+      - name: Find the open pull request
+        if: steps.branch.outputs.publish == 'true'
+        id: pull_request
+        run: |
+          # --head matches the branch name only, so skip pull requests from forks.
+          number=$(gh pr list --repo "$GITHUB_REPOSITORY" --head "$BOT_BRANCH" --base "$GITHUB_REF_NAME" --state open \
+            --json number,isCrossRepository --jq 'map(select(.isCrossRepository | not)) | .[0].number // ""')
+          echo "number=$number" >> "$GITHUB_OUTPUT"
+
+      # output/ on the base branch can reach this shape without openapi.yml changing, for
+      # example when an extractor change regenerates it. Edits on the branch still need review.
+      - name: Close the pull request when the API shape no longer differs
+        id: close
+        if: >-
+          steps.branch.outputs.publish == 'true' && steps.semantic_diff.outputs.changed != 'true' &&
+          steps.pull_request.outputs.number != ''
+        env:
+          PULL_REQUEST: ${{ steps.pull_request.outputs.number }}
+        run: |
+          git fetch origin "$BOT_BRANCH"
+          edited=$(git diff --name-only HEAD...FETCH_HEAD -- . ':(exclude)output')
+          if [ -z "$edited" ]; then
+            gh pr close "$PULL_REQUEST" --repo "$GITHUB_REPOSITORY" --delete-branch \
+              --comment "The extracted API shape matches \`$GITHUB_REF_NAME\` again, so this is no longer needed."
+            echo "closed=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          body="$RUNNER_TEMP/pull-request-body.md"
+          {
+            printf 'The extracted API shape now matches `output/` on `%s`, so there is nothing new to report.\n\n' "$GITHUB_REF_NAME"
+            printf 'This branch also changes these files. Merge it once they are reviewed, or close it:\n\n'
+            printf -- '- `%s`\n' $edited
+          } > "$body"
+          gh pr edit "$PULL_REQUEST" --repo "$GITHUB_REPOSITORY" --body-file "$body"
+
+      - name: Upload the API diff report
+        if: steps.semantic_diff.outputs.changed == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: typesense-api-diff
+          path: ${{ runner.temp }}/typesense-api-diff.md
+
+      # A pull request kept open for its edits is updated too, so it stays mergeable.
+      - name: Commit extracted artifacts to the bot branch
+        if: >-
+          steps.branch.outputs.publish == 'true' && steps.close.outputs.closed != 'true' &&
+          (steps.semantic_diff.outputs.changed == 'true' || steps.pull_request.outputs.number != '')
+        id: bot_branch
+        env:
+          PULL_REQUEST: ${{ steps.pull_request.outputs.number }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          outputs="output/typesense_api_spec.json output/typesense_api_diagnostics.json"
+          # The bot branch is checked out in its own worktree, so the code run here is always
+          # this branch's, never code pushed to the bot branch.
+          bot="$RUNNER_TEMP/bot-branch"
+          extracted() {
+            cp $outputs "$bot/output/"
+            git -C "$bot" add $outputs
+          }
+          base=$(git rev-parse HEAD)
+
+          if [ -z "$PULL_REQUEST" ]; then
+            # Nothing to preserve: a leftover branch belongs to a closed pull request.
+            git worktree add -B "$BOT_BRANCH" "$bot" "$base"
+            extracted
+            git -C "$bot" commit -m "chore: update extracted Typesense API artifacts"
+            git -C "$bot" push --force origin "$BOT_BRANCH"
+            exit 0
+          fi
+
+          # Build on the open branch, so openapi.yml edits made there survive.
+          git fetch origin "$BOT_BRANCH"
+          branch_head=$(git rev-parse FETCH_HEAD)
+          git worktree add -B "$BOT_BRANCH" "$bot" "$branch_head"
+
+          # Merge the base branch so the pull request stays mergeable. output/ is about to be
+          # replaced, so its conflicts resolve to the new extraction; any other needs a person.
+          if ! git -C "$bot" merge --no-edit -m "Merge $GITHUB_REF_NAME into $BOT_BRANCH" "$base"; then
+            if git -C "$bot" diff --name-only --diff-filter=U | grep -qv '^output/'; then
+              git -C "$bot" merge --abort
+              echo "::warning::$BOT_BRANCH conflicts with $GITHUB_REF_NAME outside output/, so it needs a manual merge."
+            else
+              extracted
+              git -C "$bot" commit --no-edit
+            fi
+          fi
+
+          # test.yml checks output/ byte for byte against this code, so commit any difference.
+          extracted
+          git -C "$bot" diff --cached --quiet || git -C "$bot" commit -m "chore: update extracted Typesense API artifacts"
+
+          if [ "$(git -C "$bot" rev-parse HEAD)" = "$branch_head" ]; then
+            echo "The open pull request is already up to date."
+          else
+            git -C "$bot" push origin "$BOT_BRANCH"
+          fi
+
+      # The report compares with the base branch, which can move while the branch doesn't.
+      - name: Open or update the pull request
+        if: steps.branch.outputs.publish == 'true' && steps.semantic_diff.outputs.changed == 'true'
+        env:
+          PULL_REQUEST: ${{ steps.pull_request.outputs.number }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          # GitHub rejects pull request bodies over 65,536 characters.
+          body="$RUNNER_TEMP/pull-request-body.md"
+          if [ "$(wc -c < "$RUNNER_TEMP/typesense-api-diff.md")" -gt 60000 ]; then
+            # Drop the last, partial line, so no table row or character is cut in two.
+            head -c 60000 "$RUNNER_TEMP/typesense-api-diff.md" | sed '$d' > "$body"
+            printf '\n\n**Report truncated.** The full report is in the artifacts of [this run](%s).\n' "$RUN_URL" >> "$body"
+          else
+            cp "$RUNNER_TEMP/typesense-api-diff.md" "$body"
+          fi
+          # output/ on the base branch holds the reviewed API shape, so only merging moves it.
+          printf '\n---\n\n%s\n' \
+            "Nothing to change in \`openapi.yml\`? Merge anyway: that records these changes as reviewed. Closing this only hides them until the next run opens a new pull request. Each run rewrites this description, so leave notes as comments." \
+            >> "$body"
+
+          if [ -n "$PULL_REQUEST" ]; then
+            gh pr edit "$PULL_REQUEST" --repo "$GITHUB_REPOSITORY" --body-file "$body"
+          else
+            gh pr create --repo "$GITHUB_REPOSITORY" --base "$GITHUB_REF_NAME" --head "$BOT_BRANCH" \
+              --title "Update openapi.yml for extracted Typesense API changes" --body-file "$body"
+          fi
