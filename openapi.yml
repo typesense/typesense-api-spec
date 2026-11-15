@@ -3006,6 +3006,11 @@ components:
         expires_at:
           type: integer
           format: int64
+        autodelete:
+          type: boolean
+          description: >
+            Delete the key once it has expired, instead of keeping it. Expired keys are purged hourly.
+            Default: false.
     ApiKey:
       allOf:
         - $ref: "#/components/schemas/ApiKeySchema"
