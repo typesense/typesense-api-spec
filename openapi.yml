@@ -1094,6 +1094,16 @@ paths:
           required: true
           schema:
             type: string
+        - name: include_fields
+          in: query
+          description: Comma-separated list of fields from the document to include in the response
+          schema:
+            type: string
+        - name: exclude_fields
+          in: query
+          description: Comma-separated list of fields from the document to exclude from the response
+          schema:
+            type: string
       responses:
         '200':
           description: The document referenced by the ID
