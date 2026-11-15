@@ -4632,6 +4632,33 @@ components:
         id:
           type: string
           description: ID of the curation item
+        diversity:
+          type: object
+          description: >
+            Diversifies the top hits of search queries that match the curation rule, by penalising hits
+            similar to those ranked above them. An empty object turns diversification off.
+            The search param `diversity_lambda` tunes it.
+          properties:
+            similarity_metric:
+              type: array
+              minItems: 1
+              description: The measures that are combined to score how similar two hits are.
+              items:
+                type: object
+                required:
+                  - field
+                  - method
+                properties:
+                  field:
+                    type: string
+                    description: The field to compare.
+                  method:
+                    type: string
+                    enum: [equality, jaccard, vector_distance]
+                    description: How the field's values are compared (case-insensitive).
+                  weight:
+                    type: number
+                    description: "Weight of this measure in the combined similarity. Default: 1."
 
 
     CurationItemSchema:
@@ -4691,6 +4718,18 @@ components:
           type: string
           description: >
             Indicates that the curation should apply when the filter_by parameter in a search query exactly matches the string specified here (including backticks, spaces, brackets, etc).
+        synonyms:
+          type: boolean
+          description: >
+            Also match search queries that match `query` through synonyms. Default: false.
+        stem:
+          type: boolean
+          description: >
+            Stem both the rule's `query` and the search query before matching them. Default: false.
+        stemming_dictionary:
+          type: string
+          description: >
+            Name of the stemming dictionary to stem with. Only used when `stem` is true.
 
     CurationInclude:
       type: object
