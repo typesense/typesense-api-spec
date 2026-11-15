@@ -1186,6 +1186,12 @@ paths:
           required: true
           schema:
             type: string
+        - name: ignore_not_found
+          in: query
+          description: >
+            Respond 200 with `{"id": documentId}` instead of 404 when the document doesn't exist.
+          schema:
+            type: boolean
       responses:
         '200':
           description: The document referenced by the ID was deleted
