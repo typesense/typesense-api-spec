@@ -4413,6 +4413,9 @@ components:
         api_url:
           type: string
           description: Custom API URL for the NL model service
+        url:
+          type: string
+          description: Endpoint URL of the Azure OpenAI deployment. Required for `azure/` models.
         max_bytes:
           type: integer
           description: Maximum number of bytes to process
@@ -4451,6 +4454,22 @@ components:
         client_secret:
           type: string
           description: Client secret for GCP Vertex AI
+        service_account:
+          type: object
+          description: >
+            GCP service account credentials for Vertex AI, used instead of `access_token`,
+            `refresh_token`, `client_id` and `client_secret`.
+          required:
+            - client_email
+            - private_key
+          properties:
+            client_email:
+              type: string
+            private_key:
+              type: string
+            token_uri:
+              type: string
+              description: "Default: `https://oauth2.googleapis.com/token`."
         region:
           type: string
           description: Region for GCP Vertex AI
