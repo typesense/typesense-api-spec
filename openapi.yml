@@ -254,6 +254,13 @@ paths:
           required: true
           schema:
             type: string
+        - name: compact_store
+          in: query
+          description: >
+            Compact the on-disk store's key range for the collection after deleting it, to reclaim disk space
+            immediately. Default: false.
+          schema:
+            type: boolean
       responses:
         '200':
           description: Collection deleted
