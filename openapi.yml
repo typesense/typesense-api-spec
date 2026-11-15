@@ -295,6 +295,16 @@ paths:
           description: Dealing with Dirty Data
           schema:
             $ref: "#/components/schemas/DirtyValues"
+        - name: remote_embedding_timeout_ms
+          in: query
+          description: "Timeout (in milliseconds) for fetching remote embeddings. Default: 60000."
+          schema:
+            type: integer
+        - name: remote_embedding_num_tries
+          in: query
+          description: "Number of times to retry fetching remote embeddings. Default: 2."
+          schema:
+            type: integer
       requestBody:
         description: The document object to be indexed
         content:
