@@ -4132,10 +4132,20 @@ components:
       enum: [popular_queries, nohits_queries, counter, log]
     AnalyticsRuleUpdate:
       type: object
-      description: Fields allowed to update on an analytics rule
+      description: >
+        Fields allowed to update on an analytics rule. When no rule has this name, the rule is
+        created, and `type`, `collection` and `event_type` are required.
       properties:
         name:
           type: string
+        type:
+          $ref: "#/components/schemas/AnalyticsRuleType"
+        collection:
+          type: string
+          description: Required when creating the rule. Can't be changed on an existing rule.
+        event_type:
+          type: string
+          description: Required when creating the rule. Can't be changed on an existing rule.
         rule_tag:
           type: string
         params:
