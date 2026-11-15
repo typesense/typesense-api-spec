@@ -2523,6 +2523,11 @@ components:
           items:
             type: string
             example: "synonym_set_1"
+        curation_sets:
+          type: array
+          description: List of curation set names to associate with this collection
+          items:
+            type: string
         metadata:
           type: object
           description: >
