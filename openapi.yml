@@ -1043,6 +1043,12 @@ paths:
                   response, you can use the return_id parameter.
               remote_embedding_batch_size:
                 type: integer
+              remote_embedding_timeout_ms:
+                type: integer
+                description: "Timeout (in milliseconds) for fetching remote embeddings. Default: 60000."
+              remote_embedding_num_tries:
+                type: integer
+                description: "Number of times to retry fetching remote embeddings. Default: 2."
               return_doc:
                 type: boolean
               action:
