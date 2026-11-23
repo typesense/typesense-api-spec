@@ -3006,6 +3006,11 @@ components:
         expires_at:
           type: integer
           format: int64
+        autodelete:
+          type: boolean
+          description: >
+            Delete the key once it has expired, instead of keeping it. Expired keys are purged hourly.
+            Default: false.
     ApiKey:
       allOf:
         - $ref: "#/components/schemas/ApiKeySchema"
@@ -4127,10 +4132,20 @@ components:
       enum: [popular_queries, nohits_queries, counter, log]
     AnalyticsRuleUpdate:
       type: object
-      description: Fields allowed to update on an analytics rule
+      description: >
+        Fields allowed to update on an analytics rule. When no rule has this name, the rule is
+        created, and `type`, `collection` and `event_type` are required.
       properties:
         name:
           type: string
+        type:
+          $ref: "#/components/schemas/AnalyticsRuleType"
+        collection:
+          type: string
+          description: Required when creating the rule. Can't be changed on an existing rule.
+        event_type:
+          type: string
+          description: Required when creating the rule. Can't be changed on an existing rule.
         rule_tag:
           type: string
         params:
@@ -4359,6 +4374,15 @@ components:
         vllm_url:
           description: URL of vLLM service
           type: string
+        openai_url:
+          description: "Base URL of an OpenAI-compatible service, for `openai/` models. Default: `https://api.openai.com`."
+          type: string
+        openai_path:
+          description: "Path of the chat completions endpoint under `openai_url`. Default: `/v1/chat/completions`."
+          type: string
+        url:
+          description: Endpoint URL of the Azure OpenAI deployment. Required for `azure/` models.
+          type: string
     ConversationModelSchema:
       allOf:
         - $ref: '#/components/schemas/ConversationModelCreateSchema'
@@ -4408,6 +4432,9 @@ components:
         api_url:
           type: string
           description: Custom API URL for the NL model service
+        url:
+          type: string
+          description: Endpoint URL of the Azure OpenAI deployment. Required for `azure/` models.
         max_bytes:
           type: integer
           description: Maximum number of bytes to process
@@ -4446,6 +4473,22 @@ components:
         client_secret:
           type: string
           description: Client secret for GCP Vertex AI
+        service_account:
+          type: object
+          description: >
+            GCP service account credentials for Vertex AI, used instead of `access_token`,
+            `refresh_token`, `client_id` and `client_secret`.
+          required:
+            - client_email
+            - private_key
+          properties:
+            client_email:
+              type: string
+            private_key:
+              type: string
+            token_uri:
+              type: string
+              description: "Default: `https://oauth2.googleapis.com/token`."
         region:
           type: string
           description: Region for GCP Vertex AI
@@ -4632,6 +4675,33 @@ components:
         id:
           type: string
           description: ID of the curation item
+        diversity:
+          type: object
+          description: >
+            Diversifies the top hits of search queries that match the curation rule, by penalising hits
+            similar to those ranked above them. An empty object turns diversification off.
+            The search param `diversity_lambda` tunes it.
+          properties:
+            similarity_metric:
+              type: array
+              minItems: 1
+              description: The measures that are combined to score how similar two hits are.
+              items:
+                type: object
+                required:
+                  - field
+                  - method
+                properties:
+                  field:
+                    type: string
+                    description: The field to compare.
+                  method:
+                    type: string
+                    enum: [equality, jaccard, vector_distance]
+                    description: How the field's values are compared (case-insensitive).
+                  weight:
+                    type: number
+                    description: "Weight of this measure in the combined similarity. Default: 1."
 
 
     CurationItemSchema:
@@ -4691,6 +4761,18 @@ components:
           type: string
           description: >
             Indicates that the curation should apply when the filter_by parameter in a search query exactly matches the string specified here (including backticks, spaces, brackets, etc).
+        synonyms:
+          type: boolean
+          description: >
+            Also match search queries that match `query` through synonyms. Default: false.
+        stem:
+          type: boolean
+          description: >
+            Stem both the rule's `query` and the search query before matching them. Default: false.
+        stemming_dictionary:
+          type: string
+          description: >
+            Name of the stemming dictionary to stem with. Only used when `stem` is true.
 
     CurationInclude:
       type: object
