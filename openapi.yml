@@ -131,6 +131,21 @@ paths:
         When a collection is created, we give it a name and describe the
         fields that will be indexed from the documents added to the collection.
       operationId: createCollection
+      parameters:
+        - name: src_name
+          in: query
+          description: >
+            Name of an existing collection to clone. The new collection copies its fields and
+            settings, but not its `metadata`, and only `name` is read from the request body.
+          schema:
+            type: string
+        - name: copy_documents
+          in: query
+          description: >
+            With `src_name`, also copy the source collection's documents. The server only checks
+            that the parameter is present, so any value, including `false`, copies them.
+          schema:
+            type: boolean
       requestBody:
         description: The collection object to be created
         content:
@@ -239,6 +254,13 @@ paths:
           required: true
           schema:
             type: string
+        - name: compact_store
+          in: query
+          description: >
+            Compact the on-disk store's key range for the collection after deleting it, to reclaim disk space
+            immediately. Default: false.
+          schema:
+            type: boolean
       responses:
         '200':
           description: Collection deleted
@@ -280,6 +302,16 @@ paths:
           description: Dealing with Dirty Data
           schema:
             $ref: "#/components/schemas/DirtyValues"
+        - name: remote_embedding_timeout_ms
+          in: query
+          description: "Timeout (in milliseconds) for fetching remote embeddings. Default: 60000."
+          schema:
+            type: integer
+        - name: remote_embedding_num_tries
+          in: query
+          description: "Number of times to retry fetching remote embeddings. Default: 2."
+          schema:
+            type: integer
       requestBody:
         description: The document object to be indexed
         content:
@@ -1018,6 +1050,12 @@ paths:
                   response, you can use the return_id parameter.
               remote_embedding_batch_size:
                 type: integer
+              remote_embedding_timeout_ms:
+                type: integer
+                description: "Timeout (in milliseconds) for fetching remote embeddings. Default: 60000."
+              remote_embedding_num_tries:
+                type: integer
+                description: "Number of times to retry fetching remote embeddings. Default: 2."
               return_doc:
                 type: boolean
               action:
@@ -1077,6 +1115,16 @@ paths:
           in: path
           description: The Document ID
           required: true
+          schema:
+            type: string
+        - name: include_fields
+          in: query
+          description: Comma-separated list of fields from the document to include in the response
+          schema:
+            type: string
+        - name: exclude_fields
+          in: query
+          description: Comma-separated list of fields from the document to exclude from the response
           schema:
             type: string
       responses:
@@ -1161,6 +1209,12 @@ paths:
           required: true
           schema:
             type: string
+        - name: ignore_not_found
+          in: query
+          description: >
+            Respond 200 with `{"id": documentId}` instead of 404 when the document doesn't exist.
+          schema:
+            type: boolean
       responses:
         '200':
           description: The document referenced by the ID was deleted
@@ -2472,6 +2526,11 @@ components:
             minLength: 1
             maxLength: 1
           default: []
+        curation_sets:
+          type: array
+          description: List of curation set names to associate with this collection
+          items:
+            type: string
         voice_query_model:
           $ref: "#/components/schemas/VoiceQueryModelCollectionConfig"
         metadata:
@@ -2503,6 +2562,11 @@ components:
           items:
             type: string
             example: "synonym_set_1"
+        curation_sets:
+          type: array
+          description: List of curation set names to associate with this collection
+          items:
+            type: string
         metadata:
           type: object
           description: >
@@ -2565,9 +2629,26 @@ components:
           type: boolean
           description: >
             Allow documents to be indexed successfully even when the referenced document doesn't exist yet.
+        cascade_delete:
+          type: boolean
+          description: >
+            Delete this document once every document it references is deleted. Can only be false on a
+            `reference` field with `async_reference` set to true. Default: true.
         num_dim:
           type: integer
           example: 256
+        hnsw_params:
+          type: object
+          description: Parameters of the HNSW index built for a vector field.
+          properties:
+            ef_construction:
+              type: integer
+              minimum: 1
+              description: "Size of the candidate list while building the index. Default: 200."
+            M:
+              type: integer
+              minimum: 1
+              description: "Number of connections each node keeps in the index. Default: 16."
         drop:
           type: boolean
           example: true
@@ -2592,6 +2673,12 @@ components:
           type: string
           description: Name of the stemming dictionary to use for this field
           example: irregular-plurals
+        truncate_len:
+          type: integer
+          minimum: 0
+          description: >
+            String tokens longer than this many characters are truncated when indexed and filtered.
+            0 disables truncation. Default: 100.
         token_separators:
           type: array
           description: >
@@ -2646,6 +2733,31 @@ components:
                   type: string
                 project_id:
                   type: string
+                region:
+                  type: string
+                  description: "GCP region of the Vertex AI model. Default: `us-central1`."
+                service_account:
+                  type: object
+                  description: >
+                    GCP service account credentials, used instead of `access_token`, `refresh_token`,
+                    `client_id` and `client_secret`.
+                  required:
+                    - client_email
+                    - private_key
+                  properties:
+                    client_email:
+                      type: string
+                    private_key:
+                      type: string
+                    token_uri:
+                      type: string
+                      description: "Default: `https://oauth2.googleapis.com/token`."
+                document_task:
+                  type: string
+                  description: "GCP task type used when embedding documents. Default: `RETRIEVAL_DOCUMENT`."
+                query_task:
+                  type: string
+                  description: "GCP task type used when embedding queries. Default: `RETRIEVAL_QUERY`."
                 indexing_prefix:
                   type: string
                 query_prefix:
