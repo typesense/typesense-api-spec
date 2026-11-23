@@ -4364,6 +4364,15 @@ components:
         vllm_url:
           description: URL of vLLM service
           type: string
+        openai_url:
+          description: "Base URL of an OpenAI-compatible service, for `openai/` models. Default: `https://api.openai.com`."
+          type: string
+        openai_path:
+          description: "Path of the chat completions endpoint under `openai_url`. Default: `/v1/chat/completions`."
+          type: string
+        url:
+          description: Endpoint URL of the Azure OpenAI deployment. Required for `azure/` models.
+          type: string
     ConversationModelSchema:
       allOf:
         - $ref: '#/components/schemas/ConversationModelCreateSchema'
