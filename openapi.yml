@@ -3089,6 +3089,12 @@ components:
           description: The ID of the natural language model to use.
           type: string
 
+        nl_query_prompt_cache_ttl:
+          description: >
+            How long (in seconds) the collection schema prompt sent to the natural language
+            model is cached. Default: 86400.
+          type: integer
+
         query_by_weights:
           description:
             The relative weight to give each `query_by` field when ranking results.
@@ -3283,6 +3289,11 @@ components:
             queries (for e.g. those originating from a test script).
           type: boolean
           default: true
+
+        analytics_tag:
+          description: >
+            A tag recorded with the analytics events this search query generates.
+          type: string
 
         snippet_threshold:
           description: >
@@ -3526,6 +3537,12 @@ components:
           description: >
             The Id of a previous conversation to continue, this tells Typesense to include prior context when communicating with the LLM.
           type: string
+        diversity_lambda:
+          description: >
+            Balances relevance against diversity when a matching curation rule diversifies results:
+            1 ranks purely by relevance, 0 purely by diversity. Values outside 0 to 1 fall back to the default.
+            Default: 0.5.
+          type: number
 
     MultiSearchParameters:
       description: >
